@@ -18,9 +18,12 @@ public class ParkingLot {
     private String address;
     private int capacity;
 
+    @Enumerated(EnumType.STRING)
+    private ParkingLotType type;
+
     @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL)
     @JsonManagedReference
-    private List<ParkingSpace> spaces = new ArrayList<>();
+    private List<Level> levels = new ArrayList<>();
 
     public ParkingLot() {
     }
@@ -57,12 +60,20 @@ public class ParkingLot {
         this.capacity = capacity;
     }
 
-    public List<ParkingSpace> getSpaces() {
-        return spaces;
+    public ParkingLotType getType() {
+        return type;
     }
 
-    public void setSpaces(List<ParkingSpace> spaces) {
-        this.spaces = spaces;
+    public void setType(ParkingLotType type) {
+        this.type = type;
+    }
+
+    public List<Level> getFloors() {
+        return levels;
+    }
+
+    public void setFloors(List<Level> levels) {
+        this.levels = levels;
     }
 }
 

@@ -13,12 +13,11 @@ public class ParkingSpace {
     private Long id;
 
     private String number;
-    private int level;
     private boolean occupied;
 
     @ManyToOne
-    @JoinColumn(name = "parking_lot_id")
-    private ParkingLot parkingLot;
+    @JoinColumn(name = "section_id")
+    private Section section;
 
     @OneToOne(mappedBy = "parkingSpace", cascade = CascadeType.ALL)
     @JsonManagedReference
@@ -43,14 +42,6 @@ public class ParkingSpace {
         this.number = number;
     }
 
-    public int getLevel() {
-        return level;
-    }
-
-    public void setLevel(int level) {
-        this.level = level;
-    }
-
     public boolean isOccupied() {
         return occupied;
     }
@@ -59,12 +50,12 @@ public class ParkingSpace {
         this.occupied = occupied;
     }
 
-    public ParkingLot getParkingLot() {
-        return parkingLot;
+    public Section getSection() {
+        return section;
     }
 
-    public void setParkingLot(ParkingLot parkingLot) {
-        this.parkingLot = parkingLot;
+    public void setSection(Section section) {
+        this.section = section;
     }
 
     public Car getCar() {
