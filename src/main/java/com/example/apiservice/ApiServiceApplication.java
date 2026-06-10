@@ -45,7 +45,7 @@ public class ApiServiceApplication {
             Car car1 = new Car();
             car1.setMake("Toyota");
             car1.setModel("Camry");
-            car1.setYear(2018);
+            car1.setManufacturingYear(2018);
             car1.setLicensePlate("ABC-123");
             car1.setParked(true);
             car1.setParkingSpace(spaces.get(0));
@@ -57,7 +57,7 @@ public class ApiServiceApplication {
             Car car2 = new Car();
             car2.setMake("Honda");
             car2.setModel("Civic");
-            car2.setYear(2020);
+            car2.setManufacturingYear(2020);
             car2.setLicensePlate("XYZ-789");
             car2.setParked(false);
             carRepo.save(car2);

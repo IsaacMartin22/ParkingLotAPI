@@ -14,7 +14,8 @@ public class Car {
 
     private String make;
     private String model;
-    private int year;
+    @Column(name = "manufacturing_year")
+    private int manufacturingYear;
     private String licensePlate;
     private boolean parked;
 
@@ -50,12 +51,12 @@ public class Car {
         this.model = model;
     }
 
-    public int getYear() {
-        return year;
+    public int getManufacturingYear() {
+        return manufacturingYear;
     }
 
-    public void setYear(int year) {
-        this.year = year;
+    public void setManufacturingYear(int manufacturingYear) {
+        this.manufacturingYear = manufacturingYear;
     }
 
     public String getLicensePlate() {

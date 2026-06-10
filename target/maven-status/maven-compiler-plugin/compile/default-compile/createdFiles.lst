@@ -1,0 +1,13 @@
+com\example\apiservice\entity\ParkingLot.class
+com\example\apiservice\controller\CarController.class
+com\example\apiservice\repository\ParkingLotRepository.class
+com\example\apiservice\ApiServiceApplication.class
+com\example\apiservice\service\ParkingSpaceService.class
+com\example\apiservice\controller\ParkingLotController.class
+com\example\apiservice\repository\CarRepository.class
+com\example\apiservice\service\CarService.class
+com\example\apiservice\controller\ParkingSpaceController.class
+com\example\apiservice\entity\ParkingSpace.class
+com\example\apiservice\service\ParkingLotService.class
+com\example\apiservice\entity\Car.class
+com\example\apiservice\repository\ParkingSpaceRepository.class
