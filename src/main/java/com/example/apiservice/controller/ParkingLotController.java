@@ -1,12 +1,15 @@
 package com.example.apiservice.controller;
 
+import com.example.apiservice.dto.ParkingLotResponse;
 import com.example.apiservice.entity.ParkingLot;
+import com.example.apiservice.mapper.ParkingLotMapper;
 import com.example.apiservice.service.ParkingLotService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/lots")
@@ -19,29 +22,31 @@ public class ParkingLotController {
     }
 
     @GetMapping
-    public List<ParkingLot> getAll() {
-        return service.findAll();
+    public List<ParkingLotResponse> getAll() {
+        return service.findAll().stream()
+                .map(ParkingLotMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ParkingLot> getById(@PathVariable Long id) {
+    public ResponseEntity<ParkingLotResponse> getById(@PathVariable Long id) {
         return service.findById(id)
-                .map(ResponseEntity::ok)
+                .map(lot -> ResponseEntity.ok(ParkingLotMapper.toResponse(lot)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<ParkingLot> create(@RequestBody ParkingLot lot) {
+    public ResponseEntity<ParkingLotResponse> create(@RequestBody ParkingLot lot) {
         ParkingLot saved = service.save(lot);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
+        return new ResponseEntity<>(ParkingLotMapper.toResponse(saved), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ParkingLot> update(@PathVariable Long id, @RequestBody ParkingLot lot) {
+    public ResponseEntity<ParkingLotResponse> update(@PathVariable Long id, @RequestBody ParkingLot lot) {
         return service.findById(id).map(existing -> {
             lot.setId(id);
             ParkingLot updated = service.save(lot);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(ParkingLotMapper.toResponse(updated));
         }).orElse(ResponseEntity.notFound().build());
     }
 

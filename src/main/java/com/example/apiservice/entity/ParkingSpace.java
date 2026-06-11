@@ -1,6 +1,7 @@
 package com.example.apiservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
 
@@ -17,6 +18,7 @@ public class ParkingSpace {
 
     @ManyToOne
     @JoinColumn(name = "section_id")
+    @JsonManagedReference
     private Section section;
 
     @OneToOne(mappedBy = "parkingSpace", cascade = CascadeType.ALL)

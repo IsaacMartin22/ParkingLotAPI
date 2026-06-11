@@ -1,5 +1,6 @@
 package com.example.apiservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
@@ -22,7 +23,7 @@ public class ParkingLot {
     private ParkingLotType type;
 
     @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonBackReference
     private List<Level> levels = new ArrayList<>();
 
     public ParkingLot() {

@@ -1,12 +1,15 @@
 package com.example.apiservice.controller;
 
+import com.example.apiservice.dto.ParkingSpaceResponse;
 import com.example.apiservice.entity.ParkingSpace;
+import com.example.apiservice.mapper.ParkingSpaceMapper;
 import com.example.apiservice.service.ParkingSpaceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/spaces")
@@ -19,29 +22,31 @@ public class ParkingSpaceController {
     }
 
     @GetMapping
-    public List<ParkingSpace> getAll() {
-        return service.findAll();
+    public List<ParkingSpaceResponse> getAll() {
+        return service.findAll().stream()
+                .map(ParkingSpaceMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ParkingSpace> getById(@PathVariable Long id) {
+    public ResponseEntity<ParkingSpaceResponse> getById(@PathVariable Long id) {
         return service.findById(id)
-                .map(ResponseEntity::ok)
+                .map(space -> ResponseEntity.ok(ParkingSpaceMapper.toResponse(space)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<ParkingSpace> create(@RequestBody ParkingSpace space) {
+    public ResponseEntity<ParkingSpaceResponse> create(@RequestBody ParkingSpace space) {
         ParkingSpace saved = service.save(space);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
+        return new ResponseEntity<>(ParkingSpaceMapper.toResponse(saved), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ParkingSpace> update(@PathVariable Long id, @RequestBody ParkingSpace space) {
+    public ResponseEntity<ParkingSpaceResponse> update(@PathVariable Long id, @RequestBody ParkingSpace space) {
         return service.findById(id).map(existing -> {
             space.setId(id);
             ParkingSpace updated = service.save(space);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(ParkingSpaceMapper.toResponse(updated));
         }).orElse(ResponseEntity.notFound().build());
     }
 

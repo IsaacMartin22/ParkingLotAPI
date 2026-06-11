@@ -1,6 +1,6 @@
 package com.example.apiservice.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 
@@ -21,7 +21,7 @@ public class Car {
 
     @OneToOne
     @JoinColumn(name = "parking_space_id")
-    @JsonBackReference
+    @JsonManagedReference
     private ParkingSpace parkingSpace;
 
     public Car() {
