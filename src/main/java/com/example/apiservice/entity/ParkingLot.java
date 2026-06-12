@@ -17,7 +17,6 @@ public class ParkingLot {
 
     private String name;
     private String address;
-    private int capacity;
 
     @Enumerated(EnumType.STRING)
     private ParkingLotType type;
@@ -53,13 +52,6 @@ public class ParkingLot {
         this.address = address;
     }
 
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
-    }
 
     public ParkingLotType getType() {
         return type;
