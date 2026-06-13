@@ -33,9 +33,9 @@ public class ApiServiceApplication {
             // Names of parking lots to seed (keep the original plus additional ones)
             String[] lotNames = new String[] {
                     "Terminal 1 Economy",
-                    "Terminal 3 Economy",
                     "Terminal 1 Long Term",
                     "Terminal 1 Short Term",
+                    "Terminal 3 Economy",
                     "Terminal 3 Long Term",
                     "Terminal 3 Short Term",
                     "Waiting"
