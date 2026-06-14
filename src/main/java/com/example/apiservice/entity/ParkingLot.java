@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +25,7 @@ public class ParkingLot {
 
     @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL)
     @JsonBackReference
+    @Size(max = 100, message = "Parking lot cannot have more than 100 levels")
     private List<Level> levels = new ArrayList<>();
 
     public ParkingLot() {
@@ -66,6 +69,9 @@ public class ParkingLot {
     }
 
     public void setFloors(List<Level> levels) {
+        if (levels != null && levels.size() > 100) {
+            throw new IllegalArgumentException("Parking lot cannot have more than 100 levels");
+        }
         this.levels = levels;
     }
 }

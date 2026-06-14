@@ -12,7 +12,7 @@ public class ParkingLotMapper {
     private static final Map<Long, CacheEntry> freeSpacesCache = new ConcurrentHashMap<>();
 
     private static final long CAPACITY_EXPIRATION_MS = 24L * 60 * 60 * 1000; // 1 day
-    private static final long FREE_SPACES_EXPIRATION_MS = 5L * 60 * 1000; // 5 minutes
+    private static final long FREE_SPACES_EXPIRATION_MS = 30 * 1000; // 30 seconds
 
     private static class CacheEntry {
         final int value;
@@ -98,7 +98,7 @@ public class ParkingLotMapper {
                     for (var section : level.getSections()) {
                         if (section.getParkingSpaces() != null) {
                             for (var space : section.getParkingSpaces()) {
-                                if (!space.isOccupied()) {
+                                if (space.getCar() == null) {
                                     totalFree++;
                                 }
                             }

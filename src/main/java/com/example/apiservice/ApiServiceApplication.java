@@ -84,7 +84,6 @@ public class ApiServiceApplication {
                             ParkingSpace s = new ParkingSpace();
                             s.setNumber("S-" + spaceCounter);
                             s.setSection(section);
-                            s.setOccupied(false);
                             s = spaceRepo.save(s);
                             spaces.add(s);
                             spaceCounter++;
@@ -99,11 +98,9 @@ public class ApiServiceApplication {
                     car1.setModel("Camry");
                     car1.setManufacturingYear(2018);
                     car1.setLicensePlate("ABC-123");
-                    car1.setParked(true);
                     car1.setParkingSpace(spaces.get(0));
                     carRepo.save(car1);
 
-                    spaces.get(0).setOccupied(true);
                     spaceRepo.save(spaces.get(0));
 
                     Car car2 = new Car();
@@ -111,7 +108,7 @@ public class ApiServiceApplication {
                     car2.setModel("Civic");
                     car2.setManufacturingYear(2020);
                     car2.setLicensePlate("XYZ-789");
-                    car2.setParked(false);
+                    car2.setParkingSpace(spaces.get(1));
                     carRepo.save(car2);
                 }
             }

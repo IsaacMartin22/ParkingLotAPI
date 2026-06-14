@@ -1,9 +1,10 @@
 package com.example.apiservice.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +23,8 @@ public class Section {
     private Level level;
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL)
-    @JsonBackReference
+    @JsonIgnoreProperties
+    @Size(max = 1000, message = "Section cannot have more than 1000 parking spaces")
     private List<ParkingSpace> parkingSpaces = new ArrayList<>();
 
     public Section() {
@@ -57,6 +59,9 @@ public class Section {
     }
 
     public void setParkingSpaces(List<ParkingSpace> parkingSpaces) {
+        if (parkingSpaces != null && parkingSpaces.size() > 1000) {
+            throw new IllegalArgumentException("Section cannot have more than 1000 parking spaces");
+        }
         this.parkingSpaces = parkingSpaces;
     }
 }

@@ -13,7 +13,5 @@ public class CarResponse {
     private String model;
     private int manufacturingYear;
     private String licensePlate;
-    private boolean parked;
-    private Long parkingSpaceId;
 }
 

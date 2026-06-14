@@ -11,7 +11,7 @@ public class ParkingSpaceMapper {
         return new ParkingSpaceResponse(
             space.getId(),
             space.getNumber(),
-            space.isOccupied(),
+            space.getCar() != null,
             space.getSection() != null ? space.getSection().getId() : null,
             space.getCar() != null ? space.getCar().getId() : null
         );

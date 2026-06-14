@@ -13,9 +13,7 @@ public class CarMapper {
             car.getMake(),
             car.getModel(),
             car.getManufacturingYear(),
-            car.getLicensePlate(),
-            car.isParked(),
-            car.getParkingSpace() != null ? car.getParkingSpace().getId() : null
+            car.getLicensePlate()
         );
     }
 }

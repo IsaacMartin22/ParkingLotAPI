@@ -1,6 +1,6 @@
 package com.example.apiservice.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
 
@@ -17,11 +17,10 @@ public class Car {
     @Column(name = "manufacturing_year")
     private int manufacturingYear;
     private String licensePlate;
-    private boolean parked;
 
     @OneToOne
     @JoinColumn(name = "parking_space_id")
-    @JsonManagedReference
+    @JsonIgnoreProperties
     private ParkingSpace parkingSpace;
 
     public Car() {
@@ -65,14 +64,6 @@ public class Car {
 
     public void setLicensePlate(String licensePlate) {
         this.licensePlate = licensePlate;
-    }
-
-    public boolean isParked() {
-        return parked;
-    }
-
-    public void setParked(boolean parked) {
-        this.parked = parked;
     }
 
     public ParkingSpace getParkingSpace() {

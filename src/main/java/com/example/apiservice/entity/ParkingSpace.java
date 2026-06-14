@@ -1,7 +1,6 @@
 package com.example.apiservice.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
 
@@ -14,15 +13,14 @@ public class ParkingSpace {
     private Long id;
 
     private String number;
-    private boolean occupied;
 
     @ManyToOne
     @JoinColumn(name = "section_id")
-    @JsonManagedReference
+    @JsonIgnoreProperties
     private Section section;
 
     @OneToOne(mappedBy = "parkingSpace", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonIgnoreProperties
     private Car car;
 
     public ParkingSpace() {
@@ -42,14 +40,6 @@ public class ParkingSpace {
 
     public void setNumber(String number) {
         this.number = number;
-    }
-
-    public boolean isOccupied() {
-        return occupied;
-    }
-
-    public void setOccupied(boolean occupied) {
-        this.occupied = occupied;
     }
 
     public Section getSection() {

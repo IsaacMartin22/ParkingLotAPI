@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +25,7 @@ public class Level {
 
     @OneToMany(mappedBy = "level", cascade = CascadeType.ALL)
     @JsonBackReference
+    @Size(max = 100, message = "Level cannot have more than 100 sections")
     private List<Section> sections = new ArrayList<>();
 
     public Level() {
@@ -57,6 +60,9 @@ public class Level {
     }
 
     public void setSections(List<Section> sections) {
+        if (sections != null && sections.size() > 100) {
+            throw new IllegalArgumentException("Level cannot have more than 100 sections");
+        }
         this.sections = sections;
     }
 }

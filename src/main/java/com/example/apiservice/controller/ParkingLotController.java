@@ -5,6 +5,7 @@ import com.example.apiservice.entity.ParkingLot;
 import com.example.apiservice.mapper.ParkingLotMapper;
 import com.example.apiservice.service.ParkingLotService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +36,7 @@ public class ParkingLotController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ParkingLotResponse> create(@RequestBody ParkingLot lot) {
         ParkingLot saved = service.save(lot);
         return new ResponseEntity<>(ParkingLotMapper.toResponse(saved), HttpStatus.CREATED);
