@@ -1,8 +1,11 @@
 package com.example.apiservice.controller;
 
+import com.example.apiservice.dto.LevelDetailsResponse;
 import com.example.apiservice.dto.ParkingLotResponse;
 import com.example.apiservice.entity.ParkingLot;
+import com.example.apiservice.mapper.LevelDetailsMapper;
 import com.example.apiservice.mapper.ParkingLotMapper;
+import com.example.apiservice.service.LevelService;
 import com.example.apiservice.service.ParkingLotService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,9 +20,11 @@ import java.util.stream.Collectors;
 public class ParkingLotController {
 
     private final ParkingLotService service;
+    private final LevelService levelService;
 
-    public ParkingLotController(ParkingLotService service) {
+    public ParkingLotController(ParkingLotService service, LevelService levelService) {
         this.service = service;
+        this.levelService = levelService;
     }
 
     @GetMapping
@@ -33,6 +38,16 @@ public class ParkingLotController {
     public ResponseEntity<ParkingLotResponse> getById(@PathVariable Long id) {
         return service.findById(id)
                 .map(lot -> ResponseEntity.ok(ParkingLotMapper.toResponse(lot)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{lotId}/levels/{levelId}/details")
+    public ResponseEntity<LevelDetailsResponse> getLevelDetailsForParkingLot(
+            @PathVariable Long lotId,
+            @PathVariable Long levelId
+    ) {
+        return levelService.getLevelDetailsForParkingLot(lotId, levelId)
+                .map(level -> ResponseEntity.ok(LevelDetailsMapper.toResponse(level)))
                 .orElse(ResponseEntity.notFound().build());
     }
 

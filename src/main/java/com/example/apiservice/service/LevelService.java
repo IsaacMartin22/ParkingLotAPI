@@ -22,6 +22,12 @@ public class LevelService {
         return levelRepository.findById(id);
     }
 
+    public Optional<Level> getLevelDetailsForParkingLot(Long parkingLotId, Long levelId) {
+        return levelRepository.findWithSectionsAndParkingSpacesById(levelId)
+                .filter(level -> level.getParkingLot() != null
+                        && parkingLotId.equals(level.getParkingLot().getId()));
+    }
+
     public Level createLevel(Level level) {
         return levelRepository.save(level);
     }
@@ -49,4 +55,3 @@ public class LevelService {
         return false;
     }
 }
-
