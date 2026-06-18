@@ -39,8 +39,9 @@ public class SectionService {
             if (sectionDetails.getName() != null) {
                 section.setName(sectionDetails.getName());
             }
-            if (sectionDetails.getLevel() != null) {
-                section.setLevel(sectionDetails.getLevel());
+            var floor = sectionDetails.getFloor();
+            if (floor != null) {
+                section.setFloor(floor);
             }
             return sectionRepository.save(section);
         }

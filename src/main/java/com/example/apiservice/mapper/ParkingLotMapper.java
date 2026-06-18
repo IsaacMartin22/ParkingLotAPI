@@ -1,7 +1,7 @@
 package com.example.apiservice.mapper;
 
 import com.example.apiservice.dto.ParkingLotResponse;
-import com.example.apiservice.entity.Level;
+import com.example.apiservice.entity.Floor;
 import com.example.apiservice.entity.ParkingLot;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,7 +68,7 @@ public class ParkingLotMapper {
             lot.getType() != null ? lot.getType().toString() : null,
             lot.getFloors() != null
                 ? lot.getFloors().stream()
-                    .map(Level::getId)
+                    .map(Floor::getId)
                     .collect(Collectors.toList())
                 : java.util.Collections.emptyList()
         );
@@ -77,9 +77,9 @@ public class ParkingLotMapper {
     private static int computeCapacity(ParkingLot lot) {
         int total = 0;
         if (lot.getFloors() != null) {
-            for (var level : lot.getFloors()) {
-                if (level.getSections() != null) {
-                    for (var section : level.getSections()) {
+            for (var floor : lot.getFloors()) {
+                if (floor.getSections() != null) {
+                    for (var section : floor.getSections()) {
                         if (section.getParkingSpaces() != null) {
                             total += section.getParkingSpaces().size();
                         }
@@ -93,9 +93,9 @@ public class ParkingLotMapper {
     private static int computeFreeSpaces(ParkingLot lot) {
         int totalFree = 0;
         if (lot.getFloors() != null) {
-            for (var level : lot.getFloors()) {
-                if (level.getSections() != null) {
-                    for (var section : level.getSections()) {
+            for (var floor : lot.getFloors()) {
+                if (floor.getSections() != null) {
+                    for (var section : floor.getSections()) {
                         if (section.getParkingSpaces() != null) {
                             for (var space : section.getParkingSpaces()) {
                                 if (space.getCar() == null) {

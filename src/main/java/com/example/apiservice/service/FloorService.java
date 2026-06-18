@@ -1,0 +1,58 @@
+package com.example.apiservice.service;
+
+import com.example.apiservice.entity.Floor;
+import com.example.apiservice.repository.FloorRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class FloorService {
+
+    @Autowired
+    private FloorRepository floorRepository;
+
+    public List<Floor> getAllFloors() {
+        return floorRepository.findAll();
+    }
+
+    public Optional<Floor> getFloorById(Long id) {
+        return floorRepository.findById(id);
+    }
+
+    public Optional<Floor> getFloorDetailsForParkingLot(Long parkingLotId, Long floorId) {
+        return floorRepository.findWithSectionsAndParkingSpacesById(floorId)
+                .filter(floor -> floor.getParkingLot() != null
+                        && parkingLotId.equals(floor.getParkingLot().getId()));
+    }
+
+    public Floor createFloor(Floor floor) {
+        return floorRepository.save(floor);
+    }
+
+    public Floor updateFloor(Long id, Floor floorDetails) {
+        Optional<Floor> floor = floorRepository.findById(id);
+        if (floor.isPresent()) {
+            Floor updatedFloor = floor.get();
+            if (floorDetails.getName() != null) {
+                updatedFloor.setName(floorDetails.getName());
+            }
+            if (floorDetails.getParkingLot() != null) {
+                updatedFloor.setParkingLot(floorDetails.getParkingLot());
+            }
+            return floorRepository.save(updatedFloor);
+        }
+        return null;
+    }
+
+    public boolean deleteFloor(Long id) {
+        if (floorRepository.existsById(id)) {
+            floorRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+}
+

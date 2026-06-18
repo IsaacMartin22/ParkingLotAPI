@@ -1,7 +1,6 @@
 package com.example.apiservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -25,8 +24,8 @@ public class ParkingLot {
 
     @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL)
     @JsonBackReference
-    @Size(max = 100, message = "Parking lot cannot have more than 100 levels")
-    private List<Level> levels = new ArrayList<>();
+    @Size(max = 100, message = "Parking lot cannot have more than 100 floors")
+    private List<Floor> floors = new ArrayList<>();
 
     public ParkingLot() {
     }
@@ -64,15 +63,15 @@ public class ParkingLot {
         this.type = type;
     }
 
-    public List<Level> getFloors() {
-        return levels;
+    public List<Floor> getFloors() {
+        return floors;
     }
 
-    public void setFloors(List<Level> levels) {
-        if (levels != null && levels.size() > 100) {
-            throw new IllegalArgumentException("Parking lot cannot have more than 100 levels");
+    public void setFloors(List<Floor> floors) {
+        if (floors != null && floors.size() > 100) {
+            throw new IllegalArgumentException("Parking lot cannot have more than 100 floors");
         }
-        this.levels = levels;
+        this.floors = floors;
     }
 }
 

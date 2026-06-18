@@ -1,26 +1,26 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dto.LevelDetailsResponse;
+import com.example.apiservice.dto.FloorDetailsResponse;
 import com.example.apiservice.dto.ParkingSpaceDetailsResponse;
 import com.example.apiservice.dto.SectionDetailsResponse;
-import com.example.apiservice.entity.Level;
+import com.example.apiservice.entity.Floor;
 
 import java.util.Collections;
 import java.util.stream.Collectors;
 
-public class LevelDetailsMapper {
+public class FloorDetailsMapper {
 
-    public static LevelDetailsResponse toResponse(Level level) {
-        if (level == null) {
+    public static FloorDetailsResponse toResponse(Floor floor) {
+        if (floor == null) {
             return null;
         }
 
-        return new LevelDetailsResponse(
-                level.getId(),
-                level.getName(),
-                level.getParkingLot() != null ? level.getParkingLot().getId() : null,
-                level.getSections() != null
-                        ? level.getSections().stream()
+        return new FloorDetailsResponse(
+                floor.getId(),
+                floor.getName(),
+                floor.getParkingLot() != null ? floor.getParkingLot().getId() : null,
+                floor.getSections() != null
+                        ? floor.getSections().stream()
                                 .map(section -> new SectionDetailsResponse(
                                         section.getId(),
                                         section.getName(),
@@ -40,3 +40,4 @@ public class LevelDetailsMapper {
         );
     }
 }
+

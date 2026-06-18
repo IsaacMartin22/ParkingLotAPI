@@ -1,7 +1,7 @@
 package com.example.apiservice;
 
 import com.example.apiservice.entity.Car;
-import com.example.apiservice.entity.Level;
+import com.example.apiservice.entity.Floor;
 import com.example.apiservice.entity.ParkingLot;
 import com.example.apiservice.entity.ParkingLotType;
 import com.example.apiservice.entity.ParkingSpace;
@@ -24,7 +24,7 @@ public class ApiServiceApplication {
 
     // Seed some sample data at startup
     @Bean
-    public CommandLineRunner seedData(ParkingLotRepository lotRepo, LevelRepository levelRepo, SectionRepository sectionRepo, ParkingSpaceRepository spaceRepo, CarRepository carRepo) {
+    public CommandLineRunner seedData(ParkingLotRepository lotRepo, FloorRepository floorRepo, SectionRepository sectionRepo, ParkingSpaceRepository spaceRepo, CarRepository carRepo) {
         return args -> {
             // Names of parking lots to seed (keep the original plus additional ones)
             String[] lotNames = new String[] {
@@ -58,21 +58,21 @@ public class ApiServiceApplication {
 
                 lot = lotRepo.save(lot);
 
-                // Create sections and parking spaces in each level
+                // Create sections and parking spaces on each floor
                 List<ParkingSpace> spaces = new ArrayList<>();
                 int spaceCounter = 1;
 
-                // Create floors (levels)
+                // Create floors
                 for (int f = 0; f < 6; f++) {
-                    Level level = new Level();
-                    level.setName("Floor-" + f);
-                    level.setParkingLot(lot);
-                    level = levelRepo.save(level);
+                    Floor floor = new Floor();
+                    floor.setName("Floor-" + f);
+                    floor.setParkingLot(lot);
+                    floor = floorRepo.save(floor);
 
                     for (int sec = 0; sec < 6; sec++) {
                         Section section = new Section();
                         section.setName("Section-" + sec);
-                        section.setLevel(level);
+                        section.setFloor(floor);
                         section = sectionRepo.save(section);
 
                         // Create 10 parking spaces per section

@@ -1,6 +1,6 @@
 package com.example.apiservice.repository;
 
-import com.example.apiservice.entity.Level;
+import com.example.apiservice.entity.Floor;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface LevelRepository extends JpaRepository<Level, Long> {
+public interface FloorRepository extends JpaRepository<Floor, Long> {
 
     @EntityGraph(attributePaths = {
             "parkingLot",
@@ -16,5 +16,6 @@ public interface LevelRepository extends JpaRepository<Level, Long> {
             "sections.parkingSpaces",
             "sections.parkingSpaces.car"
     })
-    Optional<Level> findWithSectionsAndParkingSpacesById(Long id);
+    Optional<Floor> findWithSectionsAndParkingSpacesById(Long id);
 }
+

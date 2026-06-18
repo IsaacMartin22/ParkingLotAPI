@@ -1,6 +1,5 @@
 package com.example.apiservice.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
@@ -11,7 +10,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "floors")
-public class Level {
+public class Floor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,12 +22,12 @@ public class Level {
     @JoinColumn(name = "parking_lot_id")
     private ParkingLot parkingLot;
 
-    @OneToMany(mappedBy = "level", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "floor", cascade = CascadeType.ALL)
     @JsonBackReference
-    @Size(max = 100, message = "Level cannot have more than 100 sections")
+    @Size(max = 100, message = "Floor cannot have more than 100 sections")
     private List<Section> sections = new ArrayList<>();
 
-    public Level() {
+    public Floor() {
     }
 
     public Long getId() {
@@ -61,9 +60,10 @@ public class Level {
 
     public void setSections(List<Section> sections) {
         if (sections != null && sections.size() > 100) {
-            throw new IllegalArgumentException("Level cannot have more than 100 sections");
+            throw new IllegalArgumentException("Floor cannot have more than 100 sections");
         }
         this.sections = sections;
     }
 }
+
 

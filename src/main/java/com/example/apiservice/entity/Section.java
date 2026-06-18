@@ -19,8 +19,8 @@ public class Section {
     private String name;
 
     @ManyToOne
-    @JoinColumn(name = "level_id")
-    private Level level;
+    @JoinColumn(name = "floor_id")
+    private Floor floor;
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL)
     @JsonIgnoreProperties
@@ -46,12 +46,12 @@ public class Section {
         this.name = section;
     }
 
-    public Level getLevel() {
-        return level;
+    public Floor getFloor() {
+        return floor;
     }
 
-    public void setLevel(Level level) {
-        this.level = level;
+    public void setFloor(Floor floor) {
+        this.floor = floor;
     }
 
     public List<ParkingSpace> getParkingSpaces() {

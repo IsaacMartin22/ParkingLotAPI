@@ -11,7 +11,7 @@ import java.util.List;
 public class SectionResponse {
     private Long id;
     private String name;
-    private Long levelId;
+    private Long floorId;
     private List<Long> parkingSpaceIds;
 }
 

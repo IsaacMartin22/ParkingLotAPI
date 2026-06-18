@@ -1,11 +1,11 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.dto.LevelDetailsResponse;
+import com.example.apiservice.dto.FloorDetailsResponse;
 import com.example.apiservice.dto.ParkingLotResponse;
 import com.example.apiservice.entity.ParkingLot;
-import com.example.apiservice.mapper.LevelDetailsMapper;
+import com.example.apiservice.mapper.FloorDetailsMapper;
 import com.example.apiservice.mapper.ParkingLotMapper;
-import com.example.apiservice.service.LevelService;
+import com.example.apiservice.service.FloorService;
 import com.example.apiservice.service.ParkingLotService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,11 +20,11 @@ import java.util.stream.Collectors;
 public class ParkingLotController {
 
     private final ParkingLotService service;
-    private final LevelService levelService;
+    private final FloorService floorService;
 
-    public ParkingLotController(ParkingLotService service, LevelService levelService) {
+    public ParkingLotController(ParkingLotService service, FloorService floorService) {
         this.service = service;
-        this.levelService = levelService;
+        this.floorService = floorService;
     }
 
     @GetMapping
@@ -41,13 +41,13 @@ public class ParkingLotController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{lotId}/levels/{levelId}/details")
-    public ResponseEntity<LevelDetailsResponse> getLevelDetailsForParkingLot(
+    @GetMapping("/{lotId}/floors/{floorId}/details")
+    public ResponseEntity<FloorDetailsResponse> getFloorDetailsForParkingLot(
             @PathVariable Long lotId,
-            @PathVariable Long levelId
+            @PathVariable Long floorId
     ) {
-        return levelService.getLevelDetailsForParkingLot(lotId, levelId)
-                .map(level -> ResponseEntity.ok(LevelDetailsMapper.toResponse(level)))
+        return floorService.getFloorDetailsForParkingLot(lotId, floorId)
+                .map(floor -> ResponseEntity.ok(FloorDetailsMapper.toResponse(floor)))
                 .orElse(ResponseEntity.notFound().build());
     }
 

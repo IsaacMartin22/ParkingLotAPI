@@ -15,6 +15,6 @@ public class ParkingLotResponse {
     private int totalCapacity;
     private int totalFreeSpaces;
     private String type;
-    private List<Long> levelIds;
+    private List<Long> floorIds;
 }
 

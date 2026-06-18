@@ -9,11 +9,12 @@ public class SectionMapper {
         if (section == null) {
             return null;
         }
+        Long floorId = section.getFloor() != null ? section.getFloor().getId() : null;
         return new SectionResponse(
             section.getId(),
             section.getName(),
-            section.getLevel() != null ? section.getLevel().getId() : null,
-            section.getParkingSpaces() != null 
+            floorId,
+            section.getParkingSpaces() != null
                 ? section.getParkingSpaces().stream()
                     .map(space -> space.getId())
                     .collect(Collectors.toList())
