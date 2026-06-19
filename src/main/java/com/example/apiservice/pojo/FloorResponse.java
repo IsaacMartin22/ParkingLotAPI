@@ -1,4 +1,4 @@
-package com.example.apiservice.dto;
+package com.example.apiservice.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,10 +8,11 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SectionResponse {
+public class FloorResponse {
     private Long id;
     private String name;
-    private Long floorId;
-    private List<Long> parkingSpaceIds;
+    private Long parkingLotId;
+    private List<Long> sectionIds;
 }
+
 

@@ -1,16 +1,16 @@
-package com.example.apiservice.dto;
+package com.example.apiservice.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ParkingLotFloorSummaryResponse {
+public class SectionDetailsResponse {
     private Long id;
     private String name;
-    private int capacity;
-    private int totalFreeSpaces;
+    private List<ParkingSpaceDetailsResponse> parkingSpaces;
 }
-

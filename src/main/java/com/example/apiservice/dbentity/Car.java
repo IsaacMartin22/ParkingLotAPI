@@ -1,4 +1,4 @@
-package com.example.apiservice.entity;
+package com.example.apiservice.dbentity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

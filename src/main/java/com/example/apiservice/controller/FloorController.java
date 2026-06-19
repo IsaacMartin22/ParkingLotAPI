@@ -1,6 +1,6 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.entity.Floor;
+import com.example.apiservice.dbentity.Floor;
 import com.example.apiservice.service.FloorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

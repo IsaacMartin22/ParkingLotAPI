@@ -1,4 +1,4 @@
-package com.example.apiservice.entity;
+package com.example.apiservice.dbentity;
 
 public enum ParkingLotType {
     Economy,

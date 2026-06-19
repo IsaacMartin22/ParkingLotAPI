@@ -1,7 +1,7 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dto.ParkingSpaceResponse;
-import com.example.apiservice.entity.ParkingSpace;
+import com.example.apiservice.pojo.ParkingSpaceResponse;
+import com.example.apiservice.dbentity.ParkingSpace;
 
 public class ParkingSpaceMapper {
     public static ParkingSpaceResponse toResponse(ParkingSpace space) {

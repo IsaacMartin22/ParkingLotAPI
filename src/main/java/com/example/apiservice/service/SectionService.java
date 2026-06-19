@@ -1,6 +1,6 @@
 package com.example.apiservice.service;
 
-import com.example.apiservice.entity.Section;
+import com.example.apiservice.dbentity.Section;
 import com.example.apiservice.repository.SectionRepository;
 import org.springframework.stereotype.Service;
 

@@ -1,7 +1,7 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dto.SectionResponse;
-import com.example.apiservice.entity.Section;
+import com.example.apiservice.pojo.SectionResponse;
+import com.example.apiservice.dbentity.Section;
 import java.util.stream.Collectors;
 
 public class SectionMapper {

@@ -1,6 +1,6 @@
 package com.example.apiservice.repository;
 
-import com.example.apiservice.entity.Floor;
+import com.example.apiservice.dbentity.Floor;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

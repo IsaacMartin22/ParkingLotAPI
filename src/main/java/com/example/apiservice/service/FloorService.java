@@ -1,6 +1,6 @@
 package com.example.apiservice.service;
 
-import com.example.apiservice.entity.Floor;
+import com.example.apiservice.dbentity.Floor;
 import com.example.apiservice.repository.FloorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

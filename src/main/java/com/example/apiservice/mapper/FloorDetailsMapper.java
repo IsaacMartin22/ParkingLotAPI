@@ -1,9 +1,9 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dto.FloorDetailsResponse;
-import com.example.apiservice.dto.ParkingSpaceDetailsResponse;
-import com.example.apiservice.dto.SectionDetailsResponse;
-import com.example.apiservice.entity.Floor;
+import com.example.apiservice.pojo.FloorDetailsResponse;
+import com.example.apiservice.pojo.ParkingSpaceDetailsResponse;
+import com.example.apiservice.pojo.SectionDetailsResponse;
+import com.example.apiservice.dbentity.Floor;
 
 import java.util.Collections;
 import java.util.stream.Collectors;

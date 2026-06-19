@@ -1,7 +1,7 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.dto.CarResponse;
-import com.example.apiservice.entity.Car;
+import com.example.apiservice.pojo.CarResponse;
+import com.example.apiservice.dbentity.Car;
 import com.example.apiservice.mapper.CarMapper;
 import com.example.apiservice.service.CarService;
 import org.springframework.http.HttpStatus;

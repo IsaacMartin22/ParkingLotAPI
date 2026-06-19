@@ -1,6 +1,6 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.dto.DiagnosticsResponse;
+import com.example.apiservice.pojo.DiagnosticsResponse;
 import com.example.apiservice.service.DiagnosticsService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

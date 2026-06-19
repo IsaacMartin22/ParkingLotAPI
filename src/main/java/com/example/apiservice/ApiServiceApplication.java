@@ -1,11 +1,11 @@
 package com.example.apiservice;
 
-import com.example.apiservice.entity.Car;
-import com.example.apiservice.entity.Floor;
-import com.example.apiservice.entity.ParkingLot;
-import com.example.apiservice.entity.ParkingLotType;
-import com.example.apiservice.entity.ParkingSpace;
-import com.example.apiservice.entity.Section;
+import com.example.apiservice.dbentity.Car;
+import com.example.apiservice.dbentity.Floor;
+import com.example.apiservice.dbentity.ParkingLot;
+import com.example.apiservice.dbentity.ParkingLotType;
+import com.example.apiservice.dbentity.ParkingSpace;
+import com.example.apiservice.dbentity.Section;
 import com.example.apiservice.repository.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;

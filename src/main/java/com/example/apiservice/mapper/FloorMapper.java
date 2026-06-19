@@ -1,7 +1,7 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dto.FloorResponse;
-import com.example.apiservice.entity.Floor;
+import com.example.apiservice.pojo.FloorResponse;
+import com.example.apiservice.dbentity.Floor;
 import java.util.stream.Collectors;
 
 public class FloorMapper {

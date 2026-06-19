@@ -1,6 +1,6 @@
 package com.example.apiservice.repository;
 
-import com.example.apiservice.entity.Car;
+import com.example.apiservice.dbentity.Car;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

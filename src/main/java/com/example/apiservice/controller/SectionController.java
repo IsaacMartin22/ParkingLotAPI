@@ -1,7 +1,7 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.dto.SectionResponse;
-import com.example.apiservice.entity.Section;
+import com.example.apiservice.pojo.SectionResponse;
+import com.example.apiservice.dbentity.Section;
 import com.example.apiservice.mapper.SectionMapper;
 import com.example.apiservice.service.SectionService;
 import org.springframework.http.ResponseEntity;

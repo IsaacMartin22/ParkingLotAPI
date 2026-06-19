@@ -1,7 +1,7 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dto.CarResponse;
-import com.example.apiservice.entity.Car;
+import com.example.apiservice.pojo.CarResponse;
+import com.example.apiservice.dbentity.Car;
 
 public class CarMapper {
     public static CarResponse toResponse(Car car) {

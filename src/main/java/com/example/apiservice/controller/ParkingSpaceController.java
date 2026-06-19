@@ -1,7 +1,7 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.dto.ParkingSpaceResponse;
-import com.example.apiservice.entity.ParkingSpace;
+import com.example.apiservice.pojo.ParkingSpaceResponse;
+import com.example.apiservice.dbentity.ParkingSpace;
 import com.example.apiservice.mapper.ParkingSpaceMapper;
 import com.example.apiservice.service.ParkingSpaceService;
 import org.springframework.http.HttpStatus;

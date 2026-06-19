@@ -1,4 +1,4 @@
-package com.example.apiservice.dto;
+package com.example.apiservice.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

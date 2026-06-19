@@ -1,4 +1,4 @@
-package com.example.apiservice.dto;
+package com.example.apiservice.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,9 +7,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ParkingSpaceDetailsResponse {
+public class ParkingSpaceResponse {
     private Long id;
     private String number;
     private boolean occupied;
-    private CarResponse car;
+    private Long sectionId;
+    private Long carId;
 }
+

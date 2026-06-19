@@ -1,7 +1,7 @@
 package com.example.apiservice.service;
 
-import com.example.apiservice.dto.DiagnosticsResponse;
-import com.example.apiservice.dto.EndpointDiagnostics;
+import com.example.apiservice.pojo.DiagnosticsResponse;
+import com.example.apiservice.pojo.EndpointDiagnostics;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;

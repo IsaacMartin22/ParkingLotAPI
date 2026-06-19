@@ -1,8 +1,8 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.dto.FloorDetailsResponse;
-import com.example.apiservice.dto.ParkingLotResponse;
-import com.example.apiservice.entity.ParkingLot;
+import com.example.apiservice.pojo.FloorDetailsResponse;
+import com.example.apiservice.pojo.ParkingLotResponse;
+import com.example.apiservice.dbentity.ParkingLot;
 import com.example.apiservice.mapper.FloorDetailsMapper;
 import com.example.apiservice.mapper.ParkingLotMapper;
 import com.example.apiservice.service.FloorService;

@@ -1,6 +1,6 @@
 package com.example.apiservice.service;
 
-import com.example.apiservice.entity.ParkingSpace;
+import com.example.apiservice.dbentity.ParkingSpace;
 import com.example.apiservice.repository.ParkingSpaceRepository;
 import org.springframework.stereotype.Service;
 

@@ -1,4 +1,4 @@
-package com.example.apiservice.dto;
+package com.example.apiservice.pojo;
 
 public record EndpointDiagnostics(
         long totalRequests,
