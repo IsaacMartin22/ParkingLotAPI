@@ -10,6 +10,7 @@ public class CarMapper {
         }
         return new CarResponse(
             car.getId(),
+            car.getColor(),
             car.getMake(),
             car.getModel(),
             car.getManufacturingYear(),

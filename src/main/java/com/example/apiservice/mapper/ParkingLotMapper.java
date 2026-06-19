@@ -1,8 +1,11 @@
 package com.example.apiservice.mapper;
 
+import com.example.apiservice.dto.ParkingLotFloorSummaryResponse;
 import com.example.apiservice.dto.ParkingLotResponse;
 import com.example.apiservice.entity.Floor;
 import com.example.apiservice.entity.ParkingLot;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -28,6 +31,12 @@ public class ParkingLotMapper {
         if (lot == null) {
             return null;
         }
+
+        List<ParkingLotFloorSummaryResponse> floorSummaries = lot.getFloors() != null
+            ? lot.getFloors().stream()
+                .map(ParkingLotMapper::toFloorSummary)
+                .collect(Collectors.toList())
+            : Collections.emptyList();
 
         int totalCapacity;
         int totalFreeSpaces;
@@ -70,7 +79,19 @@ public class ParkingLotMapper {
                 ? lot.getFloors().stream()
                     .map(Floor::getId)
                     .collect(Collectors.toList())
-                : java.util.Collections.emptyList()
+                : Collections.emptyList(),
+            floorSummaries
+        );
+    }
+
+    private static ParkingLotFloorSummaryResponse toFloorSummary(Floor floor) {
+        int capacity = computeFloorCapacity(floor);
+        int freeSpaces = computeFloorFreeSpaces(floor);
+        return new ParkingLotFloorSummaryResponse(
+            floor.getId(),
+            floor.getName(),
+            capacity,
+            freeSpaces
         );
     }
 
@@ -78,13 +99,7 @@ public class ParkingLotMapper {
         int total = 0;
         if (lot.getFloors() != null) {
             for (var floor : lot.getFloors()) {
-                if (floor.getSections() != null) {
-                    for (var section : floor.getSections()) {
-                        if (section.getParkingSpaces() != null) {
-                            total += section.getParkingSpaces().size();
-                        }
-                    }
-                }
+                total += computeFloorCapacity(floor);
             }
         }
         return total;
@@ -94,14 +109,32 @@ public class ParkingLotMapper {
         int totalFree = 0;
         if (lot.getFloors() != null) {
             for (var floor : lot.getFloors()) {
-                if (floor.getSections() != null) {
-                    for (var section : floor.getSections()) {
-                        if (section.getParkingSpaces() != null) {
-                            for (var space : section.getParkingSpaces()) {
-                                if (space.getCar() == null) {
-                                    totalFree++;
-                                }
-                            }
+                totalFree += computeFloorFreeSpaces(floor);
+            }
+        }
+        return totalFree;
+    }
+
+    private static int computeFloorCapacity(Floor floor) {
+        int total = 0;
+        if (floor.getSections() != null) {
+            for (var section : floor.getSections()) {
+                if (section.getParkingSpaces() != null) {
+                    total += section.getParkingSpaces().size();
+                }
+            }
+        }
+        return total;
+    }
+
+    private static int computeFloorFreeSpaces(Floor floor) {
+        int totalFree = 0;
+        if (floor.getSections() != null) {
+            for (var section : floor.getSections()) {
+                if (section.getParkingSpaces() != null) {
+                    for (var space : section.getParkingSpaces()) {
+                        if (space.getCar() == null) {
+                            totalFree++;
                         }
                     }
                 }

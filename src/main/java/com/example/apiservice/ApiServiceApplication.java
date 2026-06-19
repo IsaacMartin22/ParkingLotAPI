@@ -90,6 +90,7 @@ public class ApiServiceApplication {
                 // For the very first lot only, create example cars (avoid duplicate license plates)
                 if (idx == 0 && !spaces.isEmpty()) {
                     Car car1 = new Car();
+                    car1.setColor("Red");
                     car1.setMake("Toyota");
                     car1.setModel("Camry");
                     car1.setManufacturingYear(2018);
@@ -100,6 +101,7 @@ public class ApiServiceApplication {
                     spaceRepo.save(spaces.get(0));
 
                     Car car2 = new Car();
+                    car2.setColor("Blue");
                     car2.setMake("Honda");
                     car2.setModel("Civic");
                     car2.setManufacturingYear(2020);

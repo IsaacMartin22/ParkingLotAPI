@@ -12,6 +12,7 @@ public class Car {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String color;
     private String make;
     private String model;
     @Column(name = "manufacturing_year")
@@ -32,6 +33,14 @@ public class Car {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 
     public String getMake() {
