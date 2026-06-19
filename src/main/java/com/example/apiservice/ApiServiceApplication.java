@@ -65,13 +65,13 @@ public class ApiServiceApplication {
                 // Create floors
                 for (int f = 0; f < 6; f++) {
                     Floor floor = new Floor();
-                    floor.setName("Floor-" + f);
+                    floor.setName("Floor " + (f+1));
                     floor.setParkingLot(lot);
                     floor = floorRepo.save(floor);
 
                     for (int sec = 0; sec < 6; sec++) {
                         Section section = new Section();
-                        section.setName("Section-" + sec);
+                        section.setName("Section " + (sec+1));
                         section.setFloor(floor);
                         section = sectionRepo.save(section);
 
