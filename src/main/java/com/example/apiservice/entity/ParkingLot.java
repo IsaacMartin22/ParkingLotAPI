@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "parking_lots")
@@ -25,7 +27,7 @@ public class ParkingLot {
     @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL)
     @JsonBackReference
     @Size(max = 100, message = "Parking lot cannot have more than 100 floors")
-    private List<Floor> floors = new ArrayList<>();
+    private Set<Floor> floors = new HashSet<>();
 
     public ParkingLot() {
     }
@@ -63,11 +65,11 @@ public class ParkingLot {
         this.type = type;
     }
 
-    public List<Floor> getFloors() {
+    public Set<Floor> getFloors() {
         return floors;
     }
 
-    public void setFloors(List<Floor> floors) {
+    public void setFloors(Set<Floor> floors) {
         if (floors != null && floors.size() > 100) {
             throw new IllegalArgumentException("Parking lot cannot have more than 100 floors");
         }
