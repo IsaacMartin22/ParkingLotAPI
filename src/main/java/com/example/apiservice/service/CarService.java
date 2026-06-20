@@ -52,22 +52,6 @@ public class CarService {
         return saved;
     }
 
-    public void delete(Long id) {
-        // Capture context before deletion so we can emit the removal event
-        Optional<Car> carOpt = carRepository.findById(id);
-        if (carOpt.isEmpty()) {
-            return;
-        }
-        Car car = carOpt.get();
-        Optional<FloorContext> ctxOpt = resolveFloorContext(car);
-        carRepository.deleteById(id);
-        ctxOpt.ifPresent(ctx -> {
-            CarResponse carResponse = CarMapper.toResponse(car);
-            CarEvent event = new CarEvent(CarEventType.REMOVE, ctx.lotId, ctx.floorId, ctx.spaceId, carResponse, Instant.now());
-            floorEventService.publishEvent(ctx.lotId, ctx.floorId, event);
-        });
-    }
-
     // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------

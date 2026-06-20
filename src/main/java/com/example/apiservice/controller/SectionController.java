@@ -40,21 +40,5 @@ public class SectionController {
         Section created = sectionService.saveSection(section);
         return SectionMapper.toResponse(created);
     }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<SectionResponse> updateSection(@PathVariable Long id, @RequestBody Section sectionDetails) {
-        Section updatedSection = sectionService.updateSection(id, sectionDetails);
-        if (updatedSection != null) {
-            return ResponseEntity.ok(SectionMapper.toResponse(updatedSection));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSection(@PathVariable Long id) {
-        sectionService.deleteSection(id);
-        return ResponseEntity.noContent().build();
-    }
 }
 

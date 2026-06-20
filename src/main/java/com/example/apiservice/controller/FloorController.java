@@ -32,23 +32,6 @@ public class FloorController {
         Floor createdFloor = floorService.createFloor(floor);
         return ResponseEntity.ok(createdFloor);
     }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Floor> updateFloor(@PathVariable Long id, @RequestBody Floor floorDetails) {
-        Floor updatedFloor = floorService.updateFloor(id, floorDetails);
-        if (updatedFloor != null) {
-            return ResponseEntity.ok(updatedFloor);
-        }
-        return ResponseEntity.notFound().build();
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFloor(@PathVariable Long id) {
-        if (floorService.deleteFloor(id)) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
-    }
 }
 
 

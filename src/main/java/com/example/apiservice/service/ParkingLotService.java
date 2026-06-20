@@ -27,9 +27,5 @@ public class ParkingLotService {
     public ParkingLot save(ParkingLot lot) {
         return repo.save(lot);
     }
-
-    public void delete(Long id) {
-        repo.deleteById(id);
-    }
 }
 

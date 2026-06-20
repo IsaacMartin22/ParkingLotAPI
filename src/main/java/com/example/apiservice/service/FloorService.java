@@ -31,28 +31,5 @@ public class FloorService {
     public Floor createFloor(Floor floor) {
         return floorRepository.save(floor);
     }
-
-    public Floor updateFloor(Long id, Floor floorDetails) {
-        Optional<Floor> floor = floorRepository.findById(id);
-        if (floor.isPresent()) {
-            Floor updatedFloor = floor.get();
-            if (floorDetails.getName() != null) {
-                updatedFloor.setName(floorDetails.getName());
-            }
-            if (floorDetails.getParkingLot() != null) {
-                updatedFloor.setParkingLot(floorDetails.getParkingLot());
-            }
-            return floorRepository.save(updatedFloor);
-        }
-        return null;
-    }
-
-    public boolean deleteFloor(Long id) {
-        if (floorRepository.existsById(id)) {
-            floorRepository.deleteById(id);
-            return true;
-        }
-        return false;
-    }
 }
 

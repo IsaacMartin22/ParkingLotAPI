@@ -59,10 +59,6 @@ public class ParkingSpaceService {
         return saved;
     }
 
-    public void delete(Long id) {
-        repo.deleteById(id);
-    }
-
     private record FloorContext(Long lotId, Long floorId) {}
 
     private Optional<FloorContext> resolveFloorContext(ParkingSpace space) {

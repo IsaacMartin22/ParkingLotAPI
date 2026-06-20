@@ -40,20 +40,5 @@ public class CarController {
         Car saved = carService.save(car);
         return new ResponseEntity<>(CarMapper.toResponse(saved), HttpStatus.CREATED);
     }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<CarResponse> update(@PathVariable Long id, @RequestBody Car car) {
-        return carService.findById(id).map(existing -> {
-            car.setId(id);
-            Car updated = carService.save(car);
-            return ResponseEntity.ok(CarMapper.toResponse(updated));
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        carService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
 }
 

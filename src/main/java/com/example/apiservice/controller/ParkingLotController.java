@@ -56,20 +56,5 @@ public class ParkingLotController {
         ParkingLot saved = service.save(lot);
         return new ResponseEntity<>(ParkingLotMapper.toResponse(saved), HttpStatus.CREATED);
     }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<ParkingLotResponse> update(@PathVariable Long id, @RequestBody ParkingLot lot) {
-        return service.findById(id).map(existing -> {
-            lot.setId(id);
-            ParkingLot updated = service.save(lot);
-            return ResponseEntity.ok(ParkingLotMapper.toResponse(updated));
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
-    }
 }
 

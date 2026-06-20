@@ -27,25 +27,5 @@ public class SectionService {
     public Section saveSection(Section section) {
         return sectionRepository.save(section);
     }
-
-    public void deleteSection(Long id) {
-        sectionRepository.deleteById(id);
-    }
-
-    public Section updateSection(Long id, Section sectionDetails) {
-        Optional<Section> optionalSection = sectionRepository.findById(id);
-        if (optionalSection.isPresent()) {
-            Section section = optionalSection.get();
-            if (sectionDetails.getName() != null) {
-                section.setName(sectionDetails.getName());
-            }
-            var floor = sectionDetails.getFloor();
-            if (floor != null) {
-                section.setFloor(floor);
-            }
-            return sectionRepository.save(section);
-        }
-        return null;
-    }
 }
 

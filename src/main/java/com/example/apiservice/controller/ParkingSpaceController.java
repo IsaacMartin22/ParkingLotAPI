@@ -50,11 +50,5 @@ public class ParkingSpaceController {
             return ResponseEntity.ok(ParkingSpaceMapper.toResponse(updated));
         }).orElse(ResponseEntity.notFound().build());
     }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
-    }
 }
 
