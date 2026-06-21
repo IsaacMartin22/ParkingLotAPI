@@ -1,6 +1,7 @@
 package com.example.apiservice.config;
 
 import com.example.apiservice.service.DiagnosticsService;
+import com.example.apiservice.service.MetricsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
@@ -12,10 +13,10 @@ public class DiagnosticsInterceptor implements HandlerInterceptor {
 
     private static final String START_TIME_ATTRIBUTE = "diagnosticsStartTime";
 
-    private final DiagnosticsService diagnosticsService;
+    private final MetricsService metricsService;
 
-    public DiagnosticsInterceptor(DiagnosticsService diagnosticsService) {
-        this.diagnosticsService = diagnosticsService;
+    public DiagnosticsInterceptor(MetricsService metricsService) {
+        this.metricsService = metricsService;
     }
 
     @Override
@@ -38,7 +39,7 @@ public class DiagnosticsInterceptor implements HandlerInterceptor {
         String endpoint = getEndpointName(request);
         int statusCode = exception == null ? response.getStatus() : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
-        diagnosticsService.recordRequest(endpoint, statusCode, durationMillis);
+        metricsService.recordRequest(endpoint, statusCode, durationMillis);
     }
 
     private String getEndpointName(HttpServletRequest request) {
