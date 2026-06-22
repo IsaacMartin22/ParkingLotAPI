@@ -1,0 +1,8 @@
+# .dockerignore
+
+target
+.git
+.idea
+*.iml
+.env
+.DS_Store

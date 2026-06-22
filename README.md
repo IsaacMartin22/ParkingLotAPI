@@ -1,15 +1,12 @@
 # API-Service
 
-Run with `mvn spring-boot:run`
-
 Uses maven. Publish jars with `mvn clean package`
 
 Run stage locally with `mvn spring-boot:run "-Dspring-boot.run.profiles=staging"`\
 Run stage with `java -jar target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=stage`\
 Run prod with `java -jar target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod`
 
-Check local stage database via ``http://localhost:8082/h2-console`` \
-Check local prod database via ``http://localhost:8081/h2-console`` 
+Connect to the PostgreSQL database configured in `.env`, currently using Beekeeper studio \
 
 Diagnostic stage data available at ``http://localhost:8082/actuator/prometheus`` \
 Diagnostic prod data available at ``http://localhost:8081/actuator/prometheus``
@@ -24,19 +21,6 @@ Check Grafana Alloy is running - ``http://localhost:12345/`` \
 Grafana Alloy default location - ```%PROGRAMFILES%\GrafanaLabs\Alloy\config.alloy``` \
 Grafana monitoring URL endpoint = https://cheesy-elaborate-plating.ngrok-free.dev/actuator/prometheus
 
-Env Variables for real database - Need to add JDBC driver dependency and set Hibernate settings
+Env Variables for real database found in .env
 
-### **Stage**
-
-``SPRING_PROFILES_ACTIVE=staging
-STAGING_DATASOURCE_URL=jdbc:postgresql://staging-db:5432/api_service
-STAGING_DATASOURCE_USERNAME=api_service_staging
-STAGING_DATASOURCE_PASSWORD=staging-password
-SERVER_PORT=8082``
-
-### **Prod**
-``SPRING_PROFILES_ACTIVE=prod
-PROD_DATASOURCE_URL=jdbc:postgresql://prod-db:5432/api_service
-PROD_DATASOURCE_USERNAME=api_service_prod
-PROD_DATASOURCE_PASSWORD=prod-password
-SERVER_PORT=8081``
+The PostgreSQL prod db is hosted on Render, stage db hosted on Aiven

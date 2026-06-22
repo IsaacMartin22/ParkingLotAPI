@@ -45,7 +45,7 @@ Replace `YOUR_IP` with your actual IP address:
 - **Get car by ID:** `http://YOUR_IP:8080/api/cars/1`
 - **List all parking spaces:** `http://YOUR_IP:8080/api/spaces`
 - **List all parking lots:** `http://YOUR_IP:8080/api/lots`
-- **H2 Console:** `http://YOUR_IP:8080/h2-console`
+- **Database:** PostgreSQL (configure via the datasource environment variables)
 
 ### Example POST Request
 
@@ -79,7 +79,7 @@ The application reads settings from `src/main/resources/application.properties`:
 
 - `server.address=0.0.0.0` - Listens on all network interfaces
 - `server.port=8080` - Port number
-- `spring.h2.console.enabled=true` - Enables the H2 admin console
+- `spring.datasource.url`, `spring.datasource.username`, `spring.datasource.password` - PostgreSQL connection settings
 - `spring.jpa.hibernate.ddl-auto=create-drop` - Auto-creates/drops tables on restart
 
 To change the port, modify `application.properties`:
@@ -100,18 +100,22 @@ If you can't access the application from another machine:
    - Ensure port 8080 is not blocked by your network firewall
    - If behind a corporate firewall, consult your IT department
 
-## H2 Database Console
+## PostgreSQL Database Access
 
-Access the database browser:
-- URL: `http://YOUR_IP:8080/h2-console`
-- JDBC URL: `jdbc:h2:mem:testdb`
-- Username: `sa`
-- Password: (leave empty)
+Use a PostgreSQL client such as pgAdmin, DBeaver, or `psql` to connect to the database configured in `.env` or your deployment environment.
 
-**Note:** The in-memory database resets every time the app restarts. For persistent storage, update `application.properties`:
-```properties
-spring.datasource.url=jdbc:h2:file:./data/testdb
-```
+Common local fallback defaults are defined in `src/main/resources/application.properties`:
+- JDBC URL: `jdbc:postgresql://localhost:5432/api-service`
+- Username: `postgres`
+- Password: `postgres`
+
+For staging and production, supply the appropriate datasource environment variables:
+- `STAGING_DATASOURCE_URL`
+- `STAGING_DATASOURCE_USERNAME`
+- `STAGING_DATASOURCE_PASSWORD`
+- `PROD_DATASOURCE_URL`
+- `PROD_DATASOURCE_USERNAME`
+- `PROD_DATASOURCE_PASSWORD`
 
 ## Production Deployment
 

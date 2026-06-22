@@ -26,6 +26,11 @@ public class ApiServiceApplication {
     @Bean
     public CommandLineRunner seedData(ParkingLotRepository lotRepo, FloorRepository floorRepo, SectionRepository sectionRepo, ParkingSpaceRepository spaceRepo, CarRepository carRepo) {
         return args -> {
+            // This is only for instrumenting the initial database
+            if (lotRepo.count() > 0) {
+                return;
+            }
+
             // Names of parking lots to seed (keep the original plus additional ones)
             String[] lotNames = new String[] {
                     "Terminal 1 Economy",
