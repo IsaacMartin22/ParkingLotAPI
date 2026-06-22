@@ -1,4 +1,7 @@
 steps:
+  - label: ":mag: Debug Build Info"
+    command: echo "Commit=$BUILDKITE_COMMIT Branch=$BUILDKITE_BRANCH"
+
   - label: ":pipeline: Upload Pipeline"
     command: |
       buildkite-agent pipeline upload <<EOF
