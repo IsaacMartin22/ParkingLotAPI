@@ -1,19 +1,5 @@
 steps:
-  - label: ":mag: Debug Build Info"
-    command: echo "Commit=$BUILDKITE_COMMIT Branch=$BUILDKITE_BRANCH"
-
-  - label: ":pipeline: Upload Pipeline"
-    command: |
-      buildkite-agent pipeline upload <<EOF
-      steps:
-        - trigger: "Apply Buildkite Info"
-          label: ":pipeline:"
-          build:
-            message: "$BUILDKITE_MESSAGE"
-            commit: "$BUILDKITE_COMMIT"
-            branch: "$BUILDKITE_BRANCH"
-        - label: ":pipeline: Run Unit Tests"
-          command:
-            - "chmod +x ./mvnw"
-            - "./mvnw -B -ntp test"
-      EOF
+  - label: ":pipeline: Run Unit Tests"
+    command:
+      - "chmod +x ./mvnw"
+      - "./mvnw -B -ntp test"
