@@ -13,7 +13,7 @@ Check local prod database via ``http://localhost:8081/h2-console``
 
 Diagnostic stage data available at ``http://localhost:8082/actuator/prometheus`` \
 Diagnostic prod data available at ``http://localhost:8081/actuator/prometheus``
- 
+  
 Host stage maybe? via ``ngrok http --url=cheesy-elaborate-plating.ngrok-free.dev 8082`` \
 Host prod maybe? via ``ngrok http --url=cheesy-elaborate-plating.ngrok-free.dev 8081``
 
