@@ -1,10 +1,14 @@
 steps:
+  - label: ":pipeline: Upload Pipeline"
+    command: "buildkite-agent pipeline upload"
+
   - trigger: "Apply Buildkite Info"
     label: ":pipeline:"
     build:
       message: "$BUILDKITE_MESSAGE"
       commit: "$BUILDKITE_COMMIT"
       branch: "$BUILDKITE_BRANCH"
+
   - label: ":pipeline: Run Unit Tests"
     command:
       - "chmod +x ./mvnw"
