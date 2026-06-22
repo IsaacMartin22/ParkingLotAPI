@@ -1,12 +1,12 @@
 steps:
-  - label: ":test_tube: Unit tests (${CI_BRANCH_NAME})"
+  - label: ":test_tube: Unit tests - __CI_COMMIT_MESSAGE_SHORT__"
     command:
       - "chmod +x ./mvnw"
       - "./mvnw -B -ntp test"
     env:
-      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
-      CI_BRANCH_NAME: "${CI_BRANCH_NAME}"
-      CI_COMMIT_SHA: "${CI_COMMIT_SHA}"
+      CI_COMMIT_MESSAGE: "__CI_COMMIT_MESSAGE__"
+      CI_BRANCH_NAME: "__CI_BRANCH_NAME__"
+      CI_COMMIT_SHA: "__CI_COMMIT_SHA__"
 
   - label: ":white_check_mark: Main branch verify"
     if: build.branch == "main"
@@ -14,9 +14,9 @@ steps:
       - "chmod +x ./mvnw"
       - "./mvnw -B -ntp verify"
     env:
-      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
-      CI_BRANCH_NAME: "${CI_BRANCH_NAME}"
-      CI_COMMIT_SHA: "${CI_COMMIT_SHA}"
+      CI_COMMIT_MESSAGE: "__CI_COMMIT_MESSAGE__"
+      CI_BRANCH_NAME: "__CI_BRANCH_NAME__"
+      CI_COMMIT_SHA: "__CI_COMMIT_SHA__"
 
   - label: ":hammer: Feature branch checks"
     if: build.branch =~ /^feature\/.*$/
@@ -24,7 +24,7 @@ steps:
       - "chmod +x ./mvnw"
       - "./mvnw -B -ntp test"
     env:
-      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
-      CI_BRANCH_NAME: "${CI_BRANCH_NAME}"
-      CI_COMMIT_SHA: "${CI_COMMIT_SHA}"
+      CI_COMMIT_MESSAGE: "__CI_COMMIT_MESSAGE__"
+      CI_BRANCH_NAME: "__CI_BRANCH_NAME__"
+      CI_COMMIT_SHA: "__CI_COMMIT_SHA__"
 
