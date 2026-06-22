@@ -10,7 +10,7 @@ Run prod with `java -jar target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles
 
 Check local stage database via ``http://localhost:8082/h2-console`` \
 Check local prod database via ``http://localhost:8081/h2-console`` 
-
+ 
 Diagnostic stage data available at ``http://localhost:8082/actuator/prometheus`` \
 Diagnostic prod data available at ``http://localhost:8081/actuator/prometheus``
 
