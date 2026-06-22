@@ -1,5 +1,5 @@
 steps:
   - label: ":maven: Unit tests"
     command:
-      - "mvn -B -ntp test"
-
+      - "chmod +x ./mvnw"
+      - "./mvnw -B -ntp test"
