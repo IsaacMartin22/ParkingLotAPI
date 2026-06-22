@@ -1,23 +1,8 @@
 steps:
-  - label: ":mag: Check Agent Java"
-    command:
-      - "echo OS info:"
-      - "uname -a || true"
-      - "cat /etc/os-release || true"
-      - "echo Current user:"
-      - "whoami"
-      - "echo Java on PATH:"
-      - "which java || true"
-      - "java -version || true"
-      - "echo JAVA_HOME:"
-      - "echo $JAVA_HOME"
-      - "echo Installed JVMs:"
-      - "ls -la /usr/lib/jvm || true"
-
   - label: ":pipeline: Run Unit Tests"
-    env:
-      JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
-      PATH: "/usr/lib/jvm/java-17-openjdk-amd64/bin:${PATH}"
+    plugins:
+      - docker#v5.12.0:
+          image: "eclipse-temurin:17"
     command:
       - "chmod +x ./mvnw"
       - "java -version"
