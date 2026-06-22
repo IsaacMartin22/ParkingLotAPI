@@ -1,5 +1,11 @@
 steps:
-  - label: ":pipeline: Upload dynamic pipeline"
+  - trigger: "Apply Buildkite Info"
+    label: ":pipeline:"
+    build:
+      message: "$BUILDKITE_MESSAGE"
+      commit: "$BUILDKITE_COMMIT"
+      branch: "$BUILDKITE_BRANCH"
+  - label: ":pipeline: Run Unit Tests"
     command:
-      - "chmod +x ./.buildkite/upload_pipeline.sh"
-      - "./.buildkite/upload_pipeline.sh"
+      - "chmod +x ./mvnw"
+      - "./mvnw -B -ntp test"
