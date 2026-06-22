@@ -1,0 +1,30 @@
+steps:
+  - label: ":test_tube: Unit tests (${CI_BRANCH_NAME})"
+    command:
+      - "chmod +x ./mvnw"
+      - "./mvnw -B -ntp test"
+    env:
+      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
+      CI_BRANCH_NAME: "${CI_BRANCH_NAME}"
+      CI_COMMIT_SHA: "${CI_COMMIT_SHA}"
+
+  - label: ":white_check_mark: Main branch verify"
+    if: build.branch == "main"
+    command:
+      - "chmod +x ./mvnw"
+      - "./mvnw -B -ntp verify"
+    env:
+      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
+      CI_BRANCH_NAME: "${CI_BRANCH_NAME}"
+      CI_COMMIT_SHA: "${CI_COMMIT_SHA}"
+
+  - label: ":hammer: Feature branch checks"
+    if: build.branch =~ /^feature\/.*$/
+    command:
+      - "chmod +x ./mvnw"
+      - "./mvnw -B -ntp test"
+    env:
+      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
+      CI_BRANCH_NAME: "${CI_BRANCH_NAME}"
+      CI_COMMIT_SHA: "${CI_COMMIT_SHA}"
+

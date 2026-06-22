@@ -1,5 +1,5 @@
 steps:
-  - label: ":maven: Unit tests"
+  - label: ":pipeline: Upload dynamic pipeline"
     command:
-      - "chmod +x ./mvnw"
-      - "./mvnw -B -ntp test"
+      - "chmod +x ./.buildkite/upload_pipeline.sh"
+      - "./.buildkite/upload_pipeline.sh"
