@@ -1,5 +1,9 @@
 steps:
-  - label: ":maven: Unit tests"
+  - label: ":pipeline: Run Unit Tests"
+    plugins:
+      - docker#v5.12.0:
+          image: "eclipse-temurin:17"
     command:
-      - "mvn -B -ntp test"
-
+      - "chmod +x ./mvnw"
+      - "java -version"
+      - "./mvnw -B -ntp test"
