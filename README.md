@@ -27,7 +27,7 @@ Grafana monitoring URL endpoint = https://cheesy-elaborate-plating.ngrok-free.de
 Env Variables for real database - Need to add JDBC driver dependency and set Hibernate settings
 
 ### **Stage**
-
+ 
 ``SPRING_PROFILES_ACTIVE=staging
 STAGING_DATASOURCE_URL=jdbc:postgresql://staging-db:5432/api_service
 STAGING_DATASOURCE_USERNAME=api_service_staging
