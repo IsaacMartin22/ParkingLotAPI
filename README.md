@@ -23,4 +23,6 @@ Grafana monitoring URL endpoint = https://cheesy-elaborate-plating.ngrok-free.de
 
 Env Variables for real database found in .env
 
+**Deployment**
 The PostgreSQL prod db is hosted on Render, stage db hosted on Aiven
+This API Service is also hosted on Render via Docker image + web service, available at https://api-service-i1ms.onrender.com/
