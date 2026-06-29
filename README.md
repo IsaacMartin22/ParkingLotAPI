@@ -5,6 +5,17 @@ I may modify some endpoints to add authentication later, but for now it's intend
 
 Uses maven. Publish jars with `mvn clean package`
 
+## Entity Capacity Limits
+
+The following limits are now enforced when creating or re-parenting entities:
+
+- Parking lots: no limit
+- Floors per parking lot: max `6`
+- Sections per floor: max `10`
+- Parking spaces per section: max `10`
+
+Validation is enforced in the service layer and at the database layer (Flyway migration `V3__entity_capacity_limits.sql`) to prevent limits from being exceeded.
+
 Run stage locally with `mvn spring-boot:run "-Dspring-boot.run.profiles=staging"`\
 Run stage with `java -jar target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=stage`\
 Run prod with `java -jar target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod`

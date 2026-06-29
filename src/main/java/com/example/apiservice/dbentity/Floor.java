@@ -24,7 +24,7 @@ public class Floor {
 
     @OneToMany(mappedBy = "floor", cascade = CascadeType.ALL)
     @JsonBackReference
-    @Size(max = 100, message = "Floor cannot have more than 100 sections")
+    @Size(max = 10, message = "Floor cannot have more than 10 sections")
     private Set<Section> sections = new HashSet<>();
 
     public Floor() {
@@ -59,8 +59,8 @@ public class Floor {
     }
 
     public void setSections(Set<Section> sections) {
-        if (sections != null && sections.size() > 100) {
-            throw new IllegalArgumentException("Floor cannot have more than 100 sections");
+        if (sections != null && sections.size() > 10) {
+            throw new IllegalArgumentException("Floor cannot have more than 10 sections");
         }
         this.sections = sections;
     }

@@ -24,7 +24,7 @@ public class Section {
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL)
     @JsonIgnoreProperties
-    @Size(max = 1000, message = "Section cannot have more than 1000 parking spaces")
+    @Size(max = 10, message = "Section cannot have more than 10 parking spaces")
     private List<ParkingSpace> parkingSpaces = new ArrayList<>();
 
     public Section() {
@@ -59,10 +59,9 @@ public class Section {
     }
 
     public void setParkingSpaces(List<ParkingSpace> parkingSpaces) {
-        if (parkingSpaces != null && parkingSpaces.size() > 1000) {
-            throw new IllegalArgumentException("Section cannot have more than 1000 parking spaces");
+        if (parkingSpaces != null && parkingSpaces.size() > 10) {
+            throw new IllegalArgumentException("Section cannot have more than 10 parking spaces");
         }
         this.parkingSpaces = parkingSpaces;
     }
 }
-

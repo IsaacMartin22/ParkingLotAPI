@@ -6,5 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long> {
-}
 
+    long countBySection_Id(Long sectionId);
+}

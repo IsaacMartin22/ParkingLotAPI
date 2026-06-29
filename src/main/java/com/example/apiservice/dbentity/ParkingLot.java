@@ -24,7 +24,7 @@ public class ParkingLot {
 
     @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL)
     @JsonBackReference
-    @Size(max = 100, message = "Parking lot cannot have more than 100 floors")
+    @Size(max = 6, message = "Parking lot cannot have more than 6 floors")
     private Set<Floor> floors = new HashSet<>();
 
     public ParkingLot() {
@@ -68,10 +68,9 @@ public class ParkingLot {
     }
 
     public void setFloors(Set<Floor> floors) {
-        if (floors != null && floors.size() > 100) {
-            throw new IllegalArgumentException("Parking lot cannot have more than 100 floors");
+        if (floors != null && floors.size() > 6) {
+            throw new IllegalArgumentException("Parking lot cannot have more than 6 floors");
         }
         this.floors = floors;
     }
 }
-
