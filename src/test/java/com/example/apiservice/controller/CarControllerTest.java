@@ -2,6 +2,8 @@ package com.example.apiservice.controller;
 
 import com.example.apiservice.dbentity.Car;
 import com.example.apiservice.dbentity.ParkingSpace;
+import com.example.apiservice.pojo.CarCreateRequest;
+import com.example.apiservice.pojo.CarUpdateRequest;
 import com.example.apiservice.service.CarService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -17,10 +19,70 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 class CarControllerTest {
+
+    @Test
+    void createBuildsCarFromRequestAndIgnoresAnyId() {
+        CarService carService = mock(CarService.class);
+        CarController controller = new CarController(carService);
+
+        CarCreateRequest request = new CarCreateRequest();
+        request.setColor("Blue");
+        request.setMake("Toyota");
+        request.setModel("Corolla");
+        request.setManufacturingYear(2022);
+        request.setLicensePlate("ABC-1234");
+        request.setParkingSpaceId(10L);
+
+        when(carService.save(any(Car.class))).thenAnswer(invocation -> {
+            Car saved = invocation.getArgument(0);
+            saved.setId(99L); // simulate DB assigning an ID
+            return saved;
+        });
+
+        var response = controller.create(request);
+
+        assertEquals(CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Blue", response.getBody().getColor());
+        assertEquals("Toyota", response.getBody().getMake());
+        assertEquals("Corolla", response.getBody().getModel());
+        assertEquals(2022, response.getBody().getManufacturingYear());
+        assertEquals("ABC-1234", response.getBody().getLicensePlate());
+
+        ArgumentCaptor<Car> captor = ArgumentCaptor.forClass(Car.class);
+        verify(carService).save(captor.capture());
+        Car saved = captor.getValue();
+        assertNull(saved.getId()); // ID must not be set from the request
+        assertNotNull(saved.getParkingSpace());
+        assertEquals(10L, saved.getParkingSpace().getId());
+    }
+
+    @Test
+    void createWithNoParkingSpaceIdLeavesSpaceNull() {
+        CarService carService = mock(CarService.class);
+        CarController controller = new CarController(carService);
+
+        CarCreateRequest request = new CarCreateRequest();
+        request.setColor("Red");
+        request.setMake("Honda");
+        request.setModel("Civic");
+        request.setManufacturingYear(2021);
+        request.setLicensePlate("XYZ-9999");
+        // no parkingSpaceId
+
+        when(carService.save(any(Car.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        controller.create(request);
+
+        ArgumentCaptor<Car> captor = ArgumentCaptor.forClass(Car.class);
+        verify(carService).save(captor.capture());
+        assertNull(captor.getValue().getParkingSpace());
+    }
 
     @Test
     void updateChangesOnlyColorAndLicensePlate() {
@@ -40,7 +102,7 @@ class CarControllerTest {
         existing.setLicensePlate("ABC-123");
         existing.setParkingSpace(parkingSpace);
 
-        Car request = new Car();
+        CarUpdateRequest request = new CarUpdateRequest();
         request.setColor("Red");
 
         when(carService.findById(42L)).thenReturn(Optional.of(existing));
@@ -76,11 +138,10 @@ class CarControllerTest {
 
         when(carService.findById(42L)).thenReturn(Optional.empty());
 
-        var response = controller.update(42L, new Car());
+        var response = controller.update(42L, new CarUpdateRequest());
 
         assertEquals(NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody());
         verify(carService, never()).save(any(Car.class));
     }
 }
-

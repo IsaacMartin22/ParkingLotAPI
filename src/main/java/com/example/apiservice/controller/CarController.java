@@ -1,8 +1,11 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.pojo.CarResponse;
 import com.example.apiservice.dbentity.Car;
+import com.example.apiservice.dbentity.ParkingSpace;
 import com.example.apiservice.mapper.CarMapper;
+import com.example.apiservice.pojo.CarCreateRequest;
+import com.example.apiservice.pojo.CarResponse;
+import com.example.apiservice.pojo.CarUpdateRequest;
 import com.example.apiservice.service.CarService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,20 +39,34 @@ public class CarController {
     }
 
     @PostMapping
-    public ResponseEntity<CarResponse> create(@RequestBody Car car) {
+    public ResponseEntity<CarResponse> create(@RequestBody CarCreateRequest request) {
+        Car car = new Car();
+        car.setColor(request.getColor());
+        car.setMake(request.getMake());
+        car.setModel(request.getModel());
+        car.setManufacturingYear(request.getManufacturingYear());
+        car.setLicensePlate(request.getLicensePlate());
+
+        if (request.getParkingSpaceId() != null) {
+            ParkingSpace space = new ParkingSpace();
+            space.setId(request.getParkingSpaceId());
+            car.setParkingSpace(space);
+        }
+
         Car saved = carService.save(car);
         return new ResponseEntity<>(CarMapper.toResponse(saved), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CarResponse> update(@PathVariable Long id, @RequestBody Car car) {
+    public ResponseEntity<CarResponse> update(@PathVariable Long id, @RequestBody CarUpdateRequest request) {
         return carService.findById(id)
                 .map(existing -> {
-                    if (car.getColor() != null) {
-                        existing.setColor(car.getColor());
+                    // Only color and license plate are mutable; ID and parking space are locked
+                    if (request.getColor() != null) {
+                        existing.setColor(request.getColor());
                     }
-                    if (car.getLicensePlate() != null) {
-                        existing.setLicensePlate(car.getLicensePlate());
+                    if (request.getLicensePlate() != null) {
+                        existing.setLicensePlate(request.getLicensePlate());
                     }
                     Car saved = carService.save(existing);
                     return ResponseEntity.ok(CarMapper.toResponse(saved));
@@ -57,4 +74,3 @@ public class CarController {
                 .orElse(ResponseEntity.notFound().build());
     }
 }
-
