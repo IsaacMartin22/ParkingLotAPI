@@ -23,9 +23,5 @@ public class SectionService {
     public Optional<Section> getSectionById(Long id) {
         return sectionRepository.findById(id);
     }
-
-    public Section saveSection(Section section) {
-        return sectionRepository.save(section);
-    }
 }
 

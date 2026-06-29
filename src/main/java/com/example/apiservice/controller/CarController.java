@@ -40,5 +40,21 @@ public class CarController {
         Car saved = carService.save(car);
         return new ResponseEntity<>(CarMapper.toResponse(saved), HttpStatus.CREATED);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CarResponse> update(@PathVariable Long id, @RequestBody Car car) {
+        return carService.findById(id)
+                .map(existing -> {
+                    if (car.getColor() != null) {
+                        existing.setColor(car.getColor());
+                    }
+                    if (car.getLicensePlate() != null) {
+                        existing.setLicensePlate(car.getLicensePlate());
+                    }
+                    Car saved = carService.save(existing);
+                    return ResponseEntity.ok(CarMapper.toResponse(saved));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
 

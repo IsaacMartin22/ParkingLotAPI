@@ -23,8 +23,4 @@ public class ParkingLotService {
     public Optional<ParkingLot> findById(Long id) {
         return repo.findById(id);
     }
-
-    public ParkingLot save(ParkingLot lot) {
-        return repo.save(lot);
-    }
 }

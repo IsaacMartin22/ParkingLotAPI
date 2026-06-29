@@ -27,9 +27,5 @@ public class FloorService {
                 .filter(floor -> floor.getParkingLot() != null
                         && parkingLotId.equals(floor.getParkingLot().getId()));
     }
-
-    public Floor createFloor(Floor floor) {
-        return floorRepository.save(floor);
-    }
 }
 

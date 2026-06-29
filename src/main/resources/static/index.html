@@ -224,11 +224,8 @@
                 testing create/update operations from Postman, curl, or your frontend integration.
               </p>
               <p class="intro">
-                The Section and Floor endpoints aren't used and really shouldn't ever be used. In theory
-                changes to any entities other than the Parking Space or Car should be done via
-                migration because they would require significant construction to modify. Cars can leave
-                parking spaces or update their plates/color so those changes are common, changes to the other
-                entities should be rare.
+                Lot, floor, and section creation is handled outside the public API. Operational writes are
+                limited to cars, with parking-space updates remaining available for assignments and releases.
               </p>
               <div class="legend" aria-label="HTTP method legend">
                 <span class="method get">GET</span>
@@ -239,7 +236,7 @@
 
             <section class="section">
               <h2>Cars</h2>
-              <p class="section-note">Vehicle records and parking-space assignments.</p>
+              <p class="section-note">Vehicle records and parking-space assignments. Updates may only change the car's color or license plate.</p>
               <div class="table-wrap">
                 <table>
                   <thead>
@@ -264,6 +261,11 @@
                       <td><span class="method post">POST</span></td>
                       <td><code>/api/cars</code></td>
                       <td>Create a new car.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="method put">PUT</span></td>
+                      <td><code>/api/cars/{id}</code></td>
+                      <td>Update an existing car's color or license plate.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -293,11 +295,6 @@
                       <td><code>/api/floors/{id}</code></td>
                       <td>Get a floor by ID.</td>
                     </tr>
-                    <tr>
-                      <td><span class="method post">POST</span></td>
-                      <td><code>/api/floors</code></td>
-                      <td>Create a new floor.</td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -325,11 +322,6 @@
                       <td><span class="method get">GET</span></td>
                       <td><code>/api/sections/{id}</code></td>
                       <td>Get a section by ID.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method post">POST</span></td>
-                      <td><code>/api/sections</code></td>
-                      <td>Create a new section.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -364,11 +356,6 @@
                       <td><code>/api/lots/{lotId}/floors/{floorId}/details</code></td>
                       <td>Get details for a specific floor in a parking lot.</td>
                     </tr>
-                    <tr>
-                      <td><span class="method post">POST</span></td>
-                      <td><code>/api/lots</code></td>
-                      <td>Create a new parking lot.</td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -396,11 +383,6 @@
                       <td><span class="method get">GET</span></td>
                       <td><code>/api/spaces/{id}</code></td>
                       <td>Get a parking space by ID.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method post">POST</span></td>
-                      <td><code>/api/spaces</code></td>
-                      <td>Create a new parking space.</td>
                     </tr>
                     <tr>
                       <td><span class="method put">PUT</span></td>
@@ -443,8 +425,8 @@
             <section class="section">
               <h2>Sample JSON Request Bodies</h2>
               <p class="section-note">
-                For nested references, provide existing entity IDs (for example, <code>parkingLot.id</code>,
-                <code>floor.id</code>, or <code>section.id</code>).
+                For nested references, provide existing entity IDs such as <code>parkingSpace.id</code> or
+                <code>section.id</code>.
               </p>
               <div class="samples">
                 <article class="sample-card">
@@ -466,52 +448,12 @@
 
                 <article class="sample-card">
                   <div class="sample-head">
-                    <span class="method post">POST</span>
-                    <p class="sample-endpoint"><code>/api/floors</code></p>
+                    <span class="method put">PUT</span>
+                    <p class="sample-endpoint"><code>/api/cars/{id}</code></p>
                   </div>
                   <pre><code>{
-          "name": "Floor 2",
-          "parkingLot": {
-            "id": 1
-          }
-        }</code></pre>
-                </article>
-
-                <article class="sample-card">
-                  <div class="sample-head">
-                    <span class="method post">POST</span>
-                    <p class="sample-endpoint"><code>/api/sections</code></p>
-                  </div>
-                  <pre><code>{
-          "name": "Section B",
-          "floor": {
-            "id": 2
-          }
-        }</code></pre>
-                </article>
-
-                <article class="sample-card">
-                  <div class="sample-head">
-                    <span class="method post">POST</span>
-                    <p class="sample-endpoint"><code>/api/lots</code></p>
-                  </div>
-                  <pre><code>{
-          "name": "Downtown Garage",
-          "address": "123 Main St",
-          "type": "Economy"
-        }</code></pre>
-                </article>
-
-                <article class="sample-card">
-                  <div class="sample-head">
-                    <span class="method post">POST</span>
-                    <p class="sample-endpoint"><code>/api/spaces</code></p>
-                  </div>
-                  <pre><code>{
-          "number": "A-21",
-          "section": {
-            "id": 6
-          }
+          "color": "Red",
+          "licensePlate": "XYZ-9876"
         }</code></pre>
                 </article>
 

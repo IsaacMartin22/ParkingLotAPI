@@ -1,11 +1,9 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.pojo.ParkingSpaceResponse;
 import com.example.apiservice.dbentity.ParkingSpace;
+import com.example.apiservice.pojo.ParkingSpaceResponse;
 import com.example.apiservice.mapper.ParkingSpaceMapper;
 import com.example.apiservice.service.ParkingSpaceService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,11 +34,6 @@ public class ParkingSpaceController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ParkingSpaceResponse> create(@RequestBody ParkingSpace space) {
-        ParkingSpace saved = service.save(space);
-        return new ResponseEntity<>(ParkingSpaceMapper.toResponse(saved), HttpStatus.CREATED);
-    }
 
     @PutMapping("/{id}")
     public ResponseEntity<ParkingSpaceResponse> update(@PathVariable Long id, @RequestBody ParkingSpace space) {
