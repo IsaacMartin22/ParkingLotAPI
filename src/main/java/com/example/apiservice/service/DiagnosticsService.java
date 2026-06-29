@@ -2,8 +2,9 @@ package com.example.apiservice.service;
 
 import com.example.apiservice.pojo.DiagnosticsResponse;
 import com.example.apiservice.pojo.EndpointDiagnostics;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -33,7 +34,7 @@ public class DiagnosticsService implements SmartInitializingSingleton {
     );
 
     private final Instant startedAt = Instant.now();
-    private final ApplicationContext applicationContext;
+    private final ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider;
 
     private final AtomicLong totalRequests = new AtomicLong();
     private final AtomicLong successfulRequests = new AtomicLong();
@@ -41,8 +42,11 @@ public class DiagnosticsService implements SmartInitializingSingleton {
 
     private final ConcurrentHashMap<String, EndpointMetrics> endpointMetrics = new ConcurrentHashMap<>();
 
-    public DiagnosticsService(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
+    public DiagnosticsService(
+            @Qualifier("requestMappingHandlerMapping")
+            ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider
+    ) {
+        this.requestMappingHandlerMappingProvider = requestMappingHandlerMappingProvider;
     }
 
     @Override
@@ -52,7 +56,7 @@ public class DiagnosticsService implements SmartInitializingSingleton {
 
     private void initializeEndpoints() {
         RequestMappingHandlerMapping requestMappingHandlerMapping =
-                applicationContext.getBeanProvider(RequestMappingHandlerMapping.class).getIfAvailable();
+                requestMappingHandlerMappingProvider.getIfAvailable();
 
         if (requestMappingHandlerMapping == null) {
             return;
