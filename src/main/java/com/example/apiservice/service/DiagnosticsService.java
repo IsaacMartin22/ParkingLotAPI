@@ -3,6 +3,7 @@ package com.example.apiservice.service;
 import com.example.apiservice.pojo.DiagnosticsResponse;
 import com.example.apiservice.pojo.EndpointDiagnostics;
 import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -32,7 +33,7 @@ public class DiagnosticsService implements SmartInitializingSingleton {
     );
 
     private final Instant startedAt = Instant.now();
-    private final RequestMappingHandlerMapping requestMappingHandlerMapping;
+    private final ApplicationContext applicationContext;
 
     private final AtomicLong totalRequests = new AtomicLong();
     private final AtomicLong successfulRequests = new AtomicLong();
@@ -40,8 +41,8 @@ public class DiagnosticsService implements SmartInitializingSingleton {
 
     private final ConcurrentHashMap<String, EndpointMetrics> endpointMetrics = new ConcurrentHashMap<>();
 
-    public DiagnosticsService(RequestMappingHandlerMapping requestMappingHandlerMapping) {
-        this.requestMappingHandlerMapping = requestMappingHandlerMapping;
+    public DiagnosticsService(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
     }
 
     @Override
@@ -50,6 +51,13 @@ public class DiagnosticsService implements SmartInitializingSingleton {
     }
 
     private void initializeEndpoints() {
+        RequestMappingHandlerMapping requestMappingHandlerMapping =
+                applicationContext.getBeanProvider(RequestMappingHandlerMapping.class).getIfAvailable();
+
+        if (requestMappingHandlerMapping == null) {
+            return;
+        }
+
         for (RequestMappingInfo mappingInfo : requestMappingHandlerMapping.getHandlerMethods().keySet()) {
             Set<String> patterns = mappingInfo.getPatternValues();
             Set<RequestMethod> methods = mappingInfo.getMethodsCondition().getMethods();
