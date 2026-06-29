@@ -14,9 +14,11 @@ public class DiagnosticsInterceptor implements HandlerInterceptor {
     private static final String START_TIME_ATTRIBUTE = "diagnosticsStartTime";
 
     private final MetricsService metricsService;
+    private final DiagnosticsService diagnosticsService;
 
-    public DiagnosticsInterceptor(MetricsService metricsService) {
+    public DiagnosticsInterceptor(MetricsService metricsService, DiagnosticsService diagnosticsService) {
         this.metricsService = metricsService;
+        this.diagnosticsService = diagnosticsService;
     }
 
     @Override
@@ -40,6 +42,7 @@ public class DiagnosticsInterceptor implements HandlerInterceptor {
         int statusCode = exception == null ? response.getStatus() : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
         metricsService.recordRequest(endpoint, statusCode, durationMillis);
+        diagnosticsService.recordRequest(endpoint, statusCode, durationMillis);
     }
 
     private String getEndpointName(HttpServletRequest request) {

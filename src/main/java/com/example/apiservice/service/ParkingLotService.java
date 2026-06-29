@@ -28,4 +28,3 @@ public class ParkingLotService {
         return repo.save(lot);
     }
 }
-

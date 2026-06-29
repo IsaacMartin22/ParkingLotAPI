@@ -20,9 +20,9 @@ public class FloorEventsController {
      * <p>
      * Events emitted:
      * <ul>
-     *   <li>{@code CAR_ADDED}   – a car was assigned to a parking space on this floor</li>
-     *   <li>{@code CAR_UPDATED} – a car on this floor was updated</li>
-     *   <li>{@code CAR_REMOVED} – a car was removed from a parking space on this floor</li>
+     *   <li>{@code ADD} - a car was assigned to a parking space on this floor</li>
+     *   <li>{@code UPDATE} - a car on this floor was updated</li>
+     *   <li>{@code REMOVE} - a car was removed from a parking space on this floor</li>
      * </ul>
      *
      * @param lotId   the parking lot ID
@@ -34,4 +34,3 @@ public class FloorEventsController {
         return floorEventService.subscribe(lotId, floorId);
     }
 }
-

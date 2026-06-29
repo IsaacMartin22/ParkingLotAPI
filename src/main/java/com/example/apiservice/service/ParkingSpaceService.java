@@ -1,9 +1,6 @@
 package com.example.apiservice.service;
 
-import com.example.apiservice.dbentity.Floor;
-import com.example.apiservice.dbentity.ParkingLot;
 import com.example.apiservice.dbentity.ParkingSpace;
-import com.example.apiservice.dbentity.Section;
 import com.example.apiservice.mapper.CarMapper;
 import com.example.apiservice.pojo.CarEvent;
 import com.example.apiservice.pojo.CarEventType;
@@ -20,10 +17,16 @@ public class ParkingSpaceService {
 
     private final ParkingSpaceRepository repo;
     private final FloorEventService floorEventService;
+    private final FloorContextResolver floorContextResolver;
 
-    public ParkingSpaceService(ParkingSpaceRepository repo, FloorEventService floorEventService) {
+    public ParkingSpaceService(
+            ParkingSpaceRepository repo,
+            FloorEventService floorEventService,
+            FloorContextResolver floorContextResolver
+    ) {
         this.repo = repo;
         this.floorEventService = floorEventService;
+        this.floorContextResolver = floorContextResolver;
     }
 
     public List<ParkingSpace> findAll() {
@@ -43,35 +46,19 @@ public class ParkingSpaceService {
         }
 
         ParkingSpace fullSpace = repo.findById(saved.getId()).orElse(saved);
-        resolveFloorContext(fullSpace).ifPresent(ctx -> {
+        floorContextResolver.resolve(fullSpace).ifPresent(ctx -> {
             CarResponse carResponse = CarMapper.toResponse(fullSpace.getCar());
             CarEvent event = new CarEvent(
                     CarEventType.UPDATE,
-                    ctx.lotId,
-                    ctx.floorId,
-                    fullSpace.getId(),
+                    ctx.lotId(),
+                    ctx.floorId(),
+                    ctx.spaceId(),
                     carResponse,
                     Instant.now()
             );
-            floorEventService.publishEvent(ctx.lotId, ctx.floorId, event);
+            floorEventService.publishEvent(ctx.lotId(), ctx.floorId(), event);
         });
 
         return saved;
     }
-
-    private record FloorContext(Long lotId, Long floorId) {}
-
-    private Optional<FloorContext> resolveFloorContext(ParkingSpace space) {
-        Section section = space.getSection();
-        if (section == null) return Optional.empty();
-
-        Floor floor = section.getFloor();
-        if (floor == null) return Optional.empty();
-
-        ParkingLot lot = floor.getParkingLot();
-        if (lot == null) return Optional.empty();
-
-        return Optional.of(new FloorContext(lot.getId(), floor.getId()));
-    }
 }
-

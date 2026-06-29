@@ -80,7 +80,7 @@ The application reads settings from `src/main/resources/application.properties`:
 - `server.address=0.0.0.0` - Listens on all network interfaces
 - `server.port=8080` - Port number
 - `spring.datasource.url`, `spring.datasource.username`, `spring.datasource.password` - PostgreSQL connection settings
-- `spring.jpa.hibernate.ddl-auto=create-drop` - Auto-creates/drops tables on restart
+- `spring.jpa.hibernate.ddl-auto=validate` - Validates schema against entities at startup (schema changes should be applied via Flyway migrations)
 
 To change the port, modify `application.properties`:
 ```properties
@@ -131,8 +131,8 @@ For production, consider:
 ## Troubleshooting
 
 ### Table Not Found Error
-- Ensure `spring.jpa.hibernate.ddl-auto=create-drop` is set in `application.properties`
-- This auto-creates tables when the app starts
+- Ensure Flyway migrations have been applied to the target database
+- With `ddl-auto=validate`, Hibernate validates schema but does not auto-create tables
 
 ### Port Already in Use
 - Change the port in `application.properties`
@@ -143,4 +143,3 @@ For production, consider:
 - Check Windows Firewall settings
 - Ensure the API service machine and client are on the same network
 - Test locally first: `http://localhost:8080/api/cars`
-
