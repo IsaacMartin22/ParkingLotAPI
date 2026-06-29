@@ -1,5 +1,8 @@
 # API-Service
 
+This is a publicly available API. Currently has no authentication or validation on who can access it.
+I may modify some endpoints to add authentication later, but for now it's intended to be completely open to everyone
+
 Uses maven. Publish jars with `mvn clean package`
 
 Run stage locally with `mvn spring-boot:run "-Dspring-boot.run.profiles=staging"`\
