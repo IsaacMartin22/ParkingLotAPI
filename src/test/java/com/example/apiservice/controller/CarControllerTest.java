@@ -39,9 +39,18 @@ class CarControllerTest {
         request.setParkingSpaceId(10L);
 
         when(carService.save(any(Car.class))).thenAnswer(invocation -> {
-            Car saved = invocation.getArgument(0);
-            saved.setId(99L); // simulate DB assigning an ID
-            return saved;
+            Car inbound = invocation.getArgument(0);
+            assertNull(inbound.getId());
+
+            Car persisted = new Car();
+            persisted.setId(99L); // simulate DB assigning an ID
+            persisted.setColor(inbound.getColor());
+            persisted.setMake(inbound.getMake());
+            persisted.setModel(inbound.getModel());
+            persisted.setManufacturingYear(inbound.getManufacturingYear());
+            persisted.setLicensePlate(inbound.getLicensePlate());
+            persisted.setParkingSpace(inbound.getParkingSpace());
+            return persisted;
         });
 
         var response = controller.create(request);

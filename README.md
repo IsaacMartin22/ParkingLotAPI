@@ -3,7 +3,16 @@
 This is a publicly available API. Currently has no authentication or validation on who can access it.
 I may modify some endpoints to add authentication later, but for now it's intended to be completely open to everyone
 
-Uses maven. Publish jars with `mvn clean package`
+Uses Maven multi-module build.
+
+- Build all modules: `mvn clean package`
+- Build API service only: `mvn -pl api-service -am clean package`
+- Build SDK only: `mvn -pl sdk -am clean package`
+
+## Java SDK
+
+A standalone SDK module is available in `sdk/` with an API client and request/response DTOs for easier integration from other Java projects. See `sdk/README.md` for usage.
+GitHub Packages publishing/consuming steps are also documented in `sdk/README.md`.
 
 ## Entity Capacity Limits
 
@@ -16,9 +25,9 @@ The following limits are now enforced when creating or re-parenting entities:
 
 Validation is enforced in the service layer and at the database layer (Flyway migration `V3__entity_capacity_limits.sql`) to prevent limits from being exceeded.
 
-Run stage locally with `mvn spring-boot:run "-Dspring-boot.run.profiles=staging"`\
-Run stage with `java -jar target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=stage`\
-Run prod with `java -jar target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod`
+Run stage locally with `mvn -pl api-service spring-boot:run "-Dspring-boot.run.profiles=staging"`\
+Run stage with `java -jar api-service/target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=stage`\
+Run prod with `java -jar api-service/target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod`
 
 Connect to the PostgreSQL database configured in `.env`, currently using Beekeeper studio \
 
