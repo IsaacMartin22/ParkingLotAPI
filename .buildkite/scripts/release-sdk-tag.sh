@@ -12,11 +12,11 @@ if ! command -v git >/dev/null 2>&1; then
   echo "--- :package: git not found, installing"
   if command -v apt-get >/dev/null 2>&1; then
     apt-get update
-    apt-get install -y git
+    apt-get install -y git openssh-client
   elif command -v apk >/dev/null 2>&1; then
-    apk add --no-cache git
+    apk add --no-cache git openssh-client
   elif command -v yum >/dev/null 2>&1; then
-    yum install -y git
+    yum install -y git openssh-clients
   else
     echo "git is required but no supported package manager was found"
     exit 1
@@ -63,6 +63,18 @@ else
   echo "Unable to determine an authenticated GitHub push URL."
   echo "Set GITHUB_TOKEN or configure origin to use SSH credentials on the agent."
   exit 1
+fi
+
+if [[ "${PUSH_URL}" == git@github.com:* || "${PUSH_URL}" == ssh://git@github.com/* || "${PUSH_URL}" == "origin" && ( "${ORIGIN_URL}" == git@github.com:* || "${ORIGIN_URL}" == ssh://git@github.com/* ) ]]; then
+  echo "--- :shield: Preparing known_hosts for github.com"
+  mkdir -p "${HOME}/.ssh"
+  chmod 700 "${HOME}/.ssh"
+  KNOWN_HOSTS_FILE="${HOME}/.ssh/known_hosts"
+  touch "${KNOWN_HOSTS_FILE}"
+  chmod 600 "${KNOWN_HOSTS_FILE}"
+  if ! ssh-keygen -F github.com -f "${KNOWN_HOSTS_FILE}" >/dev/null 2>&1; then
+    ssh-keyscan -H github.com >> "${KNOWN_HOSTS_FILE}" 2>/dev/null
+  fi
 fi
 
 echo "--- :git: Configuring Git identity"
