@@ -12,6 +12,7 @@
 
     <groupId>io.github.isaacmartin22</groupId>
     <artifactId>parking-lot-api-sdk</artifactId>
+    <version>0.0.3</version>
     <packaging>jar</packaging>
 
     <name>Parking Lot API SDK</name>
