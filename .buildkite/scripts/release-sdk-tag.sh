@@ -56,12 +56,9 @@ if [[ -n "${GITHUB_TOKEN:-}" && -n "${REPO_PATH}" && "${REPO_PATH}" != "${SOURCE
 elif [[ "${ORIGIN_URL}" == git@github.com:* || "${ORIGIN_URL}" == ssh://git@github.com/* ]]; then
   PUSH_URL="origin"
   echo "--- :key: Using existing SSH origin for push"
-elif [[ -n "${REPO_PATH}" && "${REPO_PATH}" != "${SOURCE_REPO_URL}" ]]; then
-  PUSH_URL="git@github.com:${REPO_PATH}.git"
-  echo "--- :key: Falling back to SSH push URL"
 else
-  echo "Unable to determine an authenticated GitHub push URL."
-  echo "Set GITHUB_TOKEN or configure origin to use SSH credentials on the agent."
+  echo "No authenticated GitHub push method available."
+  echo "Set GITHUB_TOKEN for HTTPS push, or configure origin as SSH with a valid deploy key on the agent."
   exit 1
 fi
 
