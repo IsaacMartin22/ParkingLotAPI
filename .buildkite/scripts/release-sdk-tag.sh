@@ -54,30 +54,13 @@ REPO_PATH="${REPO_PATH#ssh://git@github.com/}"
 REPO_PATH="${REPO_PATH#https://github.com/}"
 REPO_PATH="${REPO_PATH%.git}"
 
-PUSH_URL="origin"
-if [[ -n "${GITHUB_TOKEN:-}" && -n "${REPO_PATH}" && "${REPO_PATH}" != "${SOURCE_REPO_URL}" ]]; then
-  PUSH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
-  echo "--- :lock: Using token-authenticated push URL"
-elif [[ "${ORIGIN_URL}" == git@github.com:* || "${ORIGIN_URL}" == ssh://git@github.com/* ]]; then
-  PUSH_URL="origin"
-  echo "--- :key: Using existing SSH origin for push"
-else
-  echo "No authenticated GitHub push method available."
-  echo "Set GITHUB_TOKEN for HTTPS push, or configure origin as SSH with a valid deploy key on the agent."
+if [[ -z "${REPO_PATH}" || "${REPO_PATH}" == "${SOURCE_REPO_URL}" ]]; then
+  echo "Unable to derive GitHub repository path from BUILDKITE_REPO/origin"
   exit 1
 fi
 
-if [[ "${PUSH_URL}" == git@github.com:* || "${PUSH_URL}" == ssh://git@github.com/* || "${PUSH_URL}" == "origin" && ( "${ORIGIN_URL}" == git@github.com:* || "${ORIGIN_URL}" == ssh://git@github.com/* ) ]]; then
-  echo "--- :shield: Preparing known_hosts for github.com"
-  mkdir -p "${HOME}/.ssh"
-  chmod 700 "${HOME}/.ssh"
-  KNOWN_HOSTS_FILE="${HOME}/.ssh/known_hosts"
-  touch "${KNOWN_HOSTS_FILE}"
-  chmod 600 "${KNOWN_HOSTS_FILE}"
-  if ! ssh-keygen -F github.com -f "${KNOWN_HOSTS_FILE}" >/dev/null 2>&1; then
-    ssh-keyscan -H github.com >> "${KNOWN_HOSTS_FILE}" 2>/dev/null
-  fi
-fi
+PUSH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
+echo "--- :lock: Using token-authenticated push URL"
 
 echo "--- :git: Configuring Git identity"
 git config user.email "ci@buildkite"
