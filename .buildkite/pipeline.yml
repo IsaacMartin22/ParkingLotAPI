@@ -35,6 +35,7 @@ steps:
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
+          mount-buildkite-agent: true
           environment:
             - GITHUB_TOKEN
     command:
@@ -48,6 +49,7 @@ steps:
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
+          mount-buildkite-agent: true
           environment:
             - MAVEN_CENTRAL_USERNAME
             - MAVEN_CENTRAL_TOKEN
