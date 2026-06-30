@@ -31,7 +31,7 @@ steps:
   - label: ":label: Create SDK release tag"
     key: "create-sdk-release-tag"
     depends_on: "optional-sdk-release"
-    if: build.branch == "main" && build.meta_data("sdk_release_type") != "none"
+    if: build.branch == "main"
     plugins:
       - docker#v5.12.0:
           image: "eclipse-temurin:17"
@@ -44,7 +44,7 @@ steps:
   - label: ":package: Publish SDK to Maven Central"
     key: "publish-sdk-to-maven-central"
     depends_on: "create-sdk-release-tag"
-    if: build.branch == "main" && build.meta_data("sdk_release_type") != "none"
+    if: build.branch == "main"
     plugins:
       - docker#v5.12.0:
           image: "eclipse-temurin:17"

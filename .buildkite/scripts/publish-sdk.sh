@@ -11,6 +11,12 @@
 
 set -euo pipefail
 
+RELEASE_TYPE="$(buildkite-agent meta-data get sdk_release_type 2>/dev/null || true)"
+if [[ -z "${RELEASE_TYPE}" || "${RELEASE_TYPE}" == "none" ]]; then
+  echo "Release type is 'none' or not set – skipping Maven Central publish"
+  exit 0
+fi
+
 echo "--- :key: Importing GPG signing key"
 echo "${GPG_PRIVATE_KEY}" | base64 --decode | gpg --batch --import
 echo "GPG key imported successfully"

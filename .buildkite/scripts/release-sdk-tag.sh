@@ -8,7 +8,15 @@
 
 set -euo pipefail
 
-RELEASE_TYPE="$(buildkite-agent meta-data get sdk_release_type)"
+if ! command -v buildkite-agent >/dev/null 2>&1; then
+  echo "buildkite-agent is required for release metadata lookup"
+  exit 1
+fi
+
+RELEASE_TYPE="$(buildkite-agent meta-data get sdk_release_type 2>/dev/null || true)"
+if [[ -z "${RELEASE_TYPE}" ]]; then
+  RELEASE_TYPE="none"
+fi
 
 if [[ "${RELEASE_TYPE}" == "none" ]]; then
   echo "Release type is 'none' – skipping tag creation"
