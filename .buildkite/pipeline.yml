@@ -3,7 +3,7 @@ steps:
     key: "run-unit-tests"
     plugins:
       - docker#v5.12.0:
-          image: "eclipse-temurin:17"
+          image: "public.ecr.aws/docker/library/eclipse-temurin:17"
     command:
       - "chmod +x ./mvnw"
       - "java -version"
@@ -34,7 +34,7 @@ steps:
     if: build.branch == "main"
     plugins:
       - docker#v5.12.0:
-          image: "eclipse-temurin:17"
+          image: "public.ecr.aws/docker/library/eclipse-temurin:17"
           environment:
             - GITHUB_TOKEN
     command:
@@ -47,7 +47,7 @@ steps:
     if: build.branch == "main"
     plugins:
       - docker#v5.12.0:
-          image: "eclipse-temurin:17"
+          image: "public.ecr.aws/docker/library/eclipse-temurin:17"
           environment:
             - MAVEN_CENTRAL_USERNAME
             - MAVEN_CENTRAL_TOKEN
