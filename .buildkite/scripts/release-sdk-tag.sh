@@ -58,21 +58,11 @@ fi
 
 echo "Releasing SDK version ${NEXT_VERSION} using ${RELEASE_TYPE} bump (from ${CURRENT_VERSION})."
 
-# Ensure the SDK pom reflects the exact release version being published.
-chmod +x ./mvnw
-./mvnw -B -ntp -pl sdk versions:set -DnewVersion="${NEXT_VERSION}" -DgenerateBackupPoms=false
-
 git config user.name "buildkite-bot"
 git config user.email "buildkite-bot@users.noreply.github.com"
 
-git add sdk/pom.xml
-if ! git diff --cached --quiet; then
-  git commit -m "chore(sdk): release ${NEXT_VERSION}"
-fi
-
 git tag "${NEXT_TAG}"
 
-git push origin HEAD:main
 
 git push origin "${NEXT_TAG}"
 
