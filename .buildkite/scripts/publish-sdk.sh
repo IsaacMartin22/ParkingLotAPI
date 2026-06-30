@@ -87,7 +87,6 @@ echo "--- :package: Building and publishing SDK to Maven Central"
   -pl sdk \
   -Prelease \
   -Dgpg.passphrase="${GPG_PASSPHRASE}" \
-  -DaltDeploymentRepository=central::default::https://central.sonatype.com/repository/maven-releases/ \
   deploy
 
 echo "+++ :white_check_mark: SDK published to Maven Central successfully"
