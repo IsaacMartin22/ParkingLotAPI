@@ -33,6 +33,27 @@ echo "--- :key: Importing GPG signing key"
 echo "${GPG_PRIVATE_KEY}" | base64 --decode | gpg --batch --import
 echo "GPG key imported successfully"
 
+echo "--- :globe_with_meridians: Publishing GPG public key to keyservers"
+SIGNING_KEY_FINGERPRINT="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
+if [[ -z "${SIGNING_KEY_FINGERPRINT}" ]]; then
+  echo "Unable to determine GPG key fingerprint from imported secret key"
+  exit 1
+fi
+
+KEY_UPLOAD_SUCCEEDED=false
+for keyserver in hkps://keys.openpgp.org hkps://keyserver.ubuntu.com; do
+  if gpg --batch --yes --keyserver "${keyserver}" --send-keys "${SIGNING_KEY_FINGERPRINT}"; then
+    echo "Uploaded public key ${SIGNING_KEY_FINGERPRINT} to ${keyserver}"
+    KEY_UPLOAD_SUCCEEDED=true
+  else
+    echo "Warning: failed to upload public key to ${keyserver}"
+  fi
+done
+
+if [[ "${KEY_UPLOAD_SUCCEEDED}" != "true" ]]; then
+  echo "Failed to upload signing key to supported keyservers; Central signature validation may fail"
+fi
+
 echo "--- :label: Resolving SDK release version"
 SDK_TAG="$(buildkite-agent meta-data get sdk_release_tag 2>/dev/null || true)"
 SDK_VERSION="$(buildkite-agent meta-data get sdk_release_version 2>/dev/null || true)"

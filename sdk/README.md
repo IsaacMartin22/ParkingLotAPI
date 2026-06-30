@@ -14,7 +14,7 @@ This module provides a lightweight Java client for the Parking Lot API so other 
  
 ## Coordinates
 
-`groupId`: `com.example`
+`groupId`: `io.github.isaacmartin22`
 
 `artifactId`: `parking-lot-api-sdk`
 
@@ -51,7 +51,7 @@ In the consuming project's `pom.xml`, add the GitHub Packages repository and dep
 
 <dependencies>
     <dependency>
-        <groupId>com.example</groupId>
+        <groupId>io.github.isaacmartin22</groupId>
         <artifactId>parking-lot-api-sdk</artifactId>
         <version>0.1.0</version>
     </dependency>

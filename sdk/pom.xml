@@ -10,6 +10,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <groupId>io.github.isaacmartin22</groupId>
     <artifactId>parking-lot-api-sdk</artifactId>
     <packaging>jar</packaging>
 
