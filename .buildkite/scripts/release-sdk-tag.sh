@@ -38,6 +38,11 @@ if [[ "${RELEASE_TYPE}" == "none" ]]; then
   exit 0
 fi
 
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+  echo "GITHUB_TOKEN is required for non-interactive tag push in CI"
+  exit 1
+fi
+
 # Never allow interactive credential prompts in CI; fail fast instead.
 export GIT_TERMINAL_PROMPT=0
 

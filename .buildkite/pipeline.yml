@@ -51,6 +51,7 @@ steps:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
           mount-buildkite-agent: true
           environment:
+            - GITHUB_TOKEN
             - MAVEN_CENTRAL_USERNAME
             - MAVEN_CENTRAL_TOKEN
             - GPG_PRIVATE_KEY

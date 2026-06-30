@@ -11,11 +11,23 @@
 
 set -euo pipefail
 
+if ! command -v buildkite-agent >/dev/null 2>&1; then
+  echo "buildkite-agent is required for release metadata lookup"
+  exit 1
+fi
+
 RELEASE_TYPE="$(buildkite-agent meta-data get sdk_release_type 2>/dev/null || true)"
 if [[ -z "${RELEASE_TYPE}" || "${RELEASE_TYPE}" == "none" ]]; then
   echo "Release type is 'none' or not set – skipping Maven Central publish"
   exit 0
 fi
+
+for required_var in MAVEN_CENTRAL_USERNAME MAVEN_CENTRAL_TOKEN GPG_PRIVATE_KEY GPG_PASSPHRASE; do
+  if [[ -z "${!required_var:-}" ]]; then
+    echo "${required_var} is required for Maven Central publish"
+    exit 1
+  fi
+done
 
 echo "--- :key: Importing GPG signing key"
 echo "${GPG_PRIVATE_KEY}" | base64 --decode | gpg --batch --import
