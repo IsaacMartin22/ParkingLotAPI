@@ -7,3 +7,25 @@ steps:
       - "chmod +x ./mvnw"
       - "java -version"
       - "./mvnw -B -ntp test"
+
+  - block: ":rocket: Optional SDK Release"
+    if: build.branch == "main"
+    prompt: "Choose the semantic version bump for the SDK release tag."
+    fields:
+      - select: "SDK release type"
+        key: "sdk_release_type"
+        default: "none"
+        options:
+          - label: "No release"
+            value: "none"
+          - label: "Patch"
+            value: "patch"
+          - label: "Minor"
+            value: "minor"
+          - label: "Major"
+            value: "major"
+
+  - label: ":label: Create SDK release tag"
+    if: build.branch == "main"
+    command:
+      - "bash .buildkite/scripts/release-sdk-tag.sh"

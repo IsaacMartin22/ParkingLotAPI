@@ -14,6 +14,18 @@ Uses Maven multi-module build.
 A standalone SDK module is available in `sdk/` with an API client and request/response DTOs for easier integration from other Java projects. See `sdk/README.md` for usage.
 GitHub Packages publishing/consuming steps are also documented in `sdk/README.md`.
 
+### Buildkite optional SDK release
+
+The Buildkite pipeline includes an optional release block at the end on `main`.
+
+- Choose `major`, `minor`, `patch`, or `No release`.
+- If a bump is selected, Buildkite will:
+  - compute the next semantic version from the latest `sdk-v*` tag,
+  - update `sdk/pom.xml` to that exact version,
+  - commit the version bump,
+  - create and push a tag like `sdk-v1.2.3`.
+- Pushing that tag triggers GitHub Actions workflow `.github/workflows/publish-sdk.yml` to publish that SDK version to GitHub Packages.
+
 ## Entity Capacity Limits
 
 The following limits are now enforced when creating or re-parenting entities:
