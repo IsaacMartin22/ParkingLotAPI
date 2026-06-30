@@ -1,6 +1,7 @@
 package com.example.apiservice.pojo;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 public record DiagnosticsResponse(
@@ -9,6 +10,7 @@ public record DiagnosticsResponse(
         long totalRequests,
         long successfulRequests,
         long failedRequests,
-        Map<String, EndpointDiagnostics> endpoints
+        Map<String, EndpointDiagnostics> endpoints,
+        List<LogEntry> recentLogs
 ) {
 }

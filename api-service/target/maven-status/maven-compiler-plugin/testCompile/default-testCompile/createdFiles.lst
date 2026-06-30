@@ -1,8 +1,0 @@
-com\example\apiservice\mapper\SectionMapperTest.class
-com\example\apiservice\mapper\CarMapperTest.class
-com\example\apiservice\mapper\ParkingSpaceMapperTest.class
-com\example\apiservice\mapper\ParkingLotMapperTest.class
-com\example\apiservice\mapper\FloorMapperTest.class
-com\example\apiservice\controller\ParkingSpaceControllerTest.class
-com\example\apiservice\mapper\FloorDetailsMapperTest.class
-com\example\apiservice\controller\CarControllerTest.class

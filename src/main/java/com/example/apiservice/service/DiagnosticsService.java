@@ -1,5 +1,6 @@
 package com.example.apiservice.service;
 
+import com.example.apiservice.logging.DiagnosticsLogStore;
 import com.example.apiservice.pojo.DiagnosticsResponse;
 import com.example.apiservice.pojo.EndpointDiagnostics;
 import org.springframework.beans.factory.ObjectProvider;
@@ -35,6 +36,7 @@ public class DiagnosticsService implements SmartInitializingSingleton {
 
     private final Instant startedAt = Instant.now();
     private final ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider;
+    private final DiagnosticsLogStore logStore;
 
     private final AtomicLong totalRequests = new AtomicLong();
     private final AtomicLong successfulRequests = new AtomicLong();
@@ -44,9 +46,11 @@ public class DiagnosticsService implements SmartInitializingSingleton {
 
     public DiagnosticsService(
             @Qualifier("requestMappingHandlerMapping")
-            ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider
+            ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider,
+            DiagnosticsLogStore logStore
     ) {
         this.requestMappingHandlerMappingProvider = requestMappingHandlerMappingProvider;
+        this.logStore = logStore;
     }
 
     @Override
@@ -108,7 +112,8 @@ public class DiagnosticsService implements SmartInitializingSingleton {
                 totalRequests.get(),
                 successfulRequests.get(),
                 failedRequests.get(),
-                endpoints
+                endpoints,
+                logStore.snapshot()
         );
     }
 

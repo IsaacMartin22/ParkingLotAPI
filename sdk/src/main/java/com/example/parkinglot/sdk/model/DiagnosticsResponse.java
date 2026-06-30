@@ -1,7 +1,9 @@
 package com.example.parkinglot.sdk.model;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DiagnosticsResponse {
@@ -11,6 +13,7 @@ public class DiagnosticsResponse {
     private long successfulRequests;
     private long failedRequests;
     private Map<String, EndpointDiagnostics> endpoints = new HashMap<>();
+    private List<LogEntry> recentLogs = new ArrayList<>();
 
     public Instant getStartedAt() {
         return startedAt;
@@ -58,6 +61,14 @@ public class DiagnosticsResponse {
 
     public void setEndpoints(Map<String, EndpointDiagnostics> endpoints) {
         this.endpoints = endpoints;
+    }
+
+    public List<LogEntry> getRecentLogs() {
+        return recentLogs;
+    }
+
+    public void setRecentLogs(List<LogEntry> recentLogs) {
+        this.recentLogs = recentLogs;
     }
 }
 
