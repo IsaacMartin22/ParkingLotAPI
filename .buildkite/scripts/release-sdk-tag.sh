@@ -101,6 +101,11 @@ echo "New version: ${NEW_VERSION}"
 echo "--- :label: Creating tag sdk-v${NEW_VERSION}"
 git tag "sdk-v${NEW_VERSION}"
 
+if command -v buildkite-agent >/dev/null 2>&1; then
+  buildkite-agent meta-data set sdk_release_version "${NEW_VERSION}"
+  buildkite-agent meta-data set sdk_release_tag "sdk-v${NEW_VERSION}"
+fi
+
 echo "--- :arrow_up: Pushing commit and tag"
 git push "${PUSH_URL}" "sdk-v${NEW_VERSION}"
 

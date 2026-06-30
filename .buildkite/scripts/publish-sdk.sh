@@ -34,14 +34,25 @@ echo "${GPG_PRIVATE_KEY}" | base64 --decode | gpg --batch --import
 echo "GPG key imported successfully"
 
 echo "--- :label: Resolving SDK release version"
-git fetch --tags --force >/dev/null 2>&1 || true
-SDK_TAG="$(git tag -l 'sdk-v*' --sort=-v:refname | head -n1)"
+SDK_TAG="$(buildkite-agent meta-data get sdk_release_tag 2>/dev/null || true)"
+SDK_VERSION="$(buildkite-agent meta-data get sdk_release_version 2>/dev/null || true)"
+
+if [[ -z "${SDK_TAG}" || -z "${SDK_VERSION}" ]]; then
+  if command -v git >/dev/null 2>&1; then
+    git fetch --tags --force >/dev/null 2>&1 || true
+    SDK_TAG="$(git tag -l 'sdk-v*' --sort=-v:refname | head -n1)"
+    SDK_VERSION="${SDK_TAG#sdk-v}"
+  else
+    echo "git is not installed and SDK release metadata was not provided by Buildkite"
+    exit 1
+  fi
+fi
+
 if [[ -z "${SDK_TAG}" ]]; then
   echo "No sdk-v* tag found; refusing to publish a snapshot version to Maven Central"
   exit 1
 fi
 
-SDK_VERSION="${SDK_TAG#sdk-v}"
 echo "Publishing SDK version ${SDK_VERSION} from tag ${SDK_TAG}"
 
 echo "--- :hammer_and_wrench: Setting SDK module version"
