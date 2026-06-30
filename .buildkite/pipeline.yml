@@ -1,5 +1,6 @@
 steps:
   - label: ":pipeline: Run Unit Tests"
+    key: "run-unit-tests"
     plugins:
       - docker#v5.12.0:
           image: "eclipse-temurin:17"
@@ -9,6 +10,8 @@ steps:
       - "./mvnw -B -ntp test"
 
   - block: ":rocket: Optional SDK Release"
+    key: "optional-sdk-release"
+    depends_on: "run-unit-tests"
     if: build.branch == "main"
     prompt: "Choose the semantic version bump for the SDK release tag."
     fields:
@@ -26,6 +29,31 @@ steps:
             value: "major"
 
   - label: ":label: Create SDK release tag"
-    if: build.branch == "main"
+    key: "create-sdk-release-tag"
+    depends_on: "optional-sdk-release"
+    if: build.branch == "main" && build.meta_data("sdk_release_type") != "none"
+    plugins:
+      - docker#v5.12.0:
+          image: "eclipse-temurin:17"
+          environment:
+            - GITHUB_TOKEN
     command:
+      - "chmod +x ./mvnw"
       - "bash .buildkite/scripts/release-sdk-tag.sh"
+
+  - label: ":package: Publish SDK to Maven Central"
+    key: "publish-sdk-to-maven-central"
+    depends_on: "create-sdk-release-tag"
+    if: build.branch == "main" && build.meta_data("sdk_release_type") != "none"
+    plugins:
+      - docker#v5.12.0:
+          image: "eclipse-temurin:17"
+          environment:
+            - MAVEN_CENTRAL_USERNAME
+            - MAVEN_CENTRAL_TOKEN
+            - GPG_PRIVATE_KEY
+            - GPG_PASSPHRASE
+    command:
+      - "chmod +x ./mvnw"
+      - "bash .buildkite/scripts/publish-sdk.sh"
+

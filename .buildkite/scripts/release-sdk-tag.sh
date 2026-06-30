@@ -1,71 +1,62 @@
 #!/usr/bin/env bash
+# release-sdk-tag.sh
+# Reads the sdk_release_type build metadata set by the block step, bumps the
+# version in sdk/pom.xml accordingly, commits the change, and pushes a Git tag.
+#
+# Required environment variables:
+#   GITHUB_TOKEN  – token with write access to push tags (set as Buildkite secret)
+
 set -euo pipefail
 
-RELEASE_TYPE="none"
+RELEASE_TYPE="$(buildkite-agent meta-data get sdk_release_type)"
 
-if command -v buildkite-agent >/dev/null 2>&1; then
-  RELEASE_TYPE="$(buildkite-agent meta-data get sdk_release_type --default none)"
-else
-  # Fallback to env var for local script testing.
-  RELEASE_TYPE="${BUILDKITE_META_sdk_release_type:-none}"
-fi
-
-if [[ "${RELEASE_TYPE}" == "none" || -z "${RELEASE_TYPE}" ]]; then
-  echo "No SDK release requested. Skipping release step."
+if [[ "${RELEASE_TYPE}" == "none" ]]; then
+  echo "Release type is 'none' – skipping tag creation"
   exit 0
 fi
 
-if [[ "${RELEASE_TYPE}" != "major" && "${RELEASE_TYPE}" != "minor" && "${RELEASE_TYPE}" != "patch" ]]; then
-  echo "Invalid sdk_release_type: ${RELEASE_TYPE}. Expected one of: major, minor, patch, none"
-  exit 1
-fi
+echo "--- :git: Configuring Git identity"
+git config user.email "ci@buildkite"
+git config user.name  "Buildkite CI"
 
-LATEST_TAG="$(git tag --list 'sdk-v*' --sort=-v:refname | head -n 1)"
-if [[ -z "${LATEST_TAG}" ]]; then
-  CURRENT_VERSION="0.0.0"
-else
-  CURRENT_VERSION="${LATEST_TAG#sdk-v}"
-fi
+echo "--- :mag: Reading current SDK version"
+CURRENT_VERSION="$(./mvnw -B -ntp -pl sdk help:evaluate -Dexpression=project.version -q -DforceStdout)"
+echo "Current version: ${CURRENT_VERSION}"
 
-IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT_VERSION}"
+# Strip -SNAPSHOT suffix if present
+BASE_VERSION="${CURRENT_VERSION%-SNAPSHOT}"
 
-MAJOR="${MAJOR:-0}"
-MINOR="${MINOR:-0}"
-PATCH="${PATCH:-0}"
+IFS='.' read -r MAJOR MINOR PATCH <<< "${BASE_VERSION}"
 
+echo "--- :arrows_counterclockwise: Bumping ${RELEASE_TYPE} version (${MAJOR}.${MINOR}.${PATCH})"
 case "${RELEASE_TYPE}" in
-  major)
-    MAJOR=$((MAJOR + 1))
-    MINOR=0
-    PATCH=0
-    ;;
-  minor)
-    MINOR=$((MINOR + 1))
-    PATCH=0
-    ;;
-  patch)
-    PATCH=$((PATCH + 1))
+  patch) PATCH=$((PATCH + 1)) ;;
+  minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+  major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+  *)
+    echo "Unknown release type: ${RELEASE_TYPE}"
+    exit 1
     ;;
 esac
 
-NEXT_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-NEXT_TAG="sdk-v${NEXT_VERSION}"
+NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+echo "New version: ${NEW_VERSION}"
 
-if git rev-parse -q --verify "refs/tags/${NEXT_TAG}" >/dev/null; then
-  echo "Tag ${NEXT_TAG} already exists."
-  exit 1
-fi
+echo "--- :pencil: Updating sdk/pom.xml to ${NEW_VERSION}"
+./mvnw -B -ntp -pl sdk versions:set -DnewVersion="${NEW_VERSION}" -DgenerateBackupPoms=false
 
-echo "Releasing SDK version ${NEXT_VERSION} using ${RELEASE_TYPE} bump (from ${CURRENT_VERSION})."
+echo "--- :git: Committing version bump"
+git add sdk/pom.xml
+git commit -m "chore(sdk): release ${NEW_VERSION} [skip ci]"
 
-git config user.name "buildkite-bot"
-git config user.email "buildkite-bot@users.noreply.github.com"
+echo "--- :label: Creating tag sdk-v${NEW_VERSION}"
+git tag "sdk-v${NEW_VERSION}"
 
-git tag "${NEXT_TAG}"
+echo "--- :arrow_up: Pushing commit and tag"
+REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${BUILDKITE_REPO#*github.com/}"
+git remote set-url origin "${REPO_URL}"
+git push origin HEAD:"${BUILDKITE_BRANCH}"
+git push origin "sdk-v${NEW_VERSION}"
 
-
-git push origin "${NEXT_TAG}"
-
-echo "Created and pushed ${NEXT_TAG}."
-
+echo "+++ :white_check_mark: Tagged sdk-v${NEW_VERSION} and pushed"
 

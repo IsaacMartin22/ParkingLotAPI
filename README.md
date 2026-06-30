@@ -21,10 +21,9 @@ The Buildkite pipeline includes an optional release block at the end on `main`.
 - Choose `major`, `minor`, `patch`, or `No release`.
 - If a bump is selected, Buildkite will:
   - compute the next semantic version from the latest `sdk-v*` tag,
-  - update `sdk/pom.xml` to that exact version,
-  - commit the version bump,
   - create and push a tag like `sdk-v1.2.3`.
 - Pushing that tag triggers GitHub Actions workflow `.github/workflows/publish-sdk.yml` to publish that SDK version to GitHub Packages.
+- Buildkite must have a writable `GITHUB_TOKEN` environment variable to push tags to GitHub.
 
 ## Entity Capacity Limits
 
