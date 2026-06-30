@@ -32,6 +32,8 @@ steps:
     key: "create-sdk-release-tag"
     depends_on: "optional-sdk-release"
     if: build.branch == "main"
+    secrets:
+      - "GITHUB_TOKEN"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
@@ -46,6 +48,12 @@ steps:
     key: "publish-sdk-to-maven-central"
     depends_on: "create-sdk-release-tag"
     if: build.branch == "main"
+    secrets:
+      - "GITHUB_TOKEN"
+      - "MAVEN_CENTRAL_USERNAME"
+      - "MAVEN_CENTRAL_TOKEN"
+      - "GPG_PRIVATE_KEY"
+      - "GPG_PASSPHRASE"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
