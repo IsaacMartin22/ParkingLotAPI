@@ -42,22 +42,27 @@ fi
 export GIT_TERMINAL_PROMPT=0
 
 ORIGIN_URL="$(git remote get-url origin)"
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-  SOURCE_REPO_URL="${BUILDKITE_REPO:-${ORIGIN_URL}}"
-  REPO_PATH="${SOURCE_REPO_URL#*github.com[:/]}"
-  REPO_PATH="${REPO_PATH#git@github.com:}"
-  REPO_PATH="${REPO_PATH#https://github.com/}"
-  REPO_PATH="${REPO_PATH%.git}"
+SOURCE_REPO_URL="${BUILDKITE_REPO:-${ORIGIN_URL}}"
+REPO_PATH="${SOURCE_REPO_URL#*github.com[:/]}"
+REPO_PATH="${REPO_PATH#git@github.com:}"
+REPO_PATH="${REPO_PATH#ssh://git@github.com/}"
+REPO_PATH="${REPO_PATH#https://github.com/}"
+REPO_PATH="${REPO_PATH%.git}"
 
-  if [[ -n "${REPO_PATH}" && "${REPO_PATH}" != "${SOURCE_REPO_URL}" ]]; then
-    REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
-    echo "--- :lock: Configuring authenticated git remote from GITHUB_TOKEN"
-    git remote set-url origin "${REPO_URL}"
-  else
-    echo "--- :warning: Could not infer GitHub repo path from '${SOURCE_REPO_URL}', using existing origin"
-  fi
+PUSH_URL="origin"
+if [[ -n "${GITHUB_TOKEN:-}" && -n "${REPO_PATH}" && "${REPO_PATH}" != "${SOURCE_REPO_URL}" ]]; then
+  PUSH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
+  echo "--- :lock: Using token-authenticated push URL"
+elif [[ "${ORIGIN_URL}" == git@github.com:* || "${ORIGIN_URL}" == ssh://git@github.com/* ]]; then
+  PUSH_URL="origin"
+  echo "--- :key: Using existing SSH origin for push"
+elif [[ -n "${REPO_PATH}" && "${REPO_PATH}" != "${SOURCE_REPO_URL}" ]]; then
+  PUSH_URL="git@github.com:${REPO_PATH}.git"
+  echo "--- :key: Falling back to SSH push URL"
 else
-  echo "--- :warning: GITHUB_TOKEN not set; using existing origin credentials (${ORIGIN_URL})"
+  echo "Unable to determine an authenticated GitHub push URL."
+  echo "Set GITHUB_TOKEN or configure origin to use SSH credentials on the agent."
+  exit 1
 fi
 
 echo "--- :git: Configuring Git identity"
@@ -100,7 +105,7 @@ echo "--- :label: Creating tag sdk-v${NEW_VERSION}"
 git tag "sdk-v${NEW_VERSION}"
 
 echo "--- :arrow_up: Pushing commit and tag"
-git push origin "sdk-v${NEW_VERSION}"
+git push "${PUSH_URL}" "sdk-v${NEW_VERSION}"
 
 echo "+++ :white_check_mark: Tagged sdk-v${NEW_VERSION} and pushed"
 
