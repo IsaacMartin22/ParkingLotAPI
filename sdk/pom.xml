@@ -71,8 +71,8 @@
     <distributionManagement>
         <repository>
             <id>central</id>
-            <name>Sonatype Central Staging</name>
-            <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
+            <name>Sonatype Central Releases</name>
+            <url>https://central.sonatype.com/repository/maven-releases/</url>
         </repository>
     </distributionManagement>
 
