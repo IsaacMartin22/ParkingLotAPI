@@ -38,6 +38,26 @@ if [[ "${RELEASE_TYPE}" == "none" ]]; then
   exit 0
 fi
 
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+  echo "GITHUB_TOKEN is required to fetch/push tags in CI"
+  exit 1
+fi
+
+if [[ -z "${BUILDKITE_REPO:-}" ]]; then
+  echo "BUILDKITE_REPO is required to construct authenticated Git remote URL"
+  exit 1
+fi
+
+REPO_PATH="${BUILDKITE_REPO#*github.com[:/]}"
+REPO_PATH="${REPO_PATH%.git}"
+REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
+
+# Never allow interactive credential prompts in CI; fail fast instead.
+export GIT_TERMINAL_PROMPT=0
+
+echo "--- :lock: Configuring authenticated git remote"
+git remote set-url origin "${REPO_URL}"
+
 echo "--- :git: Configuring Git identity"
 git config user.email "ci@buildkite"
 git config user.name  "Buildkite CI"
@@ -78,8 +98,6 @@ echo "--- :label: Creating tag sdk-v${NEW_VERSION}"
 git tag "sdk-v${NEW_VERSION}"
 
 echo "--- :arrow_up: Pushing commit and tag"
-REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${BUILDKITE_REPO#*github.com/}"
-git remote set-url origin "${REPO_URL}"
 git push origin "sdk-v${NEW_VERSION}"
 
 echo "+++ :white_check_mark: Tagged sdk-v${NEW_VERSION} and pushed"
