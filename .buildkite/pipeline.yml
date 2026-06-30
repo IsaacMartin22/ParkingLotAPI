@@ -32,12 +32,16 @@ steps:
     key: "create-sdk-release-tag"
     depends_on: "optional-sdk-release"
     if: build.branch == "main"
+    env:
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      GH_TOKEN: "${GITHUB_TOKEN}"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
           mount-buildkite-agent: true
           environment:
             - GITHUB_TOKEN
+            - GH_TOKEN
     command:
       - "chmod +x ./mvnw"
       - "bash .buildkite/scripts/release-sdk-tag.sh"
@@ -46,12 +50,16 @@ steps:
     key: "publish-sdk-to-maven-central"
     depends_on: "create-sdk-release-tag"
     if: build.branch == "main"
+    env:
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      GH_TOKEN: "${GITHUB_TOKEN}"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
           mount-buildkite-agent: true
           environment:
             - GITHUB_TOKEN
+            - GH_TOKEN
             - MAVEN_CENTRAL_USERNAME
             - MAVEN_CENTRAL_TOKEN
             - GPG_PRIVATE_KEY
