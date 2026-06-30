@@ -56,7 +56,7 @@ fi
 echo "Publishing SDK version ${SDK_VERSION} from tag ${SDK_TAG}"
 
 echo "--- :hammer_and_wrench: Setting SDK module version"
-./mvnw -B -ntp -pl sdk versions:set -DnewVersion="${SDK_VERSION}" -DgenerateBackupPoms=false
+./mvnw -B -ntp versions:set -DnewVersion="${SDK_VERSION}" -DgenerateBackupPoms=false -DprocessAllModules=true -DprocessParent=true
 
 echo "--- :wrench: Writing Maven settings.xml"
 SETTINGS_FILE="${HOME}/.m2/settings.xml"
