@@ -8,6 +8,21 @@
 
 set -euo pipefail
 
+if ! command -v git >/dev/null 2>&1; then
+  echo "--- :package: git not found, installing"
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update
+    apt-get install -y git
+  elif command -v apk >/dev/null 2>&1; then
+    apk add --no-cache git
+  elif command -v yum >/dev/null 2>&1; then
+    yum install -y git
+  else
+    echo "git is required but no supported package manager was found"
+    exit 1
+  fi
+fi
+
 if ! command -v buildkite-agent >/dev/null 2>&1; then
   echo "buildkite-agent is required for release metadata lookup"
   exit 1
