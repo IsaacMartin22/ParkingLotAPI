@@ -33,6 +33,20 @@ echo "--- :key: Importing GPG signing key"
 echo "${GPG_PRIVATE_KEY}" | base64 --decode | gpg --batch --import
 echo "GPG key imported successfully"
 
+echo "--- :label: Resolving SDK release version"
+git fetch --tags --force >/dev/null 2>&1 || true
+SDK_TAG="$(git tag -l 'sdk-v*' --sort=-v:refname | head -n1)"
+if [[ -z "${SDK_TAG}" ]]; then
+  echo "No sdk-v* tag found; refusing to publish a snapshot version to Maven Central"
+  exit 1
+fi
+
+SDK_VERSION="${SDK_TAG#sdk-v}"
+echo "Publishing SDK version ${SDK_VERSION} from tag ${SDK_TAG}"
+
+echo "--- :hammer_and_wrench: Setting SDK module version"
+./mvnw -B -ntp -pl sdk versions:set -DnewVersion="${SDK_VERSION}" -DgenerateBackupPoms=false
+
 echo "--- :wrench: Writing Maven settings.xml"
 SETTINGS_FILE="${HOME}/.m2/settings.xml"
 mkdir -p "$(dirname "${SETTINGS_FILE}")"
