@@ -38,21 +38,24 @@ if [[ "${RELEASE_TYPE}" == "none" ]]; then
   exit 0
 fi
 
-if [[ -z "${BUILDKITE_REPO:-}" ]]; then
-  echo "BUILDKITE_REPO is required to construct authenticated Git remote URL"
-  exit 1
-fi
-
 # Never allow interactive credential prompts in CI; fail fast instead.
 export GIT_TERMINAL_PROMPT=0
 
 ORIGIN_URL="$(git remote get-url origin)"
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-  REPO_PATH="${BUILDKITE_REPO#*github.com[:/]}"
+  SOURCE_REPO_URL="${BUILDKITE_REPO:-${ORIGIN_URL}}"
+  REPO_PATH="${SOURCE_REPO_URL#*github.com[:/]}"
+  REPO_PATH="${REPO_PATH#git@github.com:}"
+  REPO_PATH="${REPO_PATH#https://github.com/}"
   REPO_PATH="${REPO_PATH%.git}"
-  REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
-  echo "--- :lock: Configuring authenticated git remote from GITHUB_TOKEN"
-  git remote set-url origin "${REPO_URL}"
+
+  if [[ -n "${REPO_PATH}" && "${REPO_PATH}" != "${SOURCE_REPO_URL}" ]]; then
+    REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
+    echo "--- :lock: Configuring authenticated git remote from GITHUB_TOKEN"
+    git remote set-url origin "${REPO_URL}"
+  else
+    echo "--- :warning: Could not infer GitHub repo path from '${SOURCE_REPO_URL}', using existing origin"
+  fi
 else
   echo "--- :warning: GITHUB_TOKEN not set; using existing origin credentials (${ORIGIN_URL})"
 fi
