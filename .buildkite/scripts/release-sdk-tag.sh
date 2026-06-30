@@ -38,25 +38,24 @@ if [[ "${RELEASE_TYPE}" == "none" ]]; then
   exit 0
 fi
 
-if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-  echo "GITHUB_TOKEN is required to fetch/push tags in CI"
-  exit 1
-fi
-
 if [[ -z "${BUILDKITE_REPO:-}" ]]; then
   echo "BUILDKITE_REPO is required to construct authenticated Git remote URL"
   exit 1
 fi
 
-REPO_PATH="${BUILDKITE_REPO#*github.com[:/]}"
-REPO_PATH="${REPO_PATH%.git}"
-REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
-
 # Never allow interactive credential prompts in CI; fail fast instead.
 export GIT_TERMINAL_PROMPT=0
 
-echo "--- :lock: Configuring authenticated git remote"
-git remote set-url origin "${REPO_URL}"
+ORIGIN_URL="$(git remote get-url origin)"
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  REPO_PATH="${BUILDKITE_REPO#*github.com[:/]}"
+  REPO_PATH="${REPO_PATH%.git}"
+  REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_PATH}.git"
+  echo "--- :lock: Configuring authenticated git remote from GITHUB_TOKEN"
+  git remote set-url origin "${REPO_URL}"
+else
+  echo "--- :warning: GITHUB_TOKEN not set; using existing origin credentials (${ORIGIN_URL})"
+fi
 
 echo "--- :git: Configuring Git identity"
 git config user.email "ci@buildkite"
