@@ -11,7 +11,7 @@ This module provides a lightweight Java client for the Parking Lot API so other 
   - `ParkingSpaceUpdateRequest`
 - Response DTOs matching API payloads.
 - A tiny runner example in `com.example.parkinglot.sdk.example.SdkQuickstart`.
-
+ 
 ## Coordinates
 
 `groupId`: `com.example`
