@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # release-sdk-tag.sh
-# Reads the sdk_release_type build metadata set by the block step, bumps the
-# version in sdk/pom.xml accordingly, commits the change, and pushes a Git tag.
+# Reads sdk_release_type build metadata, calculates next semantic version, and
+# creates/pushes a Git tag used by the publish workflow.
 #
 # Required environment variables:
 #   GITHUB_TOKEN  – token with write access to push tags (set as Buildkite secret)
@@ -46,8 +46,17 @@ echo "--- :mag: Reading current SDK version"
 CURRENT_VERSION="$(./mvnw -B -ntp -pl sdk help:evaluate -Dexpression=project.version -q -DforceStdout)"
 echo "Current version: ${CURRENT_VERSION}"
 
-# Strip -SNAPSHOT suffix if present
-BASE_VERSION="${CURRENT_VERSION%-SNAPSHOT}"
+# Prefer latest release tag as source of truth for next bump; fallback to pom base version.
+git fetch --tags --force >/dev/null 2>&1 || true
+LATEST_TAG="$(git tag -l 'sdk-v*' --sort=-v:refname | head -n1)"
+
+if [[ -n "${LATEST_TAG}" ]]; then
+  BASE_VERSION="${LATEST_TAG#sdk-v}"
+  echo "Latest SDK tag: ${LATEST_TAG}"
+else
+  BASE_VERSION="${CURRENT_VERSION%-SNAPSHOT}"
+  echo "No existing sdk-v tags found; using base version ${BASE_VERSION}"
+fi
 
 IFS='.' read -r MAJOR MINOR PATCH <<< "${BASE_VERSION}"
 
@@ -65,20 +74,12 @@ esac
 NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 echo "New version: ${NEW_VERSION}"
 
-echo "--- :pencil: Updating sdk/pom.xml to ${NEW_VERSION}"
-./mvnw -B -ntp -pl sdk versions:set -DnewVersion="${NEW_VERSION}" -DgenerateBackupPoms=false
-
-echo "--- :git: Committing version bump"
-git add sdk/pom.xml
-git commit -m "chore(sdk): release ${NEW_VERSION} [skip ci]"
-
 echo "--- :label: Creating tag sdk-v${NEW_VERSION}"
 git tag "sdk-v${NEW_VERSION}"
 
 echo "--- :arrow_up: Pushing commit and tag"
 REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${BUILDKITE_REPO#*github.com/}"
 git remote set-url origin "${REPO_URL}"
-git push origin HEAD:"${BUILDKITE_BRANCH}"
 git push origin "sdk-v${NEW_VERSION}"
 
 echo "+++ :white_check_mark: Tagged sdk-v${NEW_VERSION} and pushed"
