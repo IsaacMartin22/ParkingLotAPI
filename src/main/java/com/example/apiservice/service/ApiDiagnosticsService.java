@@ -1,7 +1,7 @@
 package com.example.apiservice.service;
 
 import com.example.apiservice.logging.DiagnosticsLogStore;
-import com.example.apiservice.pojo.DiagnosticsResponse;
+import com.example.apiservice.pojo.ApiDiagnosticsResponse;
 import com.example.apiservice.pojo.EndpointDiagnostics;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
-public class DiagnosticsService implements SmartInitializingSingleton {
+public class ApiDiagnosticsService implements SmartInitializingSingleton {
 
     private static final Set<RequestMethod> DEFAULT_HTTP_METHODS = Set.of(
             RequestMethod.GET,
@@ -44,7 +44,7 @@ public class DiagnosticsService implements SmartInitializingSingleton {
 
     private final ConcurrentHashMap<String, EndpointMetrics> endpointMetrics = new ConcurrentHashMap<>();
 
-    public DiagnosticsService(
+    public ApiDiagnosticsService(
             @Qualifier("requestMappingHandlerMapping")
             ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider,
             DiagnosticsLogStore logStore
@@ -95,7 +95,7 @@ public class DiagnosticsService implements SmartInitializingSingleton {
                 .record(successful, durationMillis);
     }
 
-    public DiagnosticsResponse getDiagnostics() {
+    public ApiDiagnosticsResponse getDiagnostics() {
         Map<String, EndpointDiagnostics> endpoints = endpointMetrics.entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey(Comparator.naturalOrder()))
@@ -106,7 +106,7 @@ public class DiagnosticsService implements SmartInitializingSingleton {
                         LinkedHashMap::new
                 ));
 
-        return new DiagnosticsResponse(
+        return new ApiDiagnosticsResponse(
                 startedAt,
                 Duration.between(startedAt, Instant.now()).toMillis(),
                 totalRequests.get(),

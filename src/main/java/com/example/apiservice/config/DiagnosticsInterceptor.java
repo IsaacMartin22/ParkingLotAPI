@@ -1,6 +1,6 @@
 package com.example.apiservice.config;
 
-import com.example.apiservice.service.DiagnosticsService;
+import com.example.apiservice.service.ApiDiagnosticsService;
 import com.example.apiservice.service.MetricsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,11 +14,11 @@ public class DiagnosticsInterceptor implements HandlerInterceptor {
     private static final String START_TIME_ATTRIBUTE = "diagnosticsStartTime";
 
     private final MetricsService metricsService;
-    private final DiagnosticsService diagnosticsService;
+    private final ApiDiagnosticsService apiDiagnosticsService;
 
-    public DiagnosticsInterceptor(MetricsService metricsService, DiagnosticsService diagnosticsService) {
+    public DiagnosticsInterceptor(MetricsService metricsService, ApiDiagnosticsService apiDiagnosticsService) {
         this.metricsService = metricsService;
-        this.diagnosticsService = diagnosticsService;
+        this.apiDiagnosticsService = apiDiagnosticsService;
     }
 
     @Override
@@ -42,7 +42,7 @@ public class DiagnosticsInterceptor implements HandlerInterceptor {
         int statusCode = exception == null ? response.getStatus() : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
         metricsService.recordRequest(endpoint, statusCode, durationMillis);
-        diagnosticsService.recordRequest(endpoint, statusCode, durationMillis);
+        apiDiagnosticsService.recordRequest(endpoint, statusCode, durationMillis);
     }
 
     private String getEndpointName(HttpServletRequest request) {
