@@ -29,7 +29,13 @@ CREATE TABLE parking_spaces (
     section_id BIGINT,
     CONSTRAINT fk_parking_spaces_section
         FOREIGN KEY (section_id)
-        REFERENCES sections (id)
+        REFERENCES sections (id),
+    color VARCHAR(255),
+    make VARCHAR(255),
+    model VARCHAR(255),
+    manufacturing_year INTEGER,
+    licensePlate VARCHAR(255),
+
 );
 
 INSERT INTO parking_lots (name, address, type) VALUES
