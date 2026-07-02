@@ -4,12 +4,15 @@ import com.example.apiservice.pojo.ParkingSpaceResponse;
 import com.example.apiservice.pojo.ParkingSpaceUpdateRequest;
 import com.example.apiservice.mapper.ParkingSpaceMapper;
 import com.example.apiservice.service.ParkingSpaceService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/spaces")
 public class ParkingSpaceController {
@@ -38,12 +41,24 @@ public class ParkingSpaceController {
     public ResponseEntity<ParkingSpaceResponse> update(@PathVariable Long id, @RequestBody ParkingSpaceUpdateRequest request) {
         return service.findById(id)
                 .map(existing -> {
-                    // Only the space number is mutable; section is locked to its original value
-                    if (request.getNumber() != null) {
-                        existing.setNumber(request.getNumber());
+                    if (existing.getLicensePlate() != null) {
+                        log.error("Parking space must be empty before adding a new car to it. Space ID: {}, License Plate: {}", existing.getId(), existing.getLicensePlate());
+                        return ResponseEntity.status(409).body(ParkingSpaceMapper.toResponse(existing));
                     }
-                    // Note: clearing/setting car is not supported here after refactor
                     return ResponseEntity.ok(ParkingSpaceMapper.toResponse(service.save(existing)));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ParkingSpaceResponse> removeCar(@PathVariable Long id) {
+        return service.findById(id)
+                .map(existing -> {
+                    if (existing.getLicensePlate() == null) {
+                        log.error("Trying to remove a car from an empty parking space with id={}", id);
+                        return ResponseEntity.status(409).body(ParkingSpaceMapper.toResponse(existing));
+                    }
+                    return ResponseEntity.ok(ParkingSpaceMapper.toResponse(service.removeCar(existing)));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

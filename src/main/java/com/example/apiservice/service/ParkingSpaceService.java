@@ -58,8 +58,8 @@ public class ParkingSpaceService {
         ParkingSpace fullSpace = repo.findById(saved.getId()).orElse(saved);
         floorContextResolver.resolve(fullSpace).ifPresent(ctx -> {
             // Build a ParkingSpaceResponse from embedded parking space fields
-            ParkingSpaceResponse carResponse = new ParkingSpaceResponse(
-                    null,
+            ParkingSpaceResponse parkingSpaceResponse = new ParkingSpaceResponse(
+                    fullSpace.getId(),
                     fullSpace.getNumber(),
                     fullSpace.getLicensePlate() != null,
                     fullSpace.getSection().getId(),
@@ -74,7 +74,50 @@ public class ParkingSpaceService {
                     ctx.lotId(),
                     ctx.floorId(),
                     ctx.spaceId(),
-                    carResponse,
+                    parkingSpaceResponse,
+                    Instant.now()
+            );
+            floorEventService.publishEvent(ctx.lotId(), ctx.floorId(), event);
+        });
+
+        return saved;
+    }
+
+    public ParkingSpace removeCar(ParkingSpace space) {
+        ParkingSpace existingSpace = null;
+        if (space.getId() != null) {
+            existingSpace = repo.findById(space.getId()).orElse(null);
+        }
+
+        validateSectionCapacity(space, existingSpace);
+
+        boolean isUpdate = existingSpace != null;
+        ParkingSpace saved = repo.save(space);
+
+        if (!isUpdate) {
+            return saved;
+        }
+
+        ParkingSpace fullSpace = repo.findById(saved.getId()).orElse(saved);
+        floorContextResolver.resolve(fullSpace).ifPresent(ctx -> {
+            // Build a ParkingSpaceResponse from embedded parking space fields
+            ParkingSpaceResponse parkingSpaceResponse = new ParkingSpaceResponse(
+                    fullSpace.getId(),
+                    fullSpace.getNumber(),
+                    fullSpace.getLicensePlate() != null,
+                    fullSpace.getSection().getId(),
+                    null,
+                    null,
+                    null,
+                    0,
+                    null
+            );
+            ParkingSpaceEvent event = new ParkingSpaceEvent(
+                    ParkingSpaceEventType.REMOVE,
+                    ctx.lotId(),
+                    ctx.floorId(),
+                    ctx.spaceId(),
+                    parkingSpaceResponse,
                     Instant.now()
             );
             floorEventService.publishEvent(ctx.lotId(), ctx.floorId(), event);
