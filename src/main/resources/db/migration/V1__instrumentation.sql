@@ -34,8 +34,7 @@ CREATE TABLE parking_spaces (
     make VARCHAR(255),
     model VARCHAR(255),
     manufacturing_year INTEGER,
-    licensePlate VARCHAR(255),
-
+    licensePlate VARCHAR(255)
 );
 
 INSERT INTO parking_lots (name, address, type) VALUES

@@ -58,3 +58,8 @@ Env Variables for real database found in .env
 **Deployment**
 The PostgreSQL prod db is hosted on Render, stage db hosted on Aiven
 This API Service is also hosted on Render via Docker image + web service, available at https://api-service-i1ms.onrender.com/
+
+Hard reset flyway SQL database
+DROP TABLE IF EXISTS flyway_schema_history;
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
