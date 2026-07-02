@@ -81,21 +81,35 @@ Use a GitHub token that can read packages from the repository.
 
 ```java
 import com.example.parkinglot.sdk.ParkingLotApiClient;
-import com.example.parkinglot.sdk.model.CarCreateRequest;
-import com.example.parkinglot.sdk.model.CarResponse;
+import com.example.parkinglot.sdk.model.requests.CarCreateRequest;
+import com.example.parkinglot.sdk.model.responses.CarResponse;
 
 ParkingLotApiClient client = new ParkingLotApiClient("https://api-service-i1ms.onrender.com");
 
 CarCreateRequest req = new CarCreateRequest();
-req.setColor("Blue");
-req.setMake("Toyota");
-req.setModel("Corolla");
-req.setManufacturingYear(2022);
-req.setLicensePlate("SDK-123");
-req.setParkingSpaceId(10L);
+req.
+
+setColor("Blue");
+req.
+
+setMake("Toyota");
+req.
+
+setModel("Corolla");
+req.
+
+setManufacturingYear(2022);
+req.
+
+setLicensePlate("SDK-123");
+req.
+
+setParkingSpaceId(10L);
 
 CarResponse created = client.createCar(req);
-System.out.println(created.getId());
+System.out.
+
+println(created.getId());
 ```
 
 ## API client methods

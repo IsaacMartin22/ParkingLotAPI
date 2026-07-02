@@ -133,7 +133,7 @@ public class ParkingLotMapper {
             for (var section : floor.getSections()) {
                 if (section.getParkingSpaces() != null) {
                     for (var space : section.getParkingSpaces()) {
-                        if (space.getCar() == null) {
+                        if (space.getLicensePlate() == null) {
                             totalFree++;
                         }
                     }

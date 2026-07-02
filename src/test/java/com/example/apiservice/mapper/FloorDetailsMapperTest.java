@@ -1,6 +1,5 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dbentity.Car;
 import com.example.apiservice.dbentity.Floor;
 import com.example.apiservice.dbentity.ParkingLot;
 import com.example.apiservice.dbentity.ParkingSpace;
@@ -31,23 +30,19 @@ class FloorDetailsMapperTest {
         ParkingLot parkingLot = new ParkingLot();
         parkingLot.setId(10L);
 
-        Car car = new Car();
-        car.setId(41L);
-        car.setColor("Blue");
-        car.setMake("Toyota");
-        car.setModel("Corolla");
-        car.setManufacturingYear(2023);
-        car.setLicensePlate("ABC-123");
-
         ParkingSpace occupiedSpace = new ParkingSpace();
         occupiedSpace.setId(31L);
         occupiedSpace.setNumber("A-001");
-        occupiedSpace.setCar(car);
+        // set embedded car fields directly on the parking space
+        occupiedSpace.setColor("Blue");
+        occupiedSpace.setMake("Toyota");
+        occupiedSpace.setModel("Corolla");
+        occupiedSpace.setManufacturingYear(2023);
+        occupiedSpace.setLicensePlate("ABC-123");
 
         ParkingSpace freeSpace = new ParkingSpace();
         freeSpace.setId(32L);
         freeSpace.setNumber("A-002");
-        freeSpace.setCar(null);
 
         Section section = new Section();
         section.setId(21L);
@@ -80,13 +75,11 @@ class FloorDetailsMapperTest {
 
         assertEquals("A-001", occupiedSpaceResponse.getNumber());
         assertTrue(occupiedSpaceResponse.isOccupied());
-        assertNotNull(occupiedSpaceResponse.getCar());
-        assertEquals(41L, occupiedSpaceResponse.getCar().getId());
-        assertEquals("Blue", occupiedSpaceResponse.getCar().getColor());
-        assertEquals("Toyota", occupiedSpaceResponse.getCar().getMake());
-        assertEquals("Corolla", occupiedSpaceResponse.getCar().getModel());
-        assertEquals(2023, occupiedSpaceResponse.getCar().getManufacturingYear());
-        assertEquals("ABC-123", occupiedSpaceResponse.getCar().getLicensePlate());
+        assertEquals("Blue", occupiedSpaceResponse.getColor());
+        assertEquals("Toyota", occupiedSpaceResponse.getMake());
+        assertEquals("Corolla", occupiedSpaceResponse.getModel());
+        assertEquals(2023, occupiedSpaceResponse.getManufacturingYear());
+        assertEquals("ABC-123", occupiedSpaceResponse.getLicensePlate());
 
         ParkingSpaceDetailsResponse freeSpaceResponse = sectionResponse.getParkingSpaces().stream()
             .filter(space -> space.getId().equals(32L))
@@ -95,7 +88,8 @@ class FloorDetailsMapperTest {
 
         assertEquals("A-002", freeSpaceResponse.getNumber());
         assertFalse(freeSpaceResponse.isOccupied());
-        assertNull(freeSpaceResponse.getCar());
+        assertNull(freeSpaceResponse.getColor());
+        assertNull(freeSpaceResponse.getLicensePlate());
     }
 
     @Test

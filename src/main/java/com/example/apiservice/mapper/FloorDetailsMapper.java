@@ -26,12 +26,18 @@ public class FloorDetailsMapper {
                                         section.getName(),
                                         section.getParkingSpaces() != null
                                                 ? section.getParkingSpaces().stream()
-                                                        .map(space -> new ParkingSpaceDetailsResponse(
-                                                                space.getId(),
-                                                                space.getNumber(),
-                                                                space.getCar() != null,
-                                                                CarMapper.toResponse(space.getCar())
-                                                        ))
+                                                        .map(space -> {
+                                                                ParkingSpaceDetailsResponse ps = new ParkingSpaceDetailsResponse();
+                                                                ps.setId(space.getId());
+                                                                ps.setNumber(space.getNumber());
+                                                                ps.setOccupied(space.getLicensePlate() != null);
+                                                                ps.setColor(space.getColor());
+                                                                ps.setMake(space.getMake());
+                                                                ps.setModel(space.getModel());
+                                                                ps.setManufacturingYear(space.getManufacturingYear() == null ? 0 : space.getManufacturingYear());
+                                                                ps.setLicensePlate(space.getLicensePlate());
+                                                                return ps;
+                                                        })
                                                         .collect(Collectors.toList())
                                                 : Collections.emptyList()
                                 ))

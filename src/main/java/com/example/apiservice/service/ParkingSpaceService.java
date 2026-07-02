@@ -1,10 +1,9 @@
 package com.example.apiservice.service;
 
 import com.example.apiservice.dbentity.ParkingSpace;
-import com.example.apiservice.mapper.CarMapper;
-import com.example.apiservice.pojo.CarEvent;
-import com.example.apiservice.pojo.CarEventType;
-import com.example.apiservice.pojo.CarResponse;
+import com.example.apiservice.pojo.ParkingSpaceEvent;
+import com.example.apiservice.pojo.ParkingSpaceEventType;
+import com.example.apiservice.pojo.ParkingSpaceResponse;
 import com.example.apiservice.repository.ParkingSpaceRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -58,9 +57,20 @@ public class ParkingSpaceService {
 
         ParkingSpace fullSpace = repo.findById(saved.getId()).orElse(saved);
         floorContextResolver.resolve(fullSpace).ifPresent(ctx -> {
-            CarResponse carResponse = CarMapper.toResponse(fullSpace.getCar());
-            CarEvent event = new CarEvent(
-                    CarEventType.UPDATE,
+            // Build a ParkingSpaceResponse from embedded parking space fields
+            ParkingSpaceResponse carResponse = new ParkingSpaceResponse(
+                    null,
+                    fullSpace.getNumber(),
+                    fullSpace.getLicensePlate() != null,
+                    fullSpace.getSection().getId(),
+                    fullSpace.getColor(),
+                    fullSpace.getMake(),
+                    fullSpace.getModel(),
+                    fullSpace.getManufacturingYear() == null ? 0 : fullSpace.getManufacturingYear(),
+                    fullSpace.getLicensePlate()
+            );
+            ParkingSpaceEvent event = new ParkingSpaceEvent(
+                    ParkingSpaceEventType.UPDATE,
                     ctx.lotId(),
                     ctx.floorId(),
                     ctx.spaceId(),

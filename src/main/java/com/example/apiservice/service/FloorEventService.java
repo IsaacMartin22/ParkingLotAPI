@@ -1,6 +1,6 @@
 package com.example.apiservice.service;
 
-import com.example.apiservice.pojo.CarEvent;
+import com.example.apiservice.pojo.ParkingSpaceEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class FloorEventService {
     /**
      * Broadcast a CarEvent to all subscribers of the given lot/floor.
      */
-    public void publishEvent(Long lotId, Long floorId, CarEvent event) {
+    public void publishEvent(Long lotId, Long floorId, ParkingSpaceEvent event) {
         String key = key(lotId, floorId);
         CopyOnWriteArrayList<SseEmitter> floorEmitters = emitters.get(key);
         if (floorEmitters == null || floorEmitters.isEmpty()) {

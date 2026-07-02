@@ -19,9 +19,13 @@ public class ParkingSpace {
     @JsonIgnoreProperties
     private Section section;
 
-    @OneToOne(mappedBy = "parkingSpace", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties
-    private Car car;
+    // Embedded car fields (merged from former cars table)
+    private String color;
+    private String make;
+    private String model;
+    @Column(name = "manufacturing_year")
+    private Integer manufacturingYear;
+    private String licensePlate;
 
     public ParkingSpace() {
     }
@@ -50,12 +54,44 @@ public class ParkingSpace {
         this.section = section;
     }
 
-    public Car getCar() {
-        return car;
+    public String getColor() {
+        return color;
     }
 
-    public void setCar(Car car) {
-        this.car = car;
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public String getMake() {
+        return make;
+    }
+
+    public void setMake(String make) {
+        this.make = make;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public Integer getManufacturingYear() {
+        return manufacturingYear;
+    }
+
+    public void setManufacturingYear(Integer manufacturingYear) {
+        this.manufacturingYear = manufacturingYear;
+    }
+
+    public String getLicensePlate() {
+        return licensePlate;
+    }
+
+    public void setLicensePlate(String licensePlate) {
+        this.licensePlate = licensePlate;
     }
 }
 

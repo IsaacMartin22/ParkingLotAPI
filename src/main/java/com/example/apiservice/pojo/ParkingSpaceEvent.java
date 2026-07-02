@@ -10,14 +10,14 @@ import java.time.Instant;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CarEvent {
-    private CarEventType action;
+public class ParkingSpaceEvent {
+    private ParkingSpaceEventType action;
     @JsonIgnore
     private Long lotId;
     @JsonIgnore
     private Long floorId;
     private Long spaceId;
-    private CarResponse car;
+    private ParkingSpaceResponse parkingSpaceResponse;
     @JsonIgnore
     private Instant timestamp;
 }

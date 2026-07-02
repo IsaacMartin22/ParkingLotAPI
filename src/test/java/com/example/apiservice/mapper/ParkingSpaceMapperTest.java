@@ -1,6 +1,5 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dbentity.Car;
 import com.example.apiservice.dbentity.ParkingSpace;
 import com.example.apiservice.dbentity.Section;
 import com.example.apiservice.pojo.ParkingSpaceResponse;
@@ -24,14 +23,15 @@ class ParkingSpaceMapperTest {
         Section section = new Section();
         section.setId(21L);
 
-        Car car = new Car();
-        car.setId(41L);
-
         ParkingSpace space = new ParkingSpace();
         space.setId(31L);
         space.setNumber("A-001");
         space.setSection(section);
-        space.setCar(car);
+        space.setColor("Blue");
+        space.setMake("Toyota");
+        space.setModel("Corolla");
+        space.setManufacturingYear(2023);
+        space.setLicensePlate("ABC-123");
 
         ParkingSpaceResponse response = ParkingSpaceMapper.toResponse(space);
 
@@ -40,7 +40,8 @@ class ParkingSpaceMapperTest {
         assertEquals("A-001", response.getNumber());
         assertTrue(response.isOccupied());
         assertEquals(21L, response.getSectionId());
-        assertEquals(41L, response.getCarId());
+        assertEquals("ABC-123", response.getLicensePlate());
+        assertEquals("Blue", response.getColor());
     }
 
     @Test
@@ -49,7 +50,7 @@ class ParkingSpaceMapperTest {
         space.setId(31L);
         space.setNumber("A-001");
         space.setSection(null);
-        space.setCar(null);
+        // no car fields set for free space
 
         ParkingSpaceResponse response = ParkingSpaceMapper.toResponse(space);
 
@@ -58,6 +59,7 @@ class ParkingSpaceMapperTest {
         assertEquals("A-001", response.getNumber());
         assertFalse(response.isOccupied());
         assertNull(response.getSectionId());
-        assertNull(response.getCarId());
+        assertNull(response.getColor());
+        assertNull(response.getLicensePlate());
     }
 }

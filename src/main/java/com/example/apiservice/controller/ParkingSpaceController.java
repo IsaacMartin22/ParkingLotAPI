@@ -1,10 +1,8 @@
 package com.example.apiservice.controller;
 
-import com.example.apiservice.dbentity.Car;
 import com.example.apiservice.pojo.ParkingSpaceResponse;
 import com.example.apiservice.pojo.ParkingSpaceUpdateRequest;
 import com.example.apiservice.mapper.ParkingSpaceMapper;
-import com.example.apiservice.service.CarService;
 import com.example.apiservice.service.ParkingSpaceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,11 +15,9 @@ import java.util.stream.Collectors;
 public class ParkingSpaceController {
 
     private final ParkingSpaceService service;
-    private final CarService carService;
 
-    public ParkingSpaceController(ParkingSpaceService service, CarService carService) {
+    public ParkingSpaceController(ParkingSpaceService service) {
         this.service = service;
-        this.carService = carService;
     }
 
     @GetMapping
@@ -46,13 +42,7 @@ public class ParkingSpaceController {
                     if (request.getNumber() != null) {
                         existing.setNumber(request.getNumber());
                     }
-                    // Disassociate the car if requested; must update via Car (the owning side)
-                    if (Boolean.TRUE.equals(request.getClearCar()) && existing.getCar() != null) {
-                        Car car = existing.getCar();
-                        car.setParkingSpace(null);
-                        carService.save(car);
-                        existing.setCar(null); // keep in-memory state consistent for the response
-                    }
+                    // Note: clearing/setting car is not supported here after refactor
                     return ResponseEntity.ok(ParkingSpaceMapper.toResponse(service.save(existing)));
                 })
                 .orElse(ResponseEntity.notFound().build());

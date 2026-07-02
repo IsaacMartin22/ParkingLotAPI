@@ -8,12 +8,17 @@ public class ParkingSpaceMapper {
         if (space == null) {
             return null;
         }
+        boolean occupied = space.getLicensePlate() != null;
         return new ParkingSpaceResponse(
             space.getId(),
             space.getNumber(),
-            space.getCar() != null,
+            occupied,
             space.getSection() != null ? space.getSection().getId() : null,
-            space.getCar() != null ? space.getCar().getId() : null
+            space.getColor(),
+            space.getMake(),
+            space.getModel(),
+            space.getManufacturingYear() == null ? 0 : space.getManufacturingYear(),
+            space.getLicensePlate()
         );
     }
 }

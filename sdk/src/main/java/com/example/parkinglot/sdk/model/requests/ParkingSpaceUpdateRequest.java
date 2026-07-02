@@ -1,4 +1,4 @@
-package com.example.apiservice.pojo;
+package com.example.parkinglot.sdk.model.requests;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,6 +7,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ParkingSpaceUpdateRequest {
     private String number;
-    private Boolean clearCar;
 }
 

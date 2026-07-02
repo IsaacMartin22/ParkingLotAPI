@@ -10,7 +10,7 @@
 
     <name>Parking Lot API SDK</name>
     <description>Java SDK client for the Parking Lot API</description>
-    <url>https://github.com/isaac/ParkingLotAPI</url>
+    <url>https://github.com/isaacmartin22/ParkingLotAPI</url>
 
     <licenses>
         <license>
@@ -22,16 +22,16 @@
 
     <developers>
         <developer>
-            <id>isaac</id>
-            <name>Isaac</name>
-            <url>https://github.com/isaac</url>
+            <id>isaacmartin22</id>
+            <name>Isaac Martin</name>
+            <url>https://github.com/isaacmartin22</url>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/isaac/ParkingLotAPI.git</connection>
-        <developerConnection>scm:git:ssh://github.com/isaac/ParkingLotAPI.git</developerConnection>
-        <url>https://github.com/isaac/ParkingLotAPI/tree/main</url>
+        <connection>scm:git:git://github.com/isaacmartin22/ParkingLotAPI.git</connection>
+        <developerConnection>scm:git:ssh://github.com/isaacmartin22/ParkingLotAPI.git</developerConnection>
+        <url>https://github.com/isaacmartin22/ParkingLotAPI/tree/main</url>
     </scm>
 
 
@@ -60,6 +60,13 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.34</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

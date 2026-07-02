@@ -12,6 +12,10 @@ public class ParkingSpaceResponse {
     private String number;
     private boolean occupied;
     private Long sectionId;
-    private Long carId;
+    private String color;
+    private String make;
+    private String model;
+    private int manufacturingYear;
+    private String licensePlate;
 }
 

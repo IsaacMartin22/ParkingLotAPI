@@ -1,7 +1,6 @@
 package com.example.apiservice.pojo;
 
-public enum CarEventType {
-    ADD,
+public enum ParkingSpaceEventType {
     UPDATE,
     REMOVE
 }

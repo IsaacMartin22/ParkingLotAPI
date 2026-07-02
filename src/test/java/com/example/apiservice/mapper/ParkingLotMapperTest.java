@@ -1,6 +1,5 @@
 package com.example.apiservice.mapper;
 
-import com.example.apiservice.dbentity.Car;
 import com.example.apiservice.dbentity.Floor;
 import com.example.apiservice.dbentity.ParkingLot;
 import com.example.apiservice.dbentity.ParkingLotType;
@@ -95,7 +94,7 @@ class ParkingLotMapperTest {
     private static ParkingSpace space(boolean occupied) {
         ParkingSpace parkingSpace = new ParkingSpace();
         if (occupied) {
-            parkingSpace.setCar(new Car());
+            parkingSpace.setLicensePlate("X");
         }
         return parkingSpace;
     }

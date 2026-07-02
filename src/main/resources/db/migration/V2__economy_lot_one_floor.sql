@@ -18,11 +18,6 @@ economy_extra_parking_spaces AS (
     JOIN economy_extra_sections section
         ON parking_space.section_id = section.id
 )
-DELETE FROM cars car
-WHERE car.parking_space_id IN (
-    SELECT id
-    FROM economy_extra_parking_spaces
-);
 
 WITH economy_extra_floors AS (
     SELECT floor.id

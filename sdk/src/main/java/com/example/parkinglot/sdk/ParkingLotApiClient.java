@@ -1,15 +1,13 @@
 package com.example.parkinglot.sdk;
 
-import com.example.parkinglot.sdk.model.CarCreateRequest;
-import com.example.parkinglot.sdk.model.CarResponse;
-import com.example.parkinglot.sdk.model.CarUpdateRequest;
-import com.example.parkinglot.sdk.model.DiagnosticsResponse;
-import com.example.parkinglot.sdk.model.FloorDetailsResponse;
-import com.example.parkinglot.sdk.model.FloorResponse;
-import com.example.parkinglot.sdk.model.ParkingLotResponse;
-import com.example.parkinglot.sdk.model.ParkingSpaceResponse;
-import com.example.parkinglot.sdk.model.ParkingSpaceUpdateRequest;
-import com.example.parkinglot.sdk.model.SectionResponse;
+// Car endpoints have been removed; related model types are no longer imported
+import com.example.parkinglot.sdk.model.responses.DiagnosticsResponse;
+import com.example.parkinglot.sdk.model.responses.FloorDetailsResponse;
+import com.example.parkinglot.sdk.model.responses.FloorResponse;
+import com.example.parkinglot.sdk.model.responses.ParkingLotResponse;
+import com.example.parkinglot.sdk.model.responses.ParkingSpaceResponse;
+import com.example.parkinglot.sdk.model.requests.ParkingSpaceUpdateRequest;
+import com.example.parkinglot.sdk.model.responses.SectionResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,41 +21,22 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 
 public class ParkingLotApiClient {
+    private static final String DEFAULT_BASE_URL = "https://api-service-i1ms.onrender.com/api";
 
     private final String baseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final Duration requestTimeout;
 
-    public ParkingLotApiClient(String baseUrl) {
-        this(baseUrl, HttpClient.newHttpClient(), defaultObjectMapper(), Duration.ofSeconds(20));
+    public ParkingLotApiClient() {
+        this.baseUrl = DEFAULT_BASE_URL;
+        this.httpClient = HttpClient.newHttpClient();
+        this.objectMapper = defaultObjectMapper();
+        this.requestTimeout = Duration.ofSeconds(30);
     }
 
-    public ParkingLotApiClient(String baseUrl, HttpClient httpClient, ObjectMapper objectMapper, Duration requestTimeout) {
-        this.baseUrl = normalizeBaseUrl(baseUrl);
-        this.httpClient = Objects.requireNonNull(httpClient, "httpClient is required");
-        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper is required");
-        this.requestTimeout = Objects.requireNonNull(requestTimeout, "requestTimeout is required");
-    }
-
-    public List<CarResponse> getCars() {
-        return getList("/api/cars", CarResponse.class);
-    }
-
-    public CarResponse getCar(long id) {
-        return get("/api/cars/" + id, CarResponse.class);
-    }
-
-    public CarResponse createCar(CarCreateRequest request) {
-        return post("/api/cars", request, CarResponse.class);
-    }
-
-    public CarResponse updateCar(long id, CarUpdateRequest request) {
-        return put("/api/cars/" + id, request, CarResponse.class);
-    }
 
     public List<ParkingSpaceResponse> getParkingSpaces() {
         return getList("/api/spaces", ParkingSpaceResponse.class);
@@ -185,14 +164,6 @@ public class ParkingLotApiClient {
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         return mapper;
-    }
-
-    private static String normalizeBaseUrl(String url) {
-        String trimmed = Objects.requireNonNull(url, "baseUrl is required").trim();
-        if (trimmed.endsWith("/")) {
-            return trimmed.substring(0, trimmed.length() - 1);
-        }
-        return trimmed;
     }
 }
 
