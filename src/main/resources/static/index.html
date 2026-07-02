@@ -215,8 +215,9 @@
               <h1>Parking Lot API Documentation</h1>
               <h2>Base URL - Hosted via Render at https://api-service-i1ms.onrender.com/</h2>
               <p class="intro">
-                The Parking Lot API helps you manage parking lots, floors, sections, parking spaces, and cars
-                from a single service. It also includes diagnostics and event-streaming endpoints to support
+                The Parking Lot API helps you manage parking lots, floors, sections and parking spaces
+                from a single service. It also includes diagnostics, a lightweight health ping, and
+                event-streaming endpoints to support
                 operations dashboards and real-time client updates.
               </p>
               <p class="intro">
@@ -225,7 +226,7 @@
               </p>
               <p class="intro">
                 Lot, floor, and section creation is handled outside the public API. Operational writes are
-                limited to cars, with parking-space updates remaining available for assignments and releases.
+                limited to parking-space updates.
               </p>
               <p class="intro">
                 Enforced capacity limits: parking lots have no count limit, each parking lot can have up to 6 floors,
@@ -237,44 +238,6 @@
                 <span class="method put">PUT</span>
               </div>
             </header>
-
-            <section class="section">
-              <h2>Cars</h2>
-              <p class="section-note">Vehicle records and parking-space assignments. Updates may only change the car's color or license plate.</p>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Method</th>
-                      <th>Endpoint</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/cars</code></td>
-                      <td>Get all cars.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/cars/{id}</code></td>
-                      <td>Get a car by ID.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method post">POST</span></td>
-                      <td><code>/api/cars</code></td>
-                      <td>Create a new car.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method put">PUT</span></td>
-                      <td><code>/api/cars/{id}</code></td>
-                      <td>Update an existing car's color or license plate.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
 
             <section class="section">
               <h2>Floors</h2>
@@ -413,18 +376,24 @@
                   <tbody>
                     <tr>
                       <td><span class="method get">GET</span></td>
+                      <td><code>/api/health</code></td>
+                      <td>Lightweight health ping for quick liveness checks; returns simple status payload.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="method get">GET</span></td>
                       <td><code>/api/diagnostics</code></td>
                       <td>Get service diagnostics and runtime details.</td>
                     </tr>
                     <tr>
                       <td><span class="method get">GET</span></td>
                       <td><code>/api/lots/{lotId}/floors/{floorId}/events</code></td>
-                      <td>Subscribe to floor car events as a server-sent event stream.</td>
+                      <td>Subscribe to floor events as a server-sent event stream.</td>
                     </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
+                    <tr>
+                      <td><span class="method get">GET</span></td>
+                      <td><code>/api/lots/{lotId}/floors/{floorId}/events</code></td>
+                      <td>Subscribe to floor occupancy events as a server-sent event stream.</td>
+                    </tr>
 
             <section class="section">
               <h2>Sample JSON Request Bodies</h2>
@@ -435,28 +404,12 @@
               <div class="samples">
                 <article class="sample-card">
                   <div class="sample-head">
-                    <span class="method post">POST</span>
-                    <p class="sample-endpoint"><code>/api/cars</code></p>
+                    <span class="method get">GET</span>
+                    <p class="sample-endpoint"><code>/api/health</code></p>
                   </div>
                   <pre><code>{
-          "color": "Blue",
-          "make": "Toyota",
-          "model": "Corolla",
-          "manufacturingYear": 2022,
-          "licensePlate": "ABC-1234",
-          "parkingSpaceId": 10
-        }</code></pre>
-                </article>
-
-                <article class="sample-card">
-                  <div class="sample-head">
-                    <span class="method put">PUT</span>
-                    <p class="sample-endpoint"><code>/api/cars/{id}</code></p>
-                  </div>
-                  <pre><code>{
-          "color": "Red",
-          "licensePlate": "XYZ-9876"
-        }</code></pre>
+  "status": "UP"
+}</code></pre>
                 </article>
 
                 <article class="sample-card">
@@ -465,9 +418,9 @@
                     <p class="sample-endpoint"><code>/api/spaces/{id}</code></p>
                   </div>
                   <pre><code>{
-          "number": "A-21",
-          "clearCar": true
-        }</code></pre>
+  "number": "A-21",
+  "clearCar": true
+}</code></pre>
                 </article>
               </div>
             </section>
