@@ -152,6 +152,10 @@
               background: var(--put);
             }
 
+            .method.delete {
+              background: #dc2626;
+            }
+
             .samples {
               display: grid;
               grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -236,6 +240,7 @@
                 <span class="method get">GET</span>
                 <span class="method post">POST</span>
                 <span class="method put">PUT</span>
+                <span class="method delete">DELETE</span>
               </div>
             </header>
 
@@ -351,13 +356,18 @@
                       <td><code>/api/spaces/{id}</code></td>
                       <td>Get a parking space by ID.</td>
                     </tr>
-                    <tr>
-                      <td><span class="method put">PUT</span></td>
-                      <td><code>/api/spaces/{id}</code></td>
-                      <td>Update an existing parking space.</td>
-                    </tr>
-                  </tbody>
-                </table>
+                     <tr>
+                       <td><span class="method put">PUT</span></td>
+                       <td><code>/api/spaces/{id}</code></td>
+                       <td>Update an existing parking space.</td>
+                     </tr>
+                     <tr>
+                       <td><span class="method delete">DELETE</span></td>
+                       <td><code>/api/spaces/{id}</code></td>
+                       <td>Remove a car from a parking space.</td>
+                     </tr>
+                   </tbody>
+                 </table>
               </div>
             </section>
 
@@ -376,24 +386,28 @@
                   <tbody>
                     <tr>
                       <td><span class="method get">GET</span></td>
-                      <td><code>/api/health</code></td>
-                      <td>Lightweight health ping for quick liveness checks; returns simple status payload.</td>
+                      <td><code>/api/diagnostics/ping</code></td>
+                      <td>Lightweight health ping for quick liveness checks.</td>
                     </tr>
                     <tr>
                       <td><span class="method get">GET</span></td>
-                      <td><code>/api/diagnostics</code></td>
-                      <td>Get service diagnostics and runtime details.</td>
+                      <td><code>/api/diagnostics/api</code></td>
+                      <td>Get API diagnostics and runtime details.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="method get">GET</span></td>
+                      <td><code>/api/diagnostics/database</code></td>
+                      <td>Get database diagnostics and connection details.</td>
                     </tr>
                     <tr>
                       <td><span class="method get">GET</span></td>
                       <td><code>/api/lots/{lotId}/floors/{floorId}/events</code></td>
-                      <td>Subscribe to floor events as a server-sent event stream.</td>
+                      <td>Subscribe to real-time floor events as a server-sent event stream. Events include ADD, UPDATE, and REMOVE operations.</td>
                     </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/lots/{lotId}/floors/{floorId}/events</code></td>
-                      <td>Subscribe to floor occupancy events as a server-sent event stream.</td>
-                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
 
             <section class="section">
               <h2>Sample JSON Request Bodies</h2>
@@ -404,23 +418,22 @@
               <div class="samples">
                 <article class="sample-card">
                   <div class="sample-head">
-                    <span class="method get">GET</span>
-                    <p class="sample-endpoint"><code>/api/health</code></p>
-                  </div>
-                  <pre><code>{
-  "status": "UP"
-}</code></pre>
-                </article>
-
-                <article class="sample-card">
-                  <div class="sample-head">
                     <span class="method put">PUT</span>
                     <p class="sample-endpoint"><code>/api/spaces/{id}</code></p>
                   </div>
                   <pre><code>{
   "number": "A-21",
-  "clearCar": true
+  "clearCar": false
 }</code></pre>
+                </article>
+
+                <article class="sample-card">
+                  <div class="sample-head">
+                    <span class="method delete">DELETE</span>
+                    <p class="sample-endpoint"><code>/api/spaces/{id}</code></p>
+                  </div>
+                  <pre><code>// No request body required
+// Removes the car from the parking space</code></pre>
                 </article>
               </div>
             </section>
