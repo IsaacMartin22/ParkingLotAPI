@@ -16,15 +16,21 @@ steps:
     depends_on: "optional-common-release"
     if: build.branch == "main"
     secrets:
+      - "GITHUB_TOKEN"
       - "MAVEN_CENTRAL_USERNAME"
       - "MAVEN_CENTRAL_TOKEN"
+      - "GPG_PRIVATE_KEY"
+      - "GPG_PASSPHRASE"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
           mount-buildkite-agent: true
           environment:
+            - GITHUB_TOKEN
             - MAVEN_CENTRAL_USERNAME
             - MAVEN_CENTRAL_TOKEN
+            - GPG_PRIVATE_KEY
+            - GPG_PASSPHRASE
     command:
       - "chmod +x ./mvnw"
       - "bash .buildkite/scripts/publish-common.sh"
