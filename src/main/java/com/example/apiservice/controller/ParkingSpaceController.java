@@ -64,7 +64,14 @@ public class ParkingSpaceController {
                         log.error("Trying to remove a car from an empty parking space with id={}", id);
                         return ResponseEntity.status(409).body(ParkingSpaceMapper.toResponse(existing));
                     }
-                    return ResponseEntity.ok(ParkingSpaceMapper.toResponse(service.removeCar(existing)));
+                    else {
+                        existing.setColor(null);
+                        existing.setMake(null);
+                        existing.setModel(null);
+                        existing.setManufacturingYear(null);
+                        existing.setLicensePlate(null);
+                        return ResponseEntity.ok(ParkingSpaceMapper.toResponse(service.removeCar(existing)));
+                    }
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
