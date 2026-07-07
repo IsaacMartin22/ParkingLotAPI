@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="parking-lot-api-sdk" />
         <module name="api-service" />
+        <module name="parking-lot-common" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -19,6 +20,8 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-service" options="-parameters" />
       <module name="api-service (1)" options="-parameters" />
+      <module name="parking-lot-api-sdk" options="-parameters" />
+      <module name="parking-lot-common" options="-parameters" />
     </option>
   </component>
 </project>

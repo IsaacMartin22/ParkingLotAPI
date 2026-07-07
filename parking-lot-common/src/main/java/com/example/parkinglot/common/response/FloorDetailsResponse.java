@@ -1,0 +1,19 @@
+package com.example.parkinglot.common.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class FloorDetailsResponse {
+    private Long id;
+    private String name;
+    private Long parkingLotId;
+    private List<SectionDetailsResponse> sections;
+}
+
+

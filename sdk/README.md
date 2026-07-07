@@ -4,11 +4,10 @@ This module provides a lightweight Java client for the Parking Lot API so other 
 
 ## What is included
 
-- `ParkingLotApiClient` with endpoint methods for cars, spaces, floors, sections, lots, floor details, and diagnostics.
+- `ParkingLotApiClient` with endpoint methods for spaces, floors, sections, lots, floor details, and diagnostics.
 - Request DTOs for write operations:
   - `ParkingSpaceUpdateRequest`
 - Response DTOs matching API payloads.
-- A tiny runner example in `com.example.parkinglot.sdk.example.SdkQuickstart`.
  
 ## Coordinates
 
@@ -16,7 +15,7 @@ This module provides a lightweight Java client for the Parking Lot API so other 
 
 `artifactId`: `parking-lot-api-sdk`
 
-`version`: `0.0.1-SNAPSHOT` (development)
+`version`: `0.0.7` (As of 7/7/2026 - see https://central.sonatype.com/artifact/io.github.isaacmartin22/parking-lot-api-sdk for latest version)
 
 ## GitHub Packages (no local install required)
 
@@ -24,10 +23,7 @@ This repo is configured with a publish workflow at `.github/workflows/publish-sd
 
 ### Publish the SDK package
 
-Use one of these options:
-
-1. Run the workflow manually from GitHub Actions: `Publish SDK to GitHub Packages` and enter a version (example: `0.1.0`).
-2. Push a tag matching `sdk-v*` (example: `sdk-v0.1.0`). The `sdk-v` prefix is stripped and `0.1.0` is published.
+Unblock the "Publish SDK" step in the buildkite pipeline in the repository
 
 The workflow deploys the `sdk` module to:
 
@@ -51,7 +47,7 @@ In the consuming project's `pom.xml`, add the GitHub Packages repository and dep
     <dependency>
         <groupId>io.github.isaacmartin22</groupId>
         <artifactId>parking-lot-api-sdk</artifactId>
-        <version>0.1.0</version>
+        <version>0.0.7</version>
     </dependency>
 </dependencies>
 ```
@@ -100,7 +96,8 @@ ParkingLotApiClient client = new ParkingLotApiClient("https://api-service-i1ms.o
   - `getParkingLot(long id)`
   - `getFloorDetailsForLot(long lotId, long floorId)`
 - Diagnostics
-  - `getDiagnostics()`
+  - `getAPIDiagnostics()`
+  - `getDatabaseDiagnostics()`
 
 ## Error handling
 

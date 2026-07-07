@@ -12,7 +12,7 @@ Uses Maven multi-module build.
 ## Java SDK
 
 A standalone SDK module is available in `sdk/` with an API client and request/response DTOs for easier integration from other Java projects. See `sdk/README.md` for usage.
-GitHub Packages publishing/consuming steps are also documented in `sdk/README.md`.
+Maven publishing/consuming steps are also documented in `sdk/README.md`.
 
 ### Buildkite optional SDK release
 

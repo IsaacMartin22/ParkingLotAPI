@@ -1,8 +1,8 @@
 package com.example.parkinglot.sdk;
 
 // Car endpoints have been removed; related model types are no longer imported
-import com.example.parkinglot.sdk.model.responses.*;
-import com.example.parkinglot.sdk.model.requests.ParkingSpaceUpdateRequest;
+import com.example.parkinglot.common.request.ParkingSpaceUpdateRequest;
+import com.example.parkinglot.common.response.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,20 +33,20 @@ public class ParkingLotApiClient {
     }
 
 
-    public List<ParkingSpaceDetailsResponse> getParkingSpaces() {
-        return getList("/api/spaces", ParkingSpaceDetailsResponse.class);
+    public List<ParkingSpaceResponse> getParkingSpaces() {
+        return getList("/api/spaces", ParkingSpaceResponse.class);
     }
 
-    public ParkingSpaceDetailsResponse getParkingSpace(long id) {
-        return get("/api/spaces/" + id, ParkingSpaceDetailsResponse.class);
+    public ParkingSpaceResponse getParkingSpace(long id) {
+        return get("/api/spaces/" + id, ParkingSpaceResponse.class);
     }
 
-    public ParkingSpaceDetailsResponse updateParkingSpace(long id, ParkingSpaceUpdateRequest request) {
-        return put("/api/spaces/" + id, request, ParkingSpaceDetailsResponse.class);
+    public ParkingSpaceResponse updateParkingSpace(long id, ParkingSpaceUpdateRequest request) {
+        return put("/api/spaces/" + id, request, ParkingSpaceResponse.class);
     }
 
-    public ParkingSpaceDetailsResponse removeCar(long id) {
-        return delete("/api/spaces/" + id, ParkingSpaceDetailsResponse.class);
+    public ParkingSpaceResponse removeCar(long id) {
+        return delete("/api/spaces/" + id, ParkingSpaceResponse.class);
     }
 
     public List<FloorResponse> getFloors() {
@@ -77,12 +77,12 @@ public class ParkingLotApiClient {
         return get("/api/lots/" + lotId + "/floors/" + floorId + "/details", FloorDetailsResponse.class);
     }
 
-    public DiagnosticsResponse getAPIDiagnostics() {
-        return get("/api/diagnostics/api", DiagnosticsResponse.class);
+    public ApiDiagnosticsResponse getAPIDiagnostics() {
+        return get("/api/diagnostics/api", ApiDiagnosticsResponse.class);
     }
 
-    public DiagnosticsResponse getDatabaseDiagnostics() {
-        return get("/api/diagnostics/database", DiagnosticsResponse.class);
+    public DatabaseDiagnosticsResponse getDatabaseDiagnostics() {
+        return get("/api/diagnostics/database", DatabaseDiagnosticsResponse.class);
     }
 
     private <T> T get(String path, Class<T> responseType) {

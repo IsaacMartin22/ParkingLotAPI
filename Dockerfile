@@ -14,7 +14,7 @@ COPY sdk/pom.xml sdk/pom.xml
 RUN chmod +x ./mvnw
 RUN ./mvnw -B -ntp dependency:go-offline
 
-COPY src src
+COPY api-service/src src
 
 RUN ./mvnw -B -ntp -pl api-service -am clean package -DskipTests
 
