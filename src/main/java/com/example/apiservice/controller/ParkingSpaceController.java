@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -44,6 +43,13 @@ public class ParkingSpaceController {
                     if (existing.getLicensePlate() != null) {
                         log.error("Parking space must be empty before adding a new car to it. Space ID: {}, License Plate: {}", existing.getId(), existing.getLicensePlate());
                         return ResponseEntity.status(409).body(ParkingSpaceMapper.toResponse(existing));
+                    }
+                    else {
+                        existing.setColor(request.getColor());
+                        existing.setMake(request.getMake());
+                        existing.setModel(request.getModel());
+                        existing.setManufacturingYear(request.getManufacturingYear());
+                        existing.setLicensePlate(request.getLicensePlate());
                     }
                     return ResponseEntity.ok(ParkingSpaceMapper.toResponse(service.save(existing)));
                 })

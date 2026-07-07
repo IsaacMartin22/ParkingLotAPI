@@ -6,7 +6,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class ParkingSpaceUpdateRequest {
-    private String number;
-    private Boolean clearCar;
+    private String color;
+    private String make;
+    private String model;
+    private Integer manufacturingYear;
+    private String licensePlate;
 }
 

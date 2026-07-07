@@ -1,13 +1,8 @@
 package com.example.parkinglot.sdk;
 
 // Car endpoints have been removed; related model types are no longer imported
-import com.example.parkinglot.sdk.model.responses.DiagnosticsResponse;
-import com.example.parkinglot.sdk.model.responses.FloorDetailsResponse;
-import com.example.parkinglot.sdk.model.responses.FloorResponse;
-import com.example.parkinglot.sdk.model.responses.ParkingLotResponse;
-import com.example.parkinglot.sdk.model.responses.ParkingSpaceResponse;
+import com.example.parkinglot.sdk.model.responses.*;
 import com.example.parkinglot.sdk.model.requests.ParkingSpaceUpdateRequest;
-import com.example.parkinglot.sdk.model.responses.SectionResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,20 +33,20 @@ public class ParkingLotApiClient {
     }
 
 
-    public List<ParkingSpaceResponse> getParkingSpaces() {
-        return getList("/api/spaces", ParkingSpaceResponse.class);
+    public List<ParkingSpaceDetailsResponse> getParkingSpaces() {
+        return getList("/api/spaces", ParkingSpaceDetailsResponse.class);
     }
 
-    public ParkingSpaceResponse getParkingSpace(long id) {
-        return get("/api/spaces/" + id, ParkingSpaceResponse.class);
+    public ParkingSpaceDetailsResponse getParkingSpace(long id) {
+        return get("/api/spaces/" + id, ParkingSpaceDetailsResponse.class);
     }
 
-    public ParkingSpaceResponse updateParkingSpace(long id, ParkingSpaceUpdateRequest request) {
-        return put("/api/spaces/" + id, request, ParkingSpaceResponse.class);
+    public ParkingSpaceDetailsResponse updateParkingSpace(long id, ParkingSpaceUpdateRequest request) {
+        return put("/api/spaces/" + id, request, ParkingSpaceDetailsResponse.class);
     }
 
-    public ParkingSpaceResponse removeCar(long id) {
-        return delete("/api/spaces/" + id, ParkingSpaceResponse.class);
+    public ParkingSpaceDetailsResponse removeCar(long id) {
+        return delete("/api/spaces/" + id, ParkingSpaceDetailsResponse.class);
     }
 
     public List<FloorResponse> getFloors() {

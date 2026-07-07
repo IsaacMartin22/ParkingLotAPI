@@ -16,7 +16,6 @@ public interface ParkingLotRepository extends JpaRepository<ParkingLot, Long> {
             "floors",
             "floors.sections",
             "floors.sections.parkingSpaces",
-            "floors.sections.parkingSpaces.car"
     })
     List<ParkingLot> findAll();
 
@@ -25,7 +24,6 @@ public interface ParkingLotRepository extends JpaRepository<ParkingLot, Long> {
             "floors",
             "floors.sections",
             "floors.sections.parkingSpaces",
-            "floors.sections.parkingSpaces.car"
     })
     Optional<ParkingLot> findById(Long id);
 }

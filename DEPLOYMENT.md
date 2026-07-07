@@ -41,8 +41,6 @@ Look for "IPv4 Address" for your local network IP (typically 192.168.x.x or 10.x
 Replace `YOUR_IP` with your actual IP address:
 
 - **Base URL:** `http://YOUR_IP:8080`
-- **List all cars:** `http://YOUR_IP:8080/api/cars`
-- **Get car by ID:** `http://YOUR_IP:8080/api/cars/1`
 - **List all parking spaces:** `http://YOUR_IP:8080/api/spaces`
 - **List all parking lots:** `http://YOUR_IP:8080/api/lots`
 - **Database:** PostgreSQL (configure via the datasource environment variables)
@@ -60,17 +58,10 @@ $body = @{
     parked = $false
 } | ConvertTo-Json
 
-Invoke-WebRequest -Uri "http://YOUR_IP:8080/api/cars" `
+Invoke-WebRequest -Uri "http://YOUR_IP:8080/api/spaces" `
   -Method POST `
   -ContentType "application/json" `
   -Body $body
-```
-
-Or with curl:
-```bash
-curl -X POST http://YOUR_IP:8080/api/cars \
-  -H "Content-Type: application/json" \
-  -d '{"make":"Tesla","model":"Model 3","year":2024,"licensePlate":"TESLA-01","parked":false}'
 ```
 
 ## Configuration
@@ -142,4 +133,4 @@ For production, consider:
 - Verify your IP address with `ipconfig`
 - Check Windows Firewall settings
 - Ensure the API service machine and client are on the same network
-- Test locally first: `http://localhost:8080/api/cars`
+- Test locally first: `http://localhost:8080/api/spaces`

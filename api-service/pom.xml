@@ -9,7 +9,7 @@
     <packaging>jar</packaging>
 
     <name>API Service</name>
-    <description>Simple API service with Car, ParkingSpace and ParkingLot entities</description>
+    <description>Simple API service with ParkingSpace, Section, Floor, and ParkingLot entities</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
