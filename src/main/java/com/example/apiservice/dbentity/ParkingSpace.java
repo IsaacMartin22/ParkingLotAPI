@@ -25,6 +25,7 @@ public class ParkingSpace {
     private String model;
     @Column(name = "manufacturing_year")
     private Integer manufacturingYear;
+    @Column(name = "license_plate")
     private String licensePlate;
 
     public ParkingSpace() {

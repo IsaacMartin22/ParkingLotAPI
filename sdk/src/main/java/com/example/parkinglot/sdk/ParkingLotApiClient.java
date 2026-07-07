@@ -50,6 +50,10 @@ public class ParkingLotApiClient {
         return put("/api/spaces/" + id, request, ParkingSpaceResponse.class);
     }
 
+    public ParkingSpaceResponse removeCar(long id) {
+        return delete("/api/spaces/" + id, ParkingSpaceResponse.class);
+    }
+
     public List<FloorResponse> getFloors() {
         return getList("/api/floors", FloorResponse.class);
     }
@@ -78,8 +82,12 @@ public class ParkingLotApiClient {
         return get("/api/lots/" + lotId + "/floors/" + floorId + "/details", FloorDetailsResponse.class);
     }
 
-    public DiagnosticsResponse getDiagnostics() {
-        return get("/api/diagnostics", DiagnosticsResponse.class);
+    public DiagnosticsResponse getAPIDiagnostics() {
+        return get("/api/diagnostics/api", DiagnosticsResponse.class);
+    }
+
+    public DiagnosticsResponse getDatabaseDiagnostics() {
+        return get("/api/diagnostics/database", DiagnosticsResponse.class);
     }
 
     private <T> T get(String path, Class<T> responseType) {
@@ -100,16 +108,16 @@ public class ParkingLotApiClient {
         }
     }
 
-    private <B, T> T post(String path, B body, Class<T> responseType) {
+    private <B, T> T put(String path, B body, Class<T> responseType) {
         HttpRequest request = requestBuilder(path)
-                .POST(HttpRequest.BodyPublishers.ofString(serialize(body)))
+                .PUT(HttpRequest.BodyPublishers.ofString(serialize(body)))
                 .build();
         return send(request, responseType);
     }
 
-    private <B, T> T put(String path, B body, Class<T> responseType) {
+    private <B, T> T delete(String path, Class<T> responseType) {
         HttpRequest request = requestBuilder(path)
-                .PUT(HttpRequest.BodyPublishers.ofString(serialize(body)))
+                .method("DELETE", HttpRequest.BodyPublishers.noBody())
                 .build();
         return send(request, responseType);
     }
