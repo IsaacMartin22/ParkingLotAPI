@@ -14,7 +14,6 @@ public interface FloorRepository extends JpaRepository<Floor, Long> {
             "parkingLot",
             "sections",
             "sections.parkingSpaces",
-            "sections.parkingSpaces.car"
     })
     Optional<Floor> findWithSectionsAndParkingSpacesById(Long id);
 
