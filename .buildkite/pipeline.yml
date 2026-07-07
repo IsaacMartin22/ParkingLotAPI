@@ -17,10 +17,8 @@ steps:
     fields:
       - select: "SDK release type"
         key: "sdk_release_type"
-        default: "none"
+        default: "patch"
         options:
-          - label: "No release"
-            value: "none"
           - label: "Patch"
             value: "patch"
           - label: "Minor"
