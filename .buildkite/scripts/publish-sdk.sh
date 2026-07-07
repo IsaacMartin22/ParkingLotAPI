@@ -7,7 +7,6 @@
 #   MAVEN_CENTRAL_TOKEN     – Central Portal token password
 #   GPG_PRIVATE_KEY         – ASCII-armored GPG private key (export with:
 #                             gpg --armor --export-secret-keys KEY_ID | base64)
-#   GPG_PASSPHRASE          – Passphrase for the GPG key
 
 set -euo pipefail
 
@@ -22,7 +21,7 @@ if [[ -z "${RELEASE_TYPE}" || "${RELEASE_TYPE}" == "none" ]]; then
   exit 0
 fi
 
-for required_var in MAVEN_CENTRAL_USERNAME MAVEN_CENTRAL_TOKEN GPG_PRIVATE_KEY GPG_PASSPHRASE; do
+for required_var in MAVEN_CENTRAL_USERNAME MAVEN_CENTRAL_TOKEN GPG_PRIVATE_KEY; do
   if [[ -z "${!required_var:-}" ]]; then
     echo "${required_var} is required for Maven Central publish"
     exit 1
@@ -107,6 +106,7 @@ echo "--- :package: Building and publishing SDK to Maven Central"
 ./mvnw -B -ntp \
   -pl sdk \
   -Prelease \
+  -DskipTests \
   -Dgpg.passphrase="${GPG_PASSPHRASE}" \
   deploy
 

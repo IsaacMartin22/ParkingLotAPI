@@ -63,7 +63,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.example</groupId>
+            <groupId>io.github.isaacmartin22</groupId>
             <artifactId>parking-lot-common</artifactId>
             <version>0.0.1</version>
         </dependency>

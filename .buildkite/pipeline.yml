@@ -10,33 +10,28 @@ steps:
       - "./mvnw -B -ntp test"
 
   - block: ":rocket: Optional Common Release"
+    key: "optional-common-release"
   - label: ":package: Publish parking-lot-common to Maven Central"
     key: "publish-common-to-maven-central"
-    depends_on: "create-sdk-release-tag"
+    depends_on: "optional-common-release"
     if: build.branch == "main"
     secrets:
-      - "GITHUB_TOKEN"
       - "MAVEN_CENTRAL_USERNAME"
       - "MAVEN_CENTRAL_TOKEN"
-      - "GPG_PRIVATE_KEY"
-      - "GPG_PASSPHRASE"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
           mount-buildkite-agent: true
           environment:
-            - GITHUB_TOKEN
             - MAVEN_CENTRAL_USERNAME
             - MAVEN_CENTRAL_TOKEN
-            - GPG_PRIVATE_KEY
-            - GPG_PASSPHRASE
     command:
       - "chmod +x ./mvnw"
       - "bash .buildkite/scripts/publish-common.sh"
 
   - block: ":rocket: Optional SDK Release"
     key: "optional-sdk-release"
-    depends_on: "run-unit-tests"
+    depends_on: "publish-common-to-maven-central"
     if: build.branch == "main"
     prompt: "Choose the semantic version bump for the SDK release tag."
     fields:
@@ -69,7 +64,7 @@ steps:
 
   - label: ":package: Publish SDK to Maven Central"
     key: "publish-sdk-to-maven-central"
-    depends_on: "publish-common-to-maven-central"
+    depends_on: "create-sdk-release-tag"
     if: build.branch == "main"
     secrets:
       - "GITHUB_TOKEN"
