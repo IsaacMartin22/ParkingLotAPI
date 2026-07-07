@@ -5,6 +5,7 @@ import com.example.apiservice.dbentity.ParkingLot;
 import com.example.apiservice.dbentity.ParkingSpace;
 import com.example.apiservice.dbentity.Section;
 import com.example.parkinglot.common.response.FloorDetailsResponse;
+import com.example.parkinglot.common.response.ParkingSpaceResponse;
 import com.example.parkinglot.common.response.SectionDetailsResponse;
 import org.junit.jupiter.api.Test;
 
@@ -67,7 +68,7 @@ class FloorDetailsMapperTest {
         assertEquals("Section A", sectionResponse.getName());
         assertEquals(2, sectionResponse.getParkingSpaces().size());
 
-        ParkingSpaceDetailsResponse occupiedSpaceResponse = sectionResponse.getParkingSpaces().stream()
+        ParkingSpaceResponse occupiedSpaceResponse = sectionResponse.getParkingSpaces().stream()
             .filter(space -> space.getId().equals(31L))
             .findFirst()
             .orElseThrow();
@@ -80,7 +81,7 @@ class FloorDetailsMapperTest {
         assertEquals(2023, occupiedSpaceResponse.getManufacturingYear());
         assertEquals("ABC-123", occupiedSpaceResponse.getLicensePlate());
 
-        ParkingSpaceDetailsResponse freeSpaceResponse = sectionResponse.getParkingSpaces().stream()
+        ParkingSpaceResponse freeSpaceResponse = sectionResponse.getParkingSpaces().stream()
             .filter(space -> space.getId().equals(32L))
             .findFirst()
             .orElseThrow();
