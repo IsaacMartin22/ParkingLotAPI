@@ -14,6 +14,8 @@ import java.time.Instant;
  */
 public class DiagnosticsLogAppender extends AppenderBase<ILoggingEvent> {
 
+    private static final String DIAGNOSTICS_INTERCEPTOR_LOGGER = "com.example.apiservice.config.DiagnosticsInterceptor";
+
     private final DiagnosticsLogStore logStore;
 
     public DiagnosticsLogAppender(DiagnosticsLogStore logStore) {
@@ -22,6 +24,10 @@ public class DiagnosticsLogAppender extends AppenderBase<ILoggingEvent> {
 
     @Override
     protected void append(ILoggingEvent event) {
+        if (DIAGNOSTICS_INTERCEPTOR_LOGGER.equals(event.getLoggerName())) {
+            return;
+        }
+
         logStore.add(new LogEntry(
                 Instant.ofEpochMilli(event.getTimeStamp()),
                 event.getLevel().toString(),
