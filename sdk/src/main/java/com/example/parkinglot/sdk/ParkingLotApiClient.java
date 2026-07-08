@@ -34,55 +34,55 @@ public class ParkingLotApiClient {
 
 
     public List<ParkingSpaceResponse> getParkingSpaces() {
-        return getList("/api/spaces", ParkingSpaceResponse.class);
+        return getList("/spaces", ParkingSpaceResponse.class);
     }
 
     public ParkingSpaceResponse getParkingSpace(long id) {
-        return get("/api/spaces/" + id, ParkingSpaceResponse.class);
+        return get("/spaces/" + id, ParkingSpaceResponse.class);
     }
 
     public ParkingSpaceResponse updateParkingSpace(long id, ParkingSpaceUpdateRequest request) {
-        return put("/api/spaces/" + id, request, ParkingSpaceResponse.class);
+        return put("/spaces/" + id, request, ParkingSpaceResponse.class);
     }
 
     public ParkingSpaceResponse removeCar(long id) {
-        return delete("/api/spaces/" + id, ParkingSpaceResponse.class);
+        return delete("/spaces/" + id, ParkingSpaceResponse.class);
     }
 
     public List<FloorResponse> getFloors() {
-        return getList("/api/floors", FloorResponse.class);
+        return getList("/floors", FloorResponse.class);
     }
 
     public FloorResponse getFloor(long id) {
-        return get("/api/floors/" + id, FloorResponse.class);
+        return get("/floors/" + id, FloorResponse.class);
     }
 
     public List<SectionResponse> getSections() {
-        return getList("/api/sections", SectionResponse.class);
+        return getList("/sections", SectionResponse.class);
     }
 
     public SectionResponse getSection(long id) {
-        return get("/api/sections/" + id, SectionResponse.class);
+        return get("/sections/" + id, SectionResponse.class);
     }
 
     public List<ParkingLotResponse> getParkingLots() {
-        return getList("/api/lots", ParkingLotResponse.class);
+        return getList("/lots", ParkingLotResponse.class);
     }
 
     public ParkingLotResponse getParkingLot(long id) {
-        return get("/api/lots/" + id, ParkingLotResponse.class);
+        return get("/lots/" + id, ParkingLotResponse.class);
     }
 
     public FloorDetailsResponse getFloorDetailsForLot(long lotId, long floorId) {
-        return get("/api/lots/" + lotId + "/floors/" + floorId + "/details", FloorDetailsResponse.class);
+        return get("/lots/" + lotId + "/floors/" + floorId + "/details", FloorDetailsResponse.class);
     }
 
     public ApiDiagnosticsResponse getAPIDiagnostics() {
-        return get("/api/diagnostics/api", ApiDiagnosticsResponse.class);
+        return get("/diagnostics/api", ApiDiagnosticsResponse.class);
     }
 
     public DatabaseDiagnosticsResponse getDatabaseDiagnostics() {
-        return get("/api/diagnostics/database", DatabaseDiagnosticsResponse.class);
+        return get("/diagnostics/database", DatabaseDiagnosticsResponse.class);
     }
 
     private <T> T get(String path, Class<T> responseType) {
