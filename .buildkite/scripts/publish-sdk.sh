@@ -76,7 +76,9 @@ fi
 echo "Publishing SDK version ${SDK_VERSION} from tag ${SDK_TAG}"
 
 echo "--- :hammer_and_wrench: Setting SDK module version"
-./mvnw -B -ntp versions:set -DnewVersion="${SDK_VERSION}" -DgenerateBackupPoms=false -DprocessAllModules=true -DprocessParent=true
+# Only mutate sdk/pom.xml. Updating all modules rewrites parking-lot-common to SDK_VERSION,
+# which breaks dependency resolution unless that common version is already published.
+./mvnw -B -ntp -f sdk/pom.xml versions:set -DnewVersion="${SDK_VERSION}" -DgenerateBackupPoms=false
 
 echo "--- :wrench: Writing Maven settings.xml"
 SETTINGS_FILE="${HOME}/.m2/settings.xml"
