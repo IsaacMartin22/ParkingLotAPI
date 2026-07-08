@@ -11,13 +11,6 @@
     <name>API Service</name>
     <description>Simple API service with ParkingSpace, Section, Floor, and ParkingLot entities</description>
 
-    <parent>
-        <groupId>com.example</groupId>
-        <artifactId>parking-lot-parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
-
     <properties>
         <java.version>17</java.version>
     </properties>
