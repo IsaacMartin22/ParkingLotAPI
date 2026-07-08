@@ -9,7 +9,7 @@ steps:
       - "java -version"
       - "./mvnw -B -ntp test"
 
-  - block: ":rocket: Optional Common Release"
+  - input: ":rocket: Optional Common Release"
     key: "optional-common-release"
   - label: ":package: Publish parking-lot-common to Maven Central"
     key: "publish-common-to-maven-central"
@@ -35,9 +35,9 @@ steps:
       - "chmod +x ./mvnw"
       - "bash .buildkite/scripts/publish-common.sh"
 
-  - block: ":rocket: Optional SDK Release"
+  - input: ":rocket: Optional SDK Release"
     key: "optional-sdk-release"
-    depends_on: "publish-common-to-maven-central"
+    depends_on: "run-unit-tests"
     if: build.branch == "main"
     prompt: "Choose the semantic version bump for the SDK release tag."
     fields:
