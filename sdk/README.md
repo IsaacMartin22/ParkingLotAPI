@@ -15,21 +15,11 @@ This module provides a lightweight Java client for the Parking Lot API so other 
 
 `artifactId`: `parking-lot-api-sdk`
 
-`version`: `0.0.7` (As of 7/7/2026 - see https://central.sonatype.com/artifact/io.github.isaacmartin22/parking-lot-api-sdk for latest version)
-
-## GitHub Packages (no local install required)
-
-This repo is configured with a publish workflow at `.github/workflows/publish-sdk.yml`.
+`version`: `0.0.8` (As of 7/7/2026 - see https://central.sonatype.com/artifact/io.github.isaacmartin22/parking-lot-api-sdk for latest version)
 
 ### Publish the SDK package
 
 Unblock the "Publish SDK" step in the buildkite pipeline in the repository
-
-The workflow deploys the `sdk` module to:
-
-`https://maven.pkg.github.com/<OWNER>/<REPO>`
-
-where `<OWNER>/<REPO>` is the repository that ran the workflow.
 
 ### Consume from another Maven project
 
@@ -47,7 +37,7 @@ In the consuming project's `pom.xml`, add the GitHub Packages repository and dep
     <dependency>
         <groupId>io.github.isaacmartin22</groupId>
         <artifactId>parking-lot-api-sdk</artifactId>
-        <version>0.0.7</version>
+        <version>0.0.8</version>
     </dependency>
 </dependencies>
 ```
@@ -65,11 +55,6 @@ Then add credentials in `~/.m2/settings.xml`:
     </servers>
 </settings>
 ```
-
-Use a GitHub token that can read packages from the repository.
-
-- Private repos: token needs `read:packages` and repo access.
-- Public repos: token still needed for Maven authentication in most setups.
 
 ## Quick usage
 

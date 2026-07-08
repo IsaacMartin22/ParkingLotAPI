@@ -10,9 +10,9 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
+    <groupId>io.github.isaacmartin22</groupId>
     <artifactId>parking-lot-parent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <packaging>pom</packaging>
 
     <name>Parking Lot Parent</name>
