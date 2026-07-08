@@ -10,11 +10,13 @@ COPY .mvn .mvn
 COPY pom.xml .
 COPY api-service/pom.xml api-service/pom.xml
 COPY sdk/pom.xml sdk/pom.xml
+COPY parking-lot-common/pom.xml parking-lot-common/pom.xml
 
 RUN chmod +x ./mvnw
 RUN ./mvnw -B -ntp dependency:go-offline
 
-COPY api-service/src src
+COPY parking-lot-common/src parking-lot-common/src
+COPY api-service/src api-service/src
 
 RUN ./mvnw -B -ntp -pl api-service -am clean package -DskipTests
 
