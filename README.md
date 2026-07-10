@@ -3,31 +3,24 @@
 This is a publicly available API. Currently has no authentication or validation on who can access it.
 I may modify some endpoints to add authentication later, but for now it's intended to be completely open to everyone
 
-Uses Maven multi-module build.
+Uses Maven multi-module build. New version publishing should be triggered only via the Buildkite pipeline on the main branch.
+There is the api-service module which is the main application, there is an sdk module which is the sdk for the API service, 
+and lastly a shared common module which contains code used in both the api-service and sdk modules.
 
-- Build all modules: `mvn clean package`
-- Build API service only: `mvn -pl api-service -am clean package`
-- Build SDK only: `mvn -pl sdk -am clean package`
+The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The api service is built 
+via a docker image and hosted 24/7 because it powers my portfolio site on my github pages. It is hosted wherever is cheapest 
+for me which is currently Render's free tier. The hosted url is currently hardcoded into both the SDK and the frontend query so
+if I ever change where it's hosted I will need to update those two places.
+
+API documentation is available at the hosted URL, which should be listed on the github repository page in the upper right corner.
+It lists the endpoints available and payload shapes for those endpoints.
 
 ## Java SDK
 
 A standalone SDK module is available in `sdk/` with an API client and request/response DTOs for easier integration from other Java projects. See `sdk/README.md` for usage.
-Maven publishing/consuming steps are also documented in `sdk/README.md`.
+If a new SDK is to be published use the Buildkite pipeline, make sure the version is correct in pom.xml, and unblock the sdk release step.
 
-### Buildkite optional SDK release
-
-The Buildkite pipeline includes an optional release block at the end on `main`.
-
-- Choose `major`, `minor`, `patch`, or `No release`.
-- If a bump is selected, Buildkite will:
-  - compute the next semantic version from the latest `sdk-v*` tag,
-  - create and push a tag like `sdk-v1.2.3`.
-- Pushing that tag triggers GitHub Actions workflow `.github/workflows/publish-sdk.yml` to publish that SDK version to GitHub Packages.
-- Buildkite must have a writable `GITHUB_TOKEN` environment variable to push tags to GitHub.
-
-## Entity Capacity Limits
-
-The following limits are now enforced when creating or re-parenting entities:
+## Database and Principle of Least Privilege
 
 - Parking lots: no limit
 - Floors per parking lot: max `6`
@@ -35,31 +28,18 @@ The following limits are now enforced when creating or re-parenting entities:
 - Parking spaces per section: max `10`
 
 Validation is enforced in the service layer and at the database layer (Flyway migration `V3__entity_capacity_limits.sql`) to prevent limits from being exceeded.
+All previously existing endpoints to change how many of each of these entities exist per parent entity have been removed. I realized end users
+don't have any use case for changing those things, it would just be giving users too much access. I removed the endpoints that allowed users to modify
+things like floors and sections. If changes are needed the recommended path would be a migration, 3 flyway migrations have already been applied since 
+the database's inception so go off those and add a new migration.
 
-Run stage locally with `mvn -pl api-service spring-boot:run "-Dspring-boot.run.profiles=staging"`\
-Run stage with `java -jar api-service/target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=stage`\
-Run prod with `java -jar api-service/target/api-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod`
+The only time those things would need to be changed is if some sort of construction work was done for the airport and the number of parking spaces 
+increased or decreased. That would be a rare occurrence and only one person would need to change the database so a migration seems appropriate. 
 
-Connect to the PostgreSQL database configured in `.env`, currently using Beekeeper studio \
+## !!! Hard reset the database - Dangerous !!!
+### Dev testing only! Staging environments only!
 
-Diagnostic data available at ``/actuator/prometheus`` \
-
-Host via ``ngrok http --url=cheesy-elaborate-plating.ngrok-free.dev 8082`` \
-
-- If ngrok address ever changes (Currently on free plan) need to update config.alloy address. See below
-- Current Grafana API token shouldn't ever expire, if it does generate a new one on Grafana and update config.alloy
-
-Check Grafana Alloy is running - ``http://localhost:12345/`` \
-Grafana Alloy default location - ```%PROGRAMFILES%\GrafanaLabs\Alloy\config.alloy``` \
-Grafana monitoring URL endpoint = https://api-service-i1ms.onrender.com/actuator/prometheus
-
-Env Variables for real database found in .env
-
-**Deployment**
-The PostgreSQL prod db is hosted on Render, stage db hosted on Aiven
-This API Service is also hosted on Render via Docker image + web service, available at https://api-service-i1ms.onrender.com/
-
-Hard reset flyway SQL database
-DROP TABLE IF EXISTS flyway_schema_history;
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
+Hard reset flyway SQL database \
+``DROP TABLE IF EXISTS flyway_schema_history; `` \
+`` DROP SCHEMA public CASCADE; ``\
+``CREATE SCHEMA public;``
