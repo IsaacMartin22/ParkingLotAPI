@@ -1,0 +1,3 @@
+ALTER TABLE analytics
+ADD COLUMN IF NOT EXISTS event_type VARCHAR(255);
+

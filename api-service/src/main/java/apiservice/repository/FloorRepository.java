@@ -1,0 +1,21 @@
+package apiservice.repository;
+
+import apiservice.dbentity.Floor;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface FloorRepository extends JpaRepository<Floor, Long> {
+
+    @EntityGraph(attributePaths = {
+            "parkingLot",
+            "sections",
+            "sections.parkingSpaces",
+    })
+    Optional<Floor> findWithSectionsAndParkingSpacesById(Long id);
+
+    long countByParkingLot_Id(Long parkingLotId);
+}

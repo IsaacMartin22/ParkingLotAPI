@@ -1,13 +1,13 @@
 package com.example.parkinglot.sdk;
 
 // Car endpoints have been removed; related model types are no longer imported
-import com.example.parkinglot.common.request.ParkingSpaceUpdateRequest;
-import com.example.parkinglot.common.response.*;
+import parkinglot.common.request.ParkingSpaceUpdateRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import parkinglot.common.response.*;
 
 import java.io.IOException;
 import java.net.URI;
