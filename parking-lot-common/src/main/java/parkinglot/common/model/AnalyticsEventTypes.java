@@ -6,4 +6,5 @@ public enum AnalyticsEventTypes {
     PAGE_VIEW,
     CLICK,
     ERROR,
+    CLIENT_SSE_RECEIVED
 }
