@@ -1,19 +1,33 @@
 <configuration>
-    <appender name="STDOUT"
-              class="ch.qos.logback.core.ConsoleAppender">
+    <springProperty scope="context" name="serviceName" source="spring.application.name" defaultValue="parking-lot-api"/>
+    <springProperty scope="context" name="environment" source="app.environment" defaultValue="local"/>
+    <springProperty scope="context" name="sumoHttpSourceUrl" source="sumologic.http-source-url" defaultValue=""/>
 
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>
-                {
-                "service":"parking-api-service",
-                "environment":"dev"
-                }
+                {"service":"${serviceName}","environment":"${environment}"}
             </customFields>
         </encoder>
+    </appender>
 
+    <appender name="SUMO_HTTP" class="apiservice.logging.SumoHttpAppender">
+        <endpointUrl>${sumoHttpSourceUrl}</endpointUrl>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>
+                {"service":"${serviceName}","environment":"${environment}"}
+            </customFields>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_SUMO_HTTP" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>8192</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="SUMO_HTTP"/>
     </appender>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ASYNC_SUMO_HTTP"/>
     </root>
 </configuration>
