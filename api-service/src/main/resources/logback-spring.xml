@@ -1,21 +1,19 @@
 <configuration>
-    <springProperty scope="context" name="serviceName" source="spring.application.name" defaultValue="parking-lot-api"/>
     <springProperty scope="context" name="environment" source="app.environment" defaultValue="local"/>
-    <springProperty scope="context" name="sumoHttpSourceUrl" source="sumologic.http-source-url" defaultValue=""/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>
-                {"service":"${serviceName}","environment":"${environment}"}
+                {"environment":"${environment}"}
             </customFields>
         </encoder>
     </appender>
 
     <appender name="SUMO_HTTP" class="apiservice.logging.SumoHttpAppender">
-        <endpointUrl>${sumoHttpSourceUrl}</endpointUrl>
+        <endpointUrl>${SUMOLOGIC_HTTP_SOURCE_URL}</endpointUrl>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>
-                {"service":"${serviceName}","environment":"${environment}"}
+                {"environment":"${environment}"}
             </customFields>
         </encoder>
     </appender>
