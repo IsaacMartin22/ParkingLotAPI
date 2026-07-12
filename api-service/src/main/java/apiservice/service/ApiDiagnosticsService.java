@@ -1,6 +1,5 @@
 package apiservice.service;
 
-import apiservice.logging.DiagnosticsLogStore;
 import parkinglot.common.model.EndpointDiagnostics;
 import parkinglot.common.response.ApiDiagnosticsResponse;
 import org.springframework.beans.factory.ObjectProvider;
@@ -13,10 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -36,7 +32,6 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
 
     private final Instant startedAt = Instant.now();
     private final ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider;
-    private final DiagnosticsLogStore logStore;
 
     private final AtomicLong totalRequests = new AtomicLong();
     private final AtomicLong successfulRequests = new AtomicLong();
@@ -46,11 +41,9 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
 
     public ApiDiagnosticsService(
             @Qualifier("requestMappingHandlerMapping")
-            ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider,
-            DiagnosticsLogStore logStore
+            ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider
     ) {
         this.requestMappingHandlerMappingProvider = requestMappingHandlerMappingProvider;
-        this.logStore = logStore;
     }
 
     @Override
@@ -113,7 +106,7 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
                 successfulRequests.get(),
                 failedRequests.get(),
                 endpoints,
-                logStore.snapshot()
+                new ArrayList<>()
         );
     }
 

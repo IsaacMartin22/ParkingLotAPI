@@ -4,5 +4,5 @@ target
 .git
 .idea
 *.iml
-.env
+.envvars
 .DS_Store
