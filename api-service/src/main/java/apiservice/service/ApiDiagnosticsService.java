@@ -24,11 +24,10 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
             RequestMethod.GET,
             RequestMethod.POST,
             RequestMethod.PUT,
-            RequestMethod.PATCH,
-            RequestMethod.DELETE,
-            RequestMethod.OPTIONS,
-            RequestMethod.HEAD
+            RequestMethod.DELETE
     );
+
+    private static final String ERROR_ENDPOINT = "/error";
 
     private final Instant startedAt = Instant.now();
     private final ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider;
@@ -66,15 +65,23 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
 
             for (String pattern : patterns) {
                 for (RequestMethod method : methodsToUse) {
-                    endpointMetrics.putIfAbsent(method.name() + " " + pattern, new EndpointMetrics());
+                    if (!pattern.equals(ERROR_ENDPOINT)) {
+                        endpointMetrics.putIfAbsent(method.name() + " " + pattern, new EndpointMetrics());
+                    }
                 }
             }
         }
     }
 
-    public void recordRequest(String endpoint, int statusCode, long durationMillis) {
-        boolean successful = statusCode >= 200 && statusCode < 400;
+    public void recordSuccess(String endpoint, long duration) {
+        recordRequest(endpoint, true, duration);
+    }
 
+    public void recordFailure(String endpoint, long duration) {
+        recordRequest(endpoint, false, duration);
+    }
+
+    private void recordRequest(String endpoint, boolean successful, long durationMillis) {
         totalRequests.incrementAndGet();
 
         if (successful) {
@@ -106,6 +113,7 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
                 successfulRequests.get(),
                 failedRequests.get(),
                 endpoints,
+                // Used to be logs, can be removed. Need to update frontend response object to remove this
                 new ArrayList<>()
         );
     }

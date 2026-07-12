@@ -3,11 +3,14 @@ package apiservice.controller;
 import apiservice.dbentity.Analytics;
 import apiservice.mapper.AnalyticsMapper;
 import apiservice.service.AnalyticsService;
+import apiservice.service.ApiDiagnosticsService;
 import org.springframework.web.bind.annotation.*;
 import parkinglot.common.model.AnalyticsEventTypes;
 import parkinglot.common.request.AnalyticsRequest;
 import parkinglot.common.response.AnalyticsResponse;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
