@@ -24,9 +24,9 @@ public class BuildkiteBuildResponse {
 
     private BuildkitePipeline pipeline;
 
-    private Instant createdAt;
-    private Instant scheduledAt;
+    private String createdAt;
+    private String scheduledAt;
 
-    private Instant startedAt;
-    private Instant finishedAt;
+    private String startedAt;
+    private String finishedAt;
 }
