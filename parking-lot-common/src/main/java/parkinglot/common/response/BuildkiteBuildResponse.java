@@ -2,9 +2,6 @@ package parkinglot.common.response;
 
 import lombok.Data;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-
 @Data
 public class BuildkiteBuildResponse {
 
@@ -14,7 +11,7 @@ public class BuildkiteBuildResponse {
     private String state;
     private Boolean blocked;
 
-    private String cancelReason;
+    private String cancel_reason;
 
     private String message;
     private String commit;
@@ -24,9 +21,9 @@ public class BuildkiteBuildResponse {
 
     private BuildkitePipeline pipeline;
 
-    private String createdAt;
-    private String scheduledAt;
+    private String created_at;
+    private String scheduled_at;
 
-    private String startedAt;
-    private String finishedAt;
+    private String started_at;
+    private String finished_at;
 }
