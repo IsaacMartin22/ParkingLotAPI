@@ -16,7 +16,7 @@
     <packaging>pom</packaging>
 
     <name>Parking Lot Parent</name>
-    <description>Parent reactor for API service and Java SDK modules</description>
+    <description>Parent reactor for API service, common, and Java SDK modules</description>
 
     <modules>
         <module>parking-lot-common</module>
