@@ -1,0 +1,2 @@
+ALTER TABLE analytics
+ADD COLUMN IF NOT EXISTS session_id VARCHAR(255);

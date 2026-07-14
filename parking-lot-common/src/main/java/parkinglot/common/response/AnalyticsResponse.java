@@ -11,6 +11,7 @@ public record AnalyticsResponse(
         String browser,
         String operatingSystem,
         String ipAddress,
+        String sessionId,
         Instant timestamp,
         Map<String, Object> extraFields
 ) {

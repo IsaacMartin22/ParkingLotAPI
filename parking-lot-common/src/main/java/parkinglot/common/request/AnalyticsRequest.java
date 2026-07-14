@@ -1,5 +1,6 @@
 package parkinglot.common.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import parkinglot.common.model.AnalyticsEventTypes;
 
 import java.time.Instant;
@@ -11,6 +12,7 @@ public record AnalyticsRequest (
     String browser,
     String operatingSystem,
     String ipAddress,
+    @JsonProperty("session_id") String sessionId,
     Instant timestamp,
     Map<String, Object> payload
 ) {}

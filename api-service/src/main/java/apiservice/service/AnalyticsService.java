@@ -65,6 +65,7 @@ public class AnalyticsService {
         newAnalytics.setBrowser(analyticRequest.browser());
         newAnalytics.setOperatingSystem(analyticRequest.operatingSystem());
         newAnalytics.setIpAddress(analyticRequest.ipAddress());
+        newAnalytics.setSessionId(analyticRequest.sessionId());
         newAnalytics.setTimestamp(analyticRequest.timestamp());
         newAnalytics.setPayload(analyticRequest.payload());
         return newAnalytics;

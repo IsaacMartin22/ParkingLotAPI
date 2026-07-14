@@ -35,6 +35,9 @@ public class Analytics {
     @Column(name = "ip_address")
     private String ipAddress;
 
+    @Column(name = "session_id")
+    private String sessionId;
+
     private Instant timestamp;
 
     @JdbcTypeCode(SqlTypes.JSON)

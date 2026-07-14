@@ -15,9 +15,9 @@ public class AnalyticsMapper {
             analytics.getBrowser(),
             analytics.getOperatingSystem(),
             analytics.getIpAddress(),
+            analytics.getSessionId(),
             analytics.getTimestamp(),
             analytics.getPayload()
         );
     }
 }
-
