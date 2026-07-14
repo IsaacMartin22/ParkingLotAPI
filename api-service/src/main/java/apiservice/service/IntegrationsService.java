@@ -22,7 +22,7 @@ import java.util.List;
 public class IntegrationsService {
     private final RestTemplate restTemplate;
     private final String buildkiteUrl = "https://api.buildkite.com/v2/builds?branch=main";
-    private final String renderUrl = "https://api.render.com/v1/services/{serviceId}/deploys";
+    private final String renderUrl = "https://api.render.com/v1/services/srv-d8tefhurnols73e9keu0/deploys";
     private final String trelloGetUrl = "https://api.trello.com/1/boards/{id}/lists?key=APIKey&token=APIToken";
     private final String trelloPostUrl = "";
 

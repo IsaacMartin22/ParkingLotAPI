@@ -1,18 +1,25 @@
 package parkinglot.common.response;
 
-import parkinglot.common.model.AnalyticsEventTypes;
-
-import java.time.Instant;
-import java.util.Map;
-
 public record DeploymentResponse(
-        AnalyticsEventTypes eventType,
-        String currentUrl,
-        String browser,
-        String operatingSystem,
-        String ipAddress,
-        String sessionId,
-        Instant timestamp,
-        Map<String, Object> payload
+        Deploy deploy,
+        String cursor
 ) {
+    public record Deploy(
+            String id,
+            Commit commit,
+            String status,
+            String trigger,
+            String startedAt,
+            String finishedAt,
+            String createdAt,
+            String updatedAt
+    ) {
+    }
+
+    public record Commit(
+            String id,
+            String message,
+            String createdAt
+    ) {
+    }
 }
