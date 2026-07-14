@@ -18,6 +18,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.servlet.HandlerMapping;
 
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,8 +53,8 @@ class RequestDiagnosticsInterceptorTest {
             interceptor.preHandle(request, response, new Object());
             interceptor.afterCompletion(request, response, new Object(), null);
 
-            verify(apiDiagnosticsService).recordSuccess("GET /api/analytics", anyLong());
-            verify(metricsService).recordRequest("GET /api/analytics", HttpServletResponse.SC_OK, anyLong());
+            verify(apiDiagnosticsService).recordSuccess(eq("GET /api/analytics"), anyLong());
+            verify(metricsService).recordRequest(eq("GET /api/analytics"), eq(HttpServletResponse.SC_OK), anyLong());
             assertThat(appender.list).anySatisfy(event -> {
                 assertThat(event.getLevel()).isEqualTo(Level.INFO);
                 assertThat(event.getFormattedMessage()).contains("HTTP request completed");
@@ -81,8 +82,8 @@ class RequestDiagnosticsInterceptorTest {
             interceptor.preHandle(request, response, new Object());
             interceptor.afterCompletion(request, response, new Object(), null);
 
-            verify(apiDiagnosticsService).recordFailure("GET /api/lots/{id}", anyLong());
-            verify(metricsService).recordRequest("GET /api/lots/{id}", HttpServletResponse.SC_NOT_FOUND, anyLong());
+            verify(apiDiagnosticsService).recordFailure(eq("GET /api/lots/{id}"), anyLong());
+            verify(metricsService).recordRequest(eq("GET /api/lots/{id}"), eq(HttpServletResponse.SC_NOT_FOUND), anyLong());
             assertThat(appender.list).anySatisfy(event -> {
                 assertThat(event.getLevel()).isEqualTo(Level.INFO);
                 assertThat(event.getFormattedMessage()).contains("HTTP request completed");
