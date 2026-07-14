@@ -9,7 +9,7 @@
         </encoder>
     </appender>
 
-    <appender name="SUMO_HTTP" class="apiservice.logging.SumoHttpAppender">
+    <appender name="SUMO_HTTP" class="apiservice.logging.SumoLogPusher">
         <endpointUrl>${SUMOLOGIC_HTTP_SOURCE_URL}</endpointUrl>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>

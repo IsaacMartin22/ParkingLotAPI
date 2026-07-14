@@ -10,7 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 
-public class SumoHttpAppender extends AppenderBase<ILoggingEvent> {
+public class SumoLogPusher extends AppenderBase<ILoggingEvent> {
 
     private Encoder<ILoggingEvent> encoder;
     private String endpointUrl;
@@ -20,15 +20,12 @@ public class SumoHttpAppender extends AppenderBase<ILoggingEvent> {
     public void setEncoder(Encoder<ILoggingEvent> encoder) {
         this.encoder = encoder;
     }
-
     public void setEndpointUrl(String endpointUrl) {
         this.endpointUrl = endpointUrl;
     }
-
     public void setConnectTimeoutMillis(int connectTimeoutMillis) {
         this.connectTimeoutMillis = connectTimeoutMillis;
     }
-
     public void setReadTimeoutMillis(int readTimeoutMillis) {
         this.readTimeoutMillis = readTimeoutMillis;
     }
@@ -36,7 +33,7 @@ public class SumoHttpAppender extends AppenderBase<ILoggingEvent> {
     @Override
     public void start() {
         if (encoder == null) {
-            addError("No encoder configured for SumoHttpAppender");
+            addError("No encoder configured for SumoLogPusher");
             return;
         }
 

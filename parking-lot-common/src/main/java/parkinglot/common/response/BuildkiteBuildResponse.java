@@ -2,6 +2,7 @@ package parkinglot.common.response;
 
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 
 @Data
@@ -23,9 +24,9 @@ public class BuildkiteBuildResponse {
 
     private BuildkitePipeline pipeline;
 
-    private OffsetDateTime createdAt;
-    private OffsetDateTime scheduledAt;
+    private Instant createdAt;
+    private Instant scheduledAt;
 
-    private OffsetDateTime startedAt;
-    private OffsetDateTime finishedAt;
+    private Instant startedAt;
+    private Instant finishedAt;
 }
