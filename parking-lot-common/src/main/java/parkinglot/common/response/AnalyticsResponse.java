@@ -13,6 +13,6 @@ public record AnalyticsResponse(
         String ipAddress,
         String sessionId,
         Instant timestamp,
-        Map<String, Object> extraFields
+        Map<String, Object> payload
 ) {
 }

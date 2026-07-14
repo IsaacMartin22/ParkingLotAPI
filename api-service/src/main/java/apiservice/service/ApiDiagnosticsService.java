@@ -82,8 +82,11 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
     }
 
     private void recordRequest(String endpoint, boolean successful, long durationMillis) {
-        totalRequests.incrementAndGet();
+        if (endpoint.contains("OPTIONS")) {
+            return;
+        }
 
+        totalRequests.incrementAndGet();
         if (successful) {
             successfulRequests.incrementAndGet();
         } else {
