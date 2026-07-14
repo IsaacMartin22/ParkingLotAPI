@@ -1,7 +1,6 @@
 package apiservice.interceptor;
 
 import apiservice.service.ApiDiagnosticsService;
-import apiservice.service.MetricsService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,14 +27,11 @@ class RequestDiagnosticsInterceptorTest {
     @Mock
     private ApiDiagnosticsService apiDiagnosticsService;
 
-    @Mock
-    private MetricsService metricsService;
-
     private RequestDiagnosticsInterceptor interceptor;
 
     @BeforeEach
     void setUp() {
-        interceptor = new RequestDiagnosticsInterceptor(apiDiagnosticsService, metricsService);
+        interceptor = new RequestDiagnosticsInterceptor(apiDiagnosticsService);
     }
 
     @Test
@@ -54,7 +50,6 @@ class RequestDiagnosticsInterceptorTest {
             interceptor.afterCompletion(request, response, new Object(), null);
 
             verify(apiDiagnosticsService).recordSuccess(eq("GET /api/analytics"), anyLong());
-            verify(metricsService).recordRequest(eq("GET /api/analytics"), eq(HttpServletResponse.SC_OK), anyLong());
             assertThat(appender.list).anySatisfy(event -> {
                 assertThat(event.getLevel()).isEqualTo(Level.INFO);
                 assertThat(event.getFormattedMessage()).contains("HTTP request completed");
@@ -83,7 +78,6 @@ class RequestDiagnosticsInterceptorTest {
             interceptor.afterCompletion(request, response, new Object(), null);
 
             verify(apiDiagnosticsService).recordFailure(eq("GET /api/lots/{id}"), anyLong());
-            verify(metricsService).recordRequest(eq("GET /api/lots/{id}"), eq(HttpServletResponse.SC_NOT_FOUND), anyLong());
             assertThat(appender.list).anySatisfy(event -> {
                 assertThat(event.getLevel()).isEqualTo(Level.INFO);
                 assertThat(event.getFormattedMessage()).contains("HTTP request completed");

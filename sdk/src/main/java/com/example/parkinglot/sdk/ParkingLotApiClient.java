@@ -1,6 +1,5 @@
 package com.example.parkinglot.sdk;
 
-// Car endpoints have been removed; related model types are no longer imported
 import parkinglot.common.request.ParkingSpaceUpdateRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -32,7 +31,6 @@ public class ParkingLotApiClient {
         this.requestTimeout = Duration.ofSeconds(30);
     }
 
-
     public List<ParkingSpaceResponse> getParkingSpaces() {
         return getList("/spaces", ParkingSpaceResponse.class);
     }
@@ -47,42 +45,6 @@ public class ParkingLotApiClient {
 
     public ParkingSpaceResponse removeCar(long id) {
         return delete("/spaces/" + id, ParkingSpaceResponse.class);
-    }
-
-    public List<FloorResponse> getFloors() {
-        return getList("/floors", FloorResponse.class);
-    }
-
-    public FloorResponse getFloor(long id) {
-        return get("/floors/" + id, FloorResponse.class);
-    }
-
-    public List<SectionResponse> getSections() {
-        return getList("/sections", SectionResponse.class);
-    }
-
-    public SectionResponse getSection(long id) {
-        return get("/sections/" + id, SectionResponse.class);
-    }
-
-    public List<ParkingLotResponse> getParkingLots() {
-        return getList("/lots", ParkingLotResponse.class);
-    }
-
-    public ParkingLotResponse getParkingLot(long id) {
-        return get("/lots/" + id, ParkingLotResponse.class);
-    }
-
-    public FloorDetailsResponse getFloorDetailsForLot(long lotId, long floorId) {
-        return get("/lots/" + lotId + "/floors/" + floorId + "/details", FloorDetailsResponse.class);
-    }
-
-    public ApiDiagnosticsResponse getAPIDiagnostics() {
-        return get("/diagnostics/api", ApiDiagnosticsResponse.class);
-    }
-
-    public DatabaseDiagnosticsResponse getDatabaseDiagnostics() {
-        return get("/diagnostics/database", DatabaseDiagnosticsResponse.class);
     }
 
     private <T> T get(String path, Class<T> responseType) {

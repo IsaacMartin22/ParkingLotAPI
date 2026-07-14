@@ -1,7 +1,6 @@
 package apiservice.interceptor;
 
 import apiservice.service.ApiDiagnosticsService;
-import apiservice.service.MetricsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -17,11 +16,9 @@ public class RequestDiagnosticsInterceptor implements HandlerInterceptor {
     private static final String START_TIME_ATTRIBUTE = RequestDiagnosticsInterceptor.class.getName() + ".startTime";
 
     private final ApiDiagnosticsService apiDiagnosticsService;
-    private final MetricsService metricsService;
 
-    public RequestDiagnosticsInterceptor(ApiDiagnosticsService apiDiagnosticsService, MetricsService metricsService) {
+    public RequestDiagnosticsInterceptor(ApiDiagnosticsService apiDiagnosticsService) {
         this.apiDiagnosticsService = apiDiagnosticsService;
-        this.metricsService = metricsService;
     }
 
     @Override
@@ -50,7 +47,6 @@ public class RequestDiagnosticsInterceptor implements HandlerInterceptor {
             apiDiagnosticsService.recordFailure(endpoint, durationMillis);
         }
 
-        metricsService.recordRequest(endpoint, status, durationMillis);
         log.info(
                 "HTTP request completed method={} path={} uri={} status={} durationMs={} success={}",
                 request.getMethod(),

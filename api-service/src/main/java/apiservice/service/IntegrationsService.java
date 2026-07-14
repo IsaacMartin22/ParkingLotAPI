@@ -10,10 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
-import parkinglot.common.request.TrelloFeatureRequest;
 import parkinglot.common.response.BuildkiteBuildResponse;
 import parkinglot.common.response.DeploymentResponse;
-import parkinglot.common.response.TrelloResponse;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,27 +21,18 @@ public class IntegrationsService {
     private final RestTemplate restTemplate;
     private final String buildkiteUrl = "https://api.buildkite.com/v2/builds?branch=main";
     private final String renderUrl = "https://api.render.com/v1/services/srv-d8tefhurnols73e9keu0/deploys";
-    private final String trelloGetUrl = "https://api.trello.com/1/boards/{id}/lists?key=APIKey&token=APIToken";
-    private final String trelloPostUrl = "";
 
     private final String buildkiteToken;
     private final String renderToken;
-    private final String trelloToken;
 
     public IntegrationsService(
             RestTemplateBuilder restTemplateBuilder,
             @Value("${BUILDKITE_API_KEY:}") String buildkiteToken,
-            @Value("${RENDER_API_KEY:}") String renderToken,
-            @Value("${TRELLO_API_KEY:}") String trelloToken
+            @Value("${RENDER_API_KEY:}") String renderToken
     ) {
         this.restTemplate = restTemplateBuilder.build();
         this.buildkiteToken = buildkiteToken;
         this.renderToken = renderToken;
-        this.trelloToken = trelloToken;
-    }
-
-    public List<TrelloResponse> getTrelloBoard() {
-        return sendGetList(trelloGetUrl, trelloToken, TrelloResponse[].class);
     }
 
     public List<BuildkiteBuildResponse> getBuildkiteInfo() {
@@ -52,22 +41,6 @@ public class IntegrationsService {
 
     public List<DeploymentResponse> getDeployInfo() {
         return sendGetList(renderUrl, renderToken, DeploymentResponse[].class);
-    }
-
-    public TrelloResponse postTrelloFeatureRequest(TrelloFeatureRequest trelloFeatureRequest) {
-        validateConfig(trelloPostUrl, trelloToken);
-
-        HttpEntity<TrelloFeatureRequest> request = new HttpEntity<>(
-                trelloFeatureRequest,
-                createBearerHeaders(trelloToken)
-        );
-        ResponseEntity<TrelloResponse> response = restTemplate.exchange(
-                trelloPostUrl,
-                HttpMethod.POST,
-                request,
-                TrelloResponse.class
-        );
-        return response.getBody();
     }
 
     private <T> List<T> sendGetList(String url, String token, Class<T[]> responseArrayType) {
