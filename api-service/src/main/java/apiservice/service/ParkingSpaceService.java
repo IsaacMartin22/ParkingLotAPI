@@ -45,7 +45,6 @@ public class ParkingSpaceService {
         if (space.getId() != null) {
             existingSpace = repo.findById(space.getId()).orElse(null);
         }
-        boolean wasOccupied = existingSpace != null && existingSpace.getLicensePlate() != null;
 
         validateSectionCapacity(space, existingSpace);
 
@@ -70,10 +69,7 @@ public class ParkingSpaceService {
                     fullSpace.getManufacturingYear() == null ? 0 : fullSpace.getManufacturingYear(),
                     fullSpace.getLicensePlate()
             );
-            boolean isNowOccupied = fullSpace.getLicensePlate() != null;
-            ParkingSpaceEventType eventType = !wasOccupied && isNowOccupied
-                    ? ParkingSpaceEventType.ADD
-                    : ParkingSpaceEventType.UPDATE;
+            ParkingSpaceEventType eventType = ParkingSpaceEventType.UPDATE;
             ParkingSpaceEvent event = new ParkingSpaceEvent(
                     eventType,
                     ctx.lotId(),
