@@ -37,8 +37,12 @@ public class AnalyticsService {
     }
 
     public List<Analytics> getAnalyticsPage(int page, String sort) {
+        if (page < 1 || page > 1_000_000) {
+            throw new IllegalArgumentException("Page must be between 1 and 1_000_000");
+        }
+
         SortSpec sortSpec = parseSort(sort);
-        List<Analytics> analytics = analyticsRepository.getAll(page * 1000, 1000, sortSpec.field(), sortSpec.direction());
+        List<Analytics> analytics = analyticsRepository.getAll((page - 1) * 1000, 1000, sortSpec.field(), sortSpec.direction());
 
         return analytics;
     }
