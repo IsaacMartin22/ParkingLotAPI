@@ -9,9 +9,20 @@ import org.springframework.stereotype.Service;
 import parkinglot.common.response.AnalyticsResponse;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AnalyticsService {
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "eventType",
+            "currentUrl",
+            "browser",
+            "operatingSystem",
+            "sessionId",
+            "ipAddress",
+            "timestamp"
+    );
+
     private final AnalyticsRepository analyticsRepository;
 
     public AnalyticsService(AnalyticsRepository analyticsRepository) {
@@ -19,13 +30,15 @@ public class AnalyticsService {
     }
 
     public List<Analytics> getAllAnalyticsEvents() {
-        List<Analytics> analytics = analyticsRepository.getAll(0, 1000);
+        SortSpec sortSpec = parseSort("timestamp:asc");
+        List<Analytics> analytics = analyticsRepository.getAll(0, 1000, sortSpec.field(), sortSpec.direction());
 
         return analytics;
     }
 
-    public List<Analytics> getAnalyticsPage(int page) {
-        List<Analytics> analytics = analyticsRepository.getAll(page * 1000, 1000);
+    public List<Analytics> getAnalyticsPage(int page, String sort) {
+        SortSpec sortSpec = parseSort(sort);
+        List<Analytics> analytics = analyticsRepository.getAll(page * 1000, 1000, sortSpec.field(), sortSpec.direction());
 
         return analytics;
     }
@@ -75,5 +88,27 @@ public class AnalyticsService {
         newAnalytics.setTimestamp(analyticRequest.timestamp());
         newAnalytics.setPayload(analyticRequest.payload());
         return newAnalytics;
+    }
+
+    private SortSpec parseSort(String sort) {
+        if (sort == null) {
+            throw new IllegalArgumentException("Invalid sort value: " + sort);
+        }
+
+        String[] parts = sort.trim().split(":", 2);
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid sort value: " + sort);
+        }
+
+        String field = parts[0].trim();
+        String direction = parts[1].trim().toLowerCase();
+        if (!ALLOWED_SORT_FIELDS.contains(field) || (!"asc".equals(direction) && !"desc".equals(direction))) {
+            throw new IllegalArgumentException("Invalid sort value: " + sort);
+        }
+
+        return new SortSpec(field, direction);
+    }
+
+    private record SortSpec(String field, String direction) {
     }
 }

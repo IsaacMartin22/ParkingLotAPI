@@ -3,14 +3,11 @@ package apiservice.controller;
 import apiservice.dbentity.Analytics;
 import apiservice.mapper.AnalyticsMapper;
 import apiservice.service.AnalyticsService;
-import apiservice.service.ApiDiagnosticsService;
 import org.springframework.web.bind.annotation.*;
 import parkinglot.common.model.AnalyticsEventTypes;
 import parkinglot.common.request.AnalyticsRequest;
 import parkinglot.common.response.AnalyticsResponse;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -22,7 +19,7 @@ public class AnalyticsController {
         this.analyticsService = analyticsService;
     }
 
-    @GetMapping
+    @GetMapping(params = "!page")
     public List<AnalyticsResponse> getAllAnalyticsEvents() {
         List<Analytics> analytics = analyticsService.getAllAnalyticsEvents();
         return analytics.stream()
@@ -30,9 +27,9 @@ public class AnalyticsController {
                 .toList();
     }
 
-    @GetMapping
-    public List<AnalyticsResponse> getAnalyticsPage(@RequestParam int page) {
-        List<Analytics> analytics = analyticsService.getAnalyticsPage(page);
+    @GetMapping(params = {"page", "sort"})
+    public List<AnalyticsResponse> getAnalyticsPage(@RequestParam int page, @RequestParam String sort) {
+        List<Analytics> analytics = analyticsService.getAnalyticsPage(page, sort);
         return analytics.stream()
                 .map(AnalyticsMapper::toResponse)
                 .toList();
