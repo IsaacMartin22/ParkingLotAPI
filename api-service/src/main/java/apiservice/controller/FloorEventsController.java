@@ -20,7 +20,6 @@ public class FloorEventsController {
      * <p>
      * Events emitted:
      * <ul>
-     *   <li>{@code ADD} - a car was assigned to a parking space on this floor</li>
      *   <li>{@code UPDATE} - a car on this floor was updated</li>
      *   <li>{@code REMOVE} - a car was removed from a parking space on this floor</li>
      * </ul>
