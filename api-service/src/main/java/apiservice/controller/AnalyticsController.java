@@ -30,6 +30,14 @@ public class AnalyticsController {
                 .toList();
     }
 
+    @GetMapping
+    public List<AnalyticsResponse> getAnalyticsPage(@RequestParam int page) {
+        List<Analytics> analytics = analyticsService.getAnalyticsPage(page);
+        return analytics.stream()
+                .map(AnalyticsMapper::toResponse)
+                .toList();
+    }
+
     @GetMapping("/{eventType}")
     public List<AnalyticsResponse> getAnalyticsEventsForType(@PathVariable AnalyticsEventTypes eventType) {
         List<Analytics> analytics = analyticsService.getAnalyticsEventsForType(eventType);

@@ -24,6 +24,12 @@ public class AnalyticsService {
         return analytics;
     }
 
+    public List<Analytics> getAnalyticsPage(int page) {
+        List<Analytics> analytics = analyticsRepository.getAll(page * 1000, 1000);
+
+        return analytics;
+    }
+
     public List<Analytics> getAnalyticsEventsForType(AnalyticsEventTypes eventType) {
         List<Analytics> analytics = analyticsRepository.getByEventType(eventType, 0, 1000);
 
