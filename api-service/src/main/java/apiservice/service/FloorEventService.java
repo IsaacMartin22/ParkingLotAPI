@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,19 @@ public class FloorEventService {
         emitter.onTimeout(() -> removeEmitter(key, emitter));
         emitter.onError(e -> removeEmitter(key, emitter));
 
+        try {
+            Map<String, Object> connectedPayload = new LinkedHashMap<>();
+            connectedPayload.put("status", "subscribed");
+            connectedPayload.put("lotId", lotId);
+            connectedPayload.put("floorId", floorId);
+            emitter.send(SseEmitter.event()
+                    .data(connectedPayload));
+        } catch (IOException e) {
+            removeEmitter(key, emitter);
+            emitter.completeWithError(e);
+            return emitter;
+        }
+
         log.debug("New SSE subscriber for lot={} floor={}, total subscribers: {}",
                 lotId, floorId, emitters.get(key).size());
         return emitter;
@@ -61,7 +75,6 @@ public class FloorEventService {
         for (SseEmitter emitter : floorEmitters) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name(event.getAction().name())
                         .data(objectMapper.writeValueAsString(event)));
             } catch (IOException e) {
                 log.debug("Removing dead SSE emitter for lot={} floor={}", lotId, floorId);
@@ -78,4 +91,3 @@ public class FloorEventService {
         }
     }
 }
-
