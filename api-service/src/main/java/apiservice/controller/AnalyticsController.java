@@ -5,6 +5,7 @@ import apiservice.mapper.AnalyticsMapper;
 import apiservice.service.AnalyticsService;
 import org.springframework.web.bind.annotation.*;
 import parkinglot.common.model.AnalyticsEventTypes;
+import parkinglot.common.request.AnalyticsQuery;
 import parkinglot.common.request.AnalyticsRequest;
 import parkinglot.common.response.AnalyticsResponse;
 
@@ -19,25 +20,9 @@ public class AnalyticsController {
         this.analyticsService = analyticsService;
     }
 
-    @GetMapping(params = "!page")
-    public List<AnalyticsResponse> getAllAnalyticsEvents() {
-        List<Analytics> analytics = analyticsService.getAllAnalyticsEvents();
-        return analytics.stream()
-                .map(AnalyticsMapper::toResponse)
-                .toList();
-    }
-
-    @GetMapping(params = {"page", "sort"})
-    public List<AnalyticsResponse> getAnalyticsPage(@RequestParam int page, @RequestParam String sort) {
-        List<Analytics> analytics = analyticsService.getAnalyticsPage(page, sort);
-        return analytics.stream()
-                .map(AnalyticsMapper::toResponse)
-                .toList();
-    }
-
-    @GetMapping("/{eventType}")
-    public List<AnalyticsResponse> getAnalyticsEventsForType(@PathVariable AnalyticsEventTypes eventType) {
-        List<Analytics> analytics = analyticsService.getAnalyticsEventsForType(eventType);
+    @PostMapping("/search")
+    public List<AnalyticsResponse> queryAnalytics(@RequestBody AnalyticsQuery analyticsQuery) {
+        List<Analytics> analytics = analyticsService.queryAnalytics(analyticsQuery);
         return analytics.stream()
                 .map(AnalyticsMapper::toResponse)
                 .toList();

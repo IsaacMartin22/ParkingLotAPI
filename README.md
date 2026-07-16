@@ -39,7 +39,8 @@ increased or decreased. That would be a rare occurrence and only one person woul
 ## !!! Hard reset the database - Dangerous !!!
 ### Dev testing only! Staging environments only!
 
-Hard reset flyway SQL database \
+Hard reset flyway database - if manual changes are made to schemas flyway breaks \
+Changes to the database should always be done or reverted by adding an additional migration \
 ``DROP TABLE IF EXISTS flyway_schema_history; `` \
 `` DROP SCHEMA public CASCADE; ``\
 ``CREATE SCHEMA public;``
