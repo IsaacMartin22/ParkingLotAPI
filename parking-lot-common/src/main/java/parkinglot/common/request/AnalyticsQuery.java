@@ -8,3 +8,11 @@ public record AnalyticsQuery(
     String sortDirection,
     int page
 ) {}
+
+
+//public record AnalyticsQueryFilter(
+//        String field,
+//        String operator,
+//        String value
+//) {}
+// Keeping this commented so I can copy/paste this DTO to AI easier
