@@ -43,7 +43,7 @@ class AnalyticsRepositoryTest {
     @ParameterizedTest
     @MethodSource("queryCases")
     void queryReturnsExpectedResults(AnalyticsQuery query, List<Long> expectedIds) {
-        List<Analytics> results = analyticsRepository.query(
+        AnalyticsQueryResult queryResult = analyticsRepository.query(
                 0,
                 50,
                 query.sortField(),
@@ -51,7 +51,8 @@ class AnalyticsRepositoryTest {
                 query.filters()
         );
 
-        assertThat(results).extracting(Analytics::getId).containsExactlyElementsOf(expectedIds);
+        assertThat(queryResult.results()).extracting(Analytics::getId).containsExactlyElementsOf(expectedIds);
+        assertThat(queryResult.totalCount()).isEqualTo(expectedIds.size());
     }
 
     @Test
@@ -65,7 +66,7 @@ class AnalyticsRepositoryTest {
                 1
         );
 
-        List<Analytics> results = analyticsRepository.query(
+        AnalyticsQueryResult queryResult = analyticsRepository.query(
                 0,
                 1,
                 query.sortField(),
@@ -73,8 +74,9 @@ class AnalyticsRepositoryTest {
                 query.filters()
         );
 
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).getCurrentUrl()).isEqualTo("/home/features");
+        assertThat(queryResult.results()).hasSize(1);
+        assertThat(queryResult.results().get(0).getCurrentUrl()).isEqualTo("/home/features");
+        assertThat(queryResult.totalCount()).isEqualTo(2);
     }
 
     static Stream<Arguments> queryCases() {

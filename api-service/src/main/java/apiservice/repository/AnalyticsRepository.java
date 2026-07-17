@@ -44,16 +44,67 @@ public class AnalyticsRepository {
         return entityManager.merge(analytics);
     }
 
-    public List<Analytics> query(
+    public AnalyticsQueryResult query(
             Integer offset,
             Integer limit,
             String sortField,
             String sortDirection,
             List<AnalyticsQueryFilter> filters
     ) {
+        String baseSql = buildBaseSql(filters);
+        long totalCount = countMatchingRows(baseSql, filters);
+        List<Analytics> results = queryPage(offset, limit, sortField, sortDirection, baseSql, filters);
+        return new AnalyticsQueryResult(results, totalCount);
+    }
+
+    private List<Analytics> queryPage(
+            Integer offset,
+            Integer limit,
+            String sortField,
+            String sortDirection,
+            String baseSql,
+            List<AnalyticsQueryFilter> filters
+    ) {
+        String column = FIELD_COLUMNS.getOrDefault(sortField, "id");
+
+        String direction = "DESC".equalsIgnoreCase(sortDirection)
+                ? "DESC"
+                : "ASC";
 
         StringBuilder sql = new StringBuilder("""
                 SELECT * 
+                """)
+                .append(baseSql)
+                .append("""
+                        
+                        ORDER BY
+                        """)
+                .append(column)
+                .append(" ")
+                .append(direction)
+                .append(", id ASC")
+                .append("""
+                        
+                        LIMIT :limit
+                        OFFSET :offset
+                        """);
+
+        Query query = entityManager.createNativeQuery(sql.toString(), Analytics.class);
+        query.setParameter("limit", limit);
+        query.setParameter("offset", offset);
+        bindFilterParameters(query, filters);
+        return query.getResultList();
+    }
+
+    private long countMatchingRows(String baseSql, List<AnalyticsQueryFilter> filters) {
+        Query countQuery = entityManager.createNativeQuery("SELECT COUNT(*) " + baseSql);
+        bindFilterParameters(countQuery, filters);
+        Number count = (Number) countQuery.getSingleResult();
+        return count.longValue();
+    }
+
+    private String buildBaseSql(List<AnalyticsQueryFilter> filters) {
+        StringBuilder sql = new StringBuilder("""
                 FROM analytics 
                 WHERE 1 = 1 
                 """);
@@ -70,40 +121,16 @@ public class AnalyticsRepository {
             appendFilterClause(sql, column, filter.operator(), parameterName, filter.field());
         }
 
-        String column = FIELD_COLUMNS.getOrDefault(sortField, "id");
+        return sql.toString();
+    }
 
-        String direction = "DESC".equalsIgnoreCase(sortDirection)
-                ? "DESC"
-                : "ASC";
-
-        sql.append("""
-                
-                ORDER BY
-                """)
-                .append(column)
-                .append(" ")
-                .append(direction)
-                .append(", id ASC");
-
-        sql.append("""
-                
-                LIMIT :limit
-                OFFSET :offset
-                """);
-
-        Query query = entityManager.createNativeQuery(sql.toString(), Analytics.class);
-
-        query.setParameter("limit", limit);
-        query.setParameter("offset", offset);
-
-        filterIndex = 0;
+    private void bindFilterParameters(Query query, List<AnalyticsQueryFilter> filters) {
+        int filterIndex = 0;
         for (AnalyticsQueryFilter filter : filters) {
             if (FIELD_COLUMNS.containsKey(filter.field())) {
                 query.setParameter("filter" + filterIndex++, filter.value());
             }
         }
-
-        return query.getResultList();
     }
 
     private void appendFilterClause(

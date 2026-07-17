@@ -3,11 +3,13 @@ package apiservice.service;
 import apiservice.dbentity.Analytics;
 import apiservice.mapper.AnalyticsMapper;
 import apiservice.repository.AnalyticsRepository;
+import apiservice.repository.AnalyticsQueryResult;
 import parkinglot.common.request.AnalyticsQuery;
 import parkinglot.common.request.AnalyticsQueryFilter;
 import parkinglot.common.request.AnalyticsRequest;
 import org.springframework.stereotype.Service;
 import parkinglot.common.response.AnalyticsResponse;
+import parkinglot.common.response.AnalyticsQueryResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -38,15 +40,24 @@ public class AnalyticsService {
         this.analyticsRepository = analyticsRepository;
     }
 
-    public List<Analytics> queryAnalytics(AnalyticsQuery analyticsQuery) {
+    public AnalyticsQueryResponse queryAnalytics(AnalyticsQuery analyticsQuery) {
         validateAnalyticsQuery(analyticsQuery);
-        return analyticsRepository.query(
+        AnalyticsQueryResult queryResult = analyticsRepository.query(
                 PAGE_SIZE * (analyticsQuery.page() - 1),
                 PAGE_SIZE,
                 analyticsQuery.sortField(),
                 analyticsQuery.sortDirection(),
                 analyticsQuery.filters()
         );
+
+        List<AnalyticsResponse> results = queryResult.results().stream()
+                .map(AnalyticsMapper::toResponse)
+                .toList();
+        int totalPages = queryResult.totalCount() == 0
+                ? 0
+                : (int) Math.ceil((double) queryResult.totalCount() / PAGE_SIZE);
+
+        return new AnalyticsQueryResponse(results, queryResult.totalCount(), totalPages, PAGE_SIZE);
     }
 
     public AnalyticsResponse recordAnalyticsEvent(AnalyticsRequest analyticsRequest) {
