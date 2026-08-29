@@ -16,6 +16,7 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class ChatServiceImpl implements ChatService {
@@ -27,17 +28,11 @@ public class ChatServiceImpl implements ChatService {
     @Value("${app.chat.openai-api-key:}")
     private String openAiApiKey;
 
-    @Value("${app.chat.openai-embedding-model:text-embedding-3-small}")
-    private String embeddingModel;
-
     @Value("${app.chat.openai-chat-model:gpt-4o-mini}")
     private String chatModel;
 
     @Value("${app.chat.collection:portfolio_documents}")
     private String collectionName;
-
-    @Value("${app.chat.vector-index:portfolio_documents_vector_index}")
-    private String vectorIndex;
 
     @Value("${app.chat.max-context-chunks:5}")
     private int maxContextChunks;
@@ -63,8 +58,7 @@ public class ChatServiceImpl implements ChatService {
         }
 
         try {
-            float[] queryVector = embedText(trimmedQuestion);
-            List<PortfolioDocument> relevantDocuments = findRelevantDocuments(queryVector);
+            List<PortfolioDocument> relevantDocuments = findRelevantDocuments(trimmedQuestion);
             String context = buildContext(relevantDocuments);
 
             if (context.isBlank()) {
@@ -79,22 +73,14 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
-    private List<PortfolioDocument> findRelevantDocuments(float[] queryVector) {
-        List<Double> vector = new ArrayList<>();
-        for (float value : queryVector) {
-            vector.add((double) value);
-        }
-
+    @SuppressWarnings("unchecked")
+    private List<PortfolioDocument> findRelevantDocuments(String queryText) {
         List<Document> pipeline = List.of(
-                new Document("$vectorSearch", new Document("index", vectorIndex)
-                        .append("path", "embedding")
-                        .append("queryVector", vector)
-                        .append("numCandidates", Math.max(maxContextChunks * 10, 20))
-                        .append("limit", maxContextChunks)),
+                new Document("$match", new Document("text", new Document("$regex", Pattern.quote(queryText)).append("$options", "i"))),
+                new Document("$limit", maxContextChunks),
                 new Document("$project", new Document("_id", 1)
                         .append("text", 1)
-                        .append("metadata", 1)
-                        .append("score", new Document("$meta", "vectorSearchScore")))
+                        .append("metadata", 1))
         );
 
         List<PortfolioDocument> results = new ArrayList<>();
@@ -102,8 +88,33 @@ public class ChatServiceImpl implements ChatService {
             PortfolioDocument chunk = new PortfolioDocument();
             chunk.setId(document.getString("_id"));
             chunk.setText(document.getString("text"));
-            chunk.setMetadata(document.get("metadata", Map.class));
-            chunk.setScore(document.get("score", Number.class) == null ? 0.0 : document.get("score", Number.class).doubleValue());
+            chunk.setMetadata((Map<String, Object>) (Map<?, ?>) document.get("metadata", Map.class));
+            results.add(chunk);
+        }
+
+        if (!results.isEmpty()) {
+            return results;
+        }
+
+        return findRelevantDocumentsFallback(queryText);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<PortfolioDocument> findRelevantDocumentsFallback(String queryText) {
+        List<Document> pipeline = List.of(
+                new Document("$match", new Document("text", new Document("$regex", "(" + Pattern.quote(queryText.split(" ")[0]) + ")").append("$options", "i"))),
+                new Document("$limit", maxContextChunks),
+                new Document("$project", new Document("_id", 1)
+                        .append("text", 1)
+                        .append("metadata", 1))
+        );
+
+        List<PortfolioDocument> results = new ArrayList<>();
+        for (Document document : mongoTemplate.getCollection(collectionName).aggregate(pipeline)) {
+            PortfolioDocument chunk = new PortfolioDocument();
+            chunk.setId(document.getString("_id"));
+            chunk.setText(document.getString("text"));
+            chunk.setMetadata((Map<String, Object>) (Map<?, ?>) document.get("metadata", Map.class));
             results.add(chunk);
         }
         return results;
@@ -122,32 +133,6 @@ public class ChatServiceImpl implements ChatService {
             context.append(document.getText()).append(System.lineSeparator()).append(System.lineSeparator());
         }
         return context.toString().trim();
-    }
-
-    private float[] embedText(String text) throws IOException, InterruptedException {
-        String body = objectMapper.writeValueAsString(Map.of(
-                "input", text,
-                "model", embeddingModel
-        ));
-
-        HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.openai.com/v1/embeddings"))
-                .header("Authorization", "Bearer " + openAiApiKey)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build();
-
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() >= 400) {
-            throw new IllegalStateException("OpenAI embeddings request failed: " + response.body());
-        }
-
-        JsonNode json = objectMapper.readTree(response.body());
-        JsonNode embeddingNode = json.path("data").get(0).path("embedding");
-        float[] embedding = new float[embeddingNode.size()];
-        for (int i = 0; i < embeddingNode.size(); i++) {
-            embedding[i] = (float) embeddingNode.get(i).asDouble();
-        }
-        return embedding;
     }
 
     private String chatCompletion(String question, String context) throws IOException, InterruptedException {
