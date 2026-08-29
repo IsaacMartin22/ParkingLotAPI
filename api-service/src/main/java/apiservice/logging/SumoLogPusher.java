@@ -12,6 +12,9 @@ import java.net.URL;
 
 public class SumoLogPusher extends AppenderBase<ILoggingEvent> {
 
+    private static final int MAX_RETRIES = 3;
+    private static final long BASE_BACKOFF_MILLIS = 250L;
+
     private Encoder<ILoggingEvent> encoder;
     private String endpointUrl;
     private int connectTimeoutMillis = 2000;
@@ -57,31 +60,63 @@ public class SumoLogPusher extends AppenderBase<ILoggingEvent> {
             return;
         }
 
-        HttpURLConnection connection = null;
-        try {
-            URL url = URI.create(endpointUrl).toURL();
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(connectTimeoutMillis);
-            connection.setReadTimeout(readTimeoutMillis);
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Accept", "application/json");
+        for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            HttpURLConnection connection = null;
+            try {
+                URL url = URI.create(endpointUrl).toURL();
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(connectTimeoutMillis);
+                connection.setReadTimeout(readTimeoutMillis);
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Accept", "application/json");
 
-            try (OutputStream outputStream = connection.getOutputStream()) {
-                outputStream.write(payload);
-            }
+                try (OutputStream outputStream = connection.getOutputStream()) {
+                    outputStream.write(payload);
+                }
 
-            int statusCode = connection.getResponseCode();
-            if (statusCode < 200 || statusCode >= 300) {
+                int statusCode = connection.getResponseCode();
+                if (statusCode >= 200 && statusCode < 300) {
+                    return;
+                }
+
+                if (statusCode == 429 || statusCode >= 500) {
+                    if (attempt < MAX_RETRIES) {
+                        long backoffMs = BASE_BACKOFF_MILLIS * (1L << attempt);
+                        addWarn("Failed to send log event to Sumo; HTTP status " + statusCode + ". Retrying in " + backoffMs + " ms (attempt " + (attempt + 1) + "/" + (MAX_RETRIES + 1) + ")");
+                        sleep(backoffMs);
+                        continue;
+                    }
+                    addError("Failed to send log event to Sumo after retries; HTTP status " + statusCode);
+                    return;
+                }
+
                 addError("Failed to send log event to Sumo; HTTP status " + statusCode);
+                return;
+            } catch (IOException | IllegalArgumentException ex) {
+                if (attempt < MAX_RETRIES) {
+                    long backoffMs = BASE_BACKOFF_MILLIS * (1L << attempt);
+                    addWarn("Failed to send log event to Sumo; retrying in " + backoffMs + " ms (attempt " + (attempt + 1) + "/" + (MAX_RETRIES + 1) + ")", ex);
+                    sleep(backoffMs);
+                    continue;
+                }
+                addError("Failed to send log event to Sumo", ex);
+                return;
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
             }
-        } catch (IOException | IllegalArgumentException ex) {
-            addError("Failed to send log event to Sumo", ex);
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
+        }
+    }
+
+    private void sleep(long sleepMillis) {
+        try {
+            Thread.sleep(sleepMillis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            addWarn("Interrupted while backing off Sumo log delivery", ex);
         }
     }
 
