@@ -111,7 +111,8 @@ public class ChatServiceImpl implements ChatService {
         List<PortfolioDocument> results = new ArrayList<>();
         for (Document document : mongoTemplate.getCollection(collectionName).aggregate(pipeline)) {
             PortfolioDocument chunk = new PortfolioDocument();
-            chunk.setId(document.getString("_id"));
+            Object idValue = document.get("_id");
+            chunk.setId(idValue == null ? null : idValue.toString());
             chunk.setText(document.getString("text"));
             chunk.setMetadata((Map<String, Object>) (Map<?, ?>) document.get("metadata", Map.class));
             results.add(chunk);
@@ -142,7 +143,8 @@ public class ChatServiceImpl implements ChatService {
         List<PortfolioDocument> results = new ArrayList<>();
         for (Document document : mongoTemplate.getCollection(collectionName).aggregate(pipeline)) {
             PortfolioDocument chunk = new PortfolioDocument();
-            chunk.setId(document.getString("_id"));
+            Object idValue = document.get("_id");
+            chunk.setId(idValue == null ? null : idValue.toString());
             chunk.setText(document.getString("text"));
             chunk.setMetadata((Map<String, Object>) (Map<?, ?>) document.get("metadata", Map.class));
             results.add(chunk);
