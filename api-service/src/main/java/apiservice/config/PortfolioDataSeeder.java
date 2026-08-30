@@ -1,12 +1,19 @@
 package apiservice.config;
 
 import apiservice.model.PortfolioDocument;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +23,8 @@ import java.util.Map;
 public class PortfolioDataSeeder {
 
     private final MongoTemplate mongoTemplate;
+    private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
 
     @Value("${app.chat.collection:portfolio_documents}")
     private String collectionName;
@@ -23,8 +32,16 @@ public class PortfolioDataSeeder {
     @Value("${app.chat.seed-data:false}")
     private boolean seedData;
 
-    public PortfolioDataSeeder(MongoTemplate mongoTemplate) {
+    @Value("${app.chat.openai-api-key:}")
+    private String openAiApiKey;
+
+    @Value("${app.chat.openai-embedding-model:text-embedding-3-small}")
+    private String embeddingModel;
+
+    public PortfolioDataSeeder(MongoTemplate mongoTemplate, ObjectMapper objectMapper) {
         this.mongoTemplate = mongoTemplate;
+        this.objectMapper = objectMapper;
+        this.httpClient = HttpClient.newHttpClient();
     }
 
     @Bean
@@ -43,9 +60,36 @@ public class PortfolioDataSeeder {
             }
 
             for (PortfolioDocument document : buildSeedDocuments()) {
+                document.setEmbedding(embedText(document.getText()));
                 mongoTemplate.insert(document, collectionName);
             }
         };
+    }
+
+    private List<Double> embedText(String text) throws IOException, InterruptedException {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "input", text,
+                "model", embeddingModel
+        ));
+
+        HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.openai.com/v1/embeddings"))
+                .header("Authorization", "Bearer " + openAiApiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() >= 400) {
+            throw new IllegalStateException("OpenAI embeddings request failed: " + response.body());
+        }
+
+        JsonNode json = objectMapper.readTree(response.body());
+        JsonNode embeddingNode = json.path("data").get(0).path("embedding");
+        List<Double> embedding = new ArrayList<>(embeddingNode.size());
+        for (int i = 0; i < embeddingNode.size(); i++) {
+            embedding.add(embeddingNode.get(i).asDouble());
+        }
+        return embedding;
     }
 
     private List<PortfolioDocument> buildSeedDocuments() {
