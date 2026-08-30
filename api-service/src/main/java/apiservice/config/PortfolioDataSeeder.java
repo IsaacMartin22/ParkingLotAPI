@@ -101,7 +101,59 @@ public class PortfolioDataSeeder {
                 I am Isaac Martin, a software engineer based in Las Vegas, NV, and I am open to relocation.
                 I hold a Bachelor of Science in Computer Science from Oregon State University (2021) with a 3.68 GPA.
                 """,
-                "summary",
+                "degree",
+                "personal_profile"
+        ));
+
+        // Give me a brief overview of who you are and your software engineering experience.
+        docs.add(buildDocument(
+                """
+                I am Isaac Martin, a fullstack software engineer based in Las Vegas, Nevada. I have 4 years and 8 months of
+                professional work experience entirely with Widen - later Widen, an Acquia company. Widen is in the Digital Asset
+                Management (DAM) industry making Software as a Service (SAAS) apps and services. I'm most familiar with microservices
+                architecture, Java, Spring Boot, Typescript, React, SQL, and distributed systems. 
+                """,
+                "professional_summary",
+                "personal_profile"
+        ));
+
+        // List all the technologies you are proficient in or have experience with, including programming languages,
+        // frameworks, databases, and any other relevant tools or platforms.
+        docs.add(buildDocument(
+                """
+                For languages I'm familiar with Java, Typescript, Javascript, C++, Python, Rust, HTML, CSS, SQL, NoSQL, Bash, Groovy, and Ruby. 
+                The frameworks I'm familiar with are Spring, Spring Boot, React, Hibernate, Playwright, Apache Tapestry, and JUnit. 
+                For databases I'm most familiar with MySQL and PostgreSQL, however I've also worked with DynamoDB and MongoDB and MongoDB's vector database.
+                For tools and platforms I'm most familiar with Github Copilot, Docker, Kubernetes, Postman, Maven, JFrog, Stormforge, Sumologic, Buildkite, Datadog, 
+                Grafana, and Snowflake. My preferred cloud provider is AWS. I've used AWS SQS, AWS S3, AWS Kinesis, DynamoDB, Aurora DB, RDS, Lambda, and IAM. 
+                """,
+                "technologies",
+                "personal_profile"
+        ));
+
+        // What is your Github? Can you list your projects and their github links?
+        docs.add(buildDocument(
+                """
+                My Github profile is IsaacMartin22 - https://github.com/IsaacMartin22. The frontend for my portfolio site can be found at https://github.com/IsaacMartin22/ParkingLotFrontend,
+                the backend for my portfolio site can be found at https://github.com/IsaacMartin22/ParkingLotAPI. My site also has an SDK for interacting with the backend API at
+                https://github.com/IsaacMartin22/ParkingLotEventGenerator. A libGDX Java card game inspired by Slay the Spire can be found at https://github.com/IsaacMartin22/CardGame.
+                Various open source contributions can be found on the forked repositories in my Github profile, including lichess and hiring-agent.
+                """,
+                "github",
+                "personal_profile"
+        ));
+
+        // What is this project? What is this chatbot?
+        docs.add(buildDocument(
+                """
+                This project is Isaac's portfolio website. It contains a chatbot trained on Isaac's work experience and technical skills as well as
+                answers to recruiter questions he's received or found. It also contains a parking lot availability application using server-sent events, 
+                user analytics collection, and dashboards for visibility into project infrastructure. The 2 main repositories powering this site are 
+                entirely open source and visible on Isaac's Github profile IsaacMartin22. All chatbot seed data can be found in the backend repository 
+                ParkingLotAPI in PortfolioDataSeeder.java. The chatbot is a RAG (retrieval-augmented generation) chatbot that uses vector search to find 
+                relevant seed data and then uses an OpenAI model to generate answers to questions based on the seed data.
+                """,
+                "this_project_chatbot",
                 "personal_profile"
         ));
 

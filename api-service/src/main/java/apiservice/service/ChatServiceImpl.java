@@ -59,19 +59,15 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public String ask(String question) {
         String trimmedQuestion = question == null ? "" : question.trim();
-        logger.info("ask() called with question='{}'", trimmedQuestion);
 
         if (trimmedQuestion.isBlank()) {
             logger.warn("ask() received blank question");
             return "Please provide a question about Isaac's background, skills, or experience.";
         }
 
-        logger.info("Config check: openAiApiKeyPresent={}, collectionName={}, maxContextChunks={}",
-                openAiApiKey != null && !openAiApiKey.isBlank(), collectionName, maxContextChunks);
-
         if (openAiApiKey == null || openAiApiKey.isBlank()) {
             logger.error("ask() aborted: OPENAI_API_KEY is missing");
-            return "The portfolio chatbot is not configured yet. Set OPENAI_API_KEY and MONGODB_URI before asking questions.";
+            return "The portfolio chatbot is not configured yet. ";
         }
 
         try {
