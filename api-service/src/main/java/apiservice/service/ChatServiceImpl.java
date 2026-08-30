@@ -130,7 +130,7 @@ public class ChatServiceImpl implements ChatService {
     private List<PortfolioDocument> findRelevantDocumentsFallback(String queryText) {
         String firstToken = queryText.split(" ")[0];
         String fallbackRegex = "(" + Pattern.quote(firstToken) + ")";
-        logger.info("findRelevantDocumentsFallback() regex='{}' using first token='{}'", fallbackRegex, firstToken);
+        logger.warn("findRelevantDocumentsFallback() regex='{}' using first token='{}'", fallbackRegex, firstToken);
 
         List<Document> pipeline = List.of(
                 new Document("$match", new Document("text", new Document("$regex", fallbackRegex).append("$options", "i"))),
