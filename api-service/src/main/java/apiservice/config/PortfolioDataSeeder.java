@@ -247,6 +247,93 @@ public class PortfolioDataSeeder {
                 "technical_summary"
         ));
 
+        // Tell us about a project you owned end-to-end — from design through deployment and ongoing production support.
+        // What was it, and how did you handle it when something didn't go as planned? *
+        docs.add(buildDocument(
+                """
+                        My portfolio project is something I own end to end. It features server side events, user collected analytics that 
+                        are persisted, RAG (retrieval augmented generation) chatbot to answer questions, and other things. Originally I 
+                        designed it just to be a website app using server side events, it would be a proof of concept for a specific solution 
+                        I had in mind, but eventually I decided for it to be my portfolio website containing said feature and contributed other 
+                        features as well. So I had to walk back a bit on my original design and refactor things when I made that call. Its 
+                        scope is still always growing, I'm currently unemployed so I'm spending every day learning and practicing new things 
+                        and then I try to showcase my new skills in my portfolio site somehow, but now that I've accepted that the scope will 
+                        always be growing it's easier to plan how I want my site to change when adding a specific section or skill. There aren't 
+                        really any consequences for things not going as planned because hardly anyone visits my site, but one time my buildkite 
+                        free trial ended so my integration showing my build pipelines broke. I updated the token I was using from my free trial 
+                        to an active token and it resumed working again.
+                """,
+                "project_ownership",
+                "technical_summary"
+        ));
+
+        // Do you have experience reviewing, modernizing, or replacing a legacy system? If so, briefly describe the system and what you changed. *
+        docs.add(buildDocument(
+                """
+                Yes. My previous job had a legacy monolith structure that developers had been picking apart over the course of 15 years or so. 
+                It started as a monolith and at some point the company made the architectural decision to switch to a microservices architecture. 
+                So new functionality from that point on was built in microservices, and additionally when we were able to prioritize the work we 
+                would duplicate chunks of functionality from the monolith in a new microservice and then direct traffic to the new microservice 
+                from the monolith when we would hit that duplicate functionality. We would later go back and clean up the no longer needed monolith 
+                code when it was determined the new microservice was stable. I implemented a new API endpoint in one of our new microservices 
+                mimicking monolith functionality for retrieving user information. It was used for retrieving user information and then the old 
+                monolith code was marked as ready for removal.
+                """,
+                "modernization",
+                "technical_summary"
+        ));
+
+        // Tell us about a time you worked closely with a non-technical teammate or department to solve a real problem they were having.
+        // How did you build that relationship, and how did you make sure you understood what they actually needed (not just what they asked for)?
+        docs.add(buildDocument(
+                """
+                Product was the most regular non-technical team/department I worked with to solve problems. There was one time a specific customer 
+                of ours wanted all their user's emails to be enabled for a specific notification and they wanted the notification preference panel 
+                to be "Locked" for their users so they wouldn't be able to change their preferences to not receive the email. Product told me that 
+                was what the customer wanted, in this instance I followed up with clarifying questions because "All users" probably didn't mean "All 
+                users" in this case. The preference was only viewable by admin users so basic users shouldn't even be able to see or toggle their 
+                preference there, and they definitely don't receive those emails. Just having good open dialogue with product where we're both 
+                sharing what we're thinking and our interpretations of what the customer wants was a good way of hashing out the specific requirements 
+                and what the customer actually needed.
+                """,
+                "cross_team_collaboration",
+                "technical_summary"
+        ));
+
+        // Describe a manual or messy real-life process — tracking job tasks, orders, inventory, whatever — that you turned into a
+        // working piece of software. What did the "before" look like, what did you build, and how did people's day-to-day actually change?
+        docs.add(buildDocument(
+                """
+                        At my previous job we had a manual support workflow customers had to use to do something called "Transferring a portal". 
+                        At the end of the day all it ended up being was a database update on our end after it went through our support team. 
+                        One day the guy who usually handled those requests was out so the task fell to me. It was a pain for me and I saw that 
+                        it could easily be automated so I talked to my manager and got approval for implementing self service functionality for 
+                        the customer so that it wouldn't have to go through my team or our support team, customers could just do it themselves. 
+                        I added a frontend, backend, tests, and then it just worked and neither us nor support ever had to do that manual workflow 
+                        again. It was also a hit with customers as well because they didn't have to wait for us to get back to them saying the work 
+                        was done, they could self service the functionality.\s
+                """,
+                "automation",
+                "technical_summary"
+        ));
+
+        // Outside of work, what kinds of projects, tools, or problems do you like to tinker with?
+        // (Side projects, open source, hobby builds, anything you geek out on.)
+        docs.add(buildDocument(
+                """
+                I've made a couple contributions to open source - lichess, which is an open source community driven chess website. Additionally 
+                I've contributed to a repository called hiring-agent - I noticed that sometimes when I applied to companies I was being automatically 
+                rejected without a human ever looking at my resume, so I was looking into open source AI resume evaluators and that was one of them. 
+                I made a quality of life contribution there. I've also worked on a mod for the game Minecraft in the past, I never published it or 
+                finished it but it is out there, I've made a libGDX Java card game inspired by Slay the Spire, and right now I'm still actively 
+                contributing to my portfolio website, I'm polishing a RAG chatbot for answering recruiter questions such as these by using vector 
+                search and manually seeding responses to these questions. I'm actually going to seed these questions and my answers to these 
+                questions into my Vector database as part of the RAG pipeline.
+                """,
+                "hobby_projects",
+                "technical_summary"
+        ));
+
         return docs;
     }
 
