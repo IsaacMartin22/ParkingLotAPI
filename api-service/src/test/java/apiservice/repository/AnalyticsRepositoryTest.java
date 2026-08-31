@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import parkinglot.common.model.AnalyticsEventTypes;
 import parkinglot.common.request.AnalyticsQuery;
 import parkinglot.common.request.AnalyticsQueryFilter;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Import(AnalyticsRepository.class)
+@ActiveProfiles("test")
 class AnalyticsRepositoryTest {
 
     @Autowired
@@ -42,7 +44,7 @@ class AnalyticsRepositoryTest {
 
     @ParameterizedTest
     @MethodSource("queryCases")
-    void queryReturnsExpectedResults(AnalyticsQuery query, List<Long> expectedIds) {
+    void queryReturnsExpectedResults(AnalyticsQuery query, List<String> expectedUrls) {
         AnalyticsQueryResult queryResult = analyticsRepository.query(
                 0,
                 50,
@@ -51,8 +53,8 @@ class AnalyticsRepositoryTest {
                 query.filters()
         );
 
-        assertThat(queryResult.results()).extracting(Analytics::getId).containsExactlyElementsOf(expectedIds);
-        assertThat(queryResult.totalCount()).isEqualTo(expectedIds.size());
+        assertThat(queryResult.results()).extracting(Analytics::getCurrentUrl).containsExactlyElementsOf(expectedUrls);
+        assertThat(queryResult.totalCount()).isEqualTo(expectedUrls.size());
     }
 
     @Test
@@ -88,7 +90,7 @@ class AnalyticsRepositoryTest {
                                 "asc",
                                 1
                         ),
-                        List.of(1L, 3L)
+                        List.of("/home", "/home/features")
                 ),
                 Arguments.of(
                         new AnalyticsQuery(
@@ -97,7 +99,7 @@ class AnalyticsRepositoryTest {
                                 "desc",
                                 1
                         ),
-                        List.of(3L, 1L)
+                        List.of("/home/features", "/home")
                 ),
                 Arguments.of(
                         new AnalyticsQuery(
@@ -109,7 +111,7 @@ class AnalyticsRepositoryTest {
                                 "asc",
                                 1
                         ),
-                        List.of(2L, 3L)
+                        List.of("/pricing", "/home/features")
                 ),
                 Arguments.of(
                         new AnalyticsQuery(
@@ -121,7 +123,7 @@ class AnalyticsRepositoryTest {
                                 "asc",
                                 1
                         ),
-                        List.of(1L)
+                        List.of("/home")
                 )
         );
     }
