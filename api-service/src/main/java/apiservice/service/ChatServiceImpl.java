@@ -1,6 +1,8 @@
 package apiservice.service;
 
 import apiservice.model.PortfolioDocument;
+import apiservice.dbentity.ChatInteraction;
+import apiservice.repository.ChatInteractionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
@@ -26,6 +28,7 @@ public class ChatServiceImpl implements ChatService {
     private static final Logger logger = LoggerFactory.getLogger(ChatServiceImpl.class);
 
     private final MongoTemplate mongoTemplate;
+    private final ChatInteractionRepository chatInteractionRepository;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
@@ -47,11 +50,16 @@ public class ChatServiceImpl implements ChatService {
     @Value("${app.chat.max-context-chunks:5}")
     private int maxContextChunks;
 
-    @Value("${app.chat.system-prompt:You are Isaac Martin's portfolio assistant. Answer recruiter and hiring manager questions using only the provided context. If the answer is not in the context, say you do not have enough information and invite them to ask about skills, experience, or projects.}")
+    @Value("${app.chat.system-prompt:You are Isaac Martin's portfolio assistant. Answer recruiter and hiring manager questions using only the provided context. If the answer is not in the context, say you do not have enough information.}")
     private String systemPrompt;
 
-    public ChatServiceImpl(MongoTemplate mongoTemplate, ObjectMapper objectMapper) {
+    public ChatServiceImpl(
+            MongoTemplate mongoTemplate,
+            ChatInteractionRepository chatInteractionRepository,
+            ObjectMapper objectMapper
+    ) {
         this.mongoTemplate = mongoTemplate;
+        this.chatInteractionRepository = chatInteractionRepository;
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newHttpClient();
     }
@@ -62,7 +70,7 @@ public class ChatServiceImpl implements ChatService {
 
         if (trimmedQuestion.isBlank()) {
             logger.warn("ask() received blank question");
-            return "Please provide a question about Isaac's background, skills, or experience.";
+            return "Question cannot be empty.";
         }
 
         if (openAiApiKey == null || openAiApiKey.isBlank()) {
@@ -78,18 +86,7 @@ public class ChatServiceImpl implements ChatService {
             logger.info("Retrieved {} candidate documents from MongoDB for question='{}'",
                     relevantDocuments.size(), trimmedQuestion);
 
-            for (PortfolioDocument doc : relevantDocuments) {
-                logger.info("Document ID={} score={} metadata={} textPreview='{}'",
-                        doc.getId(), doc.getScore(), doc.getMetadata(),
-                        doc.getText() == null ? "null" : (doc.getText().length() > 100 ? doc.getText().substring(0, 100) + "..." : doc.getText()));
-            }
-
             String context = buildContext(relevantDocuments);
-            logger.info("Built context length={} chars for question='{}'", context.length(), trimmedQuestion);
-            if (context.length() > 200) {
-                logger.info("Context preview ='{}'", context.substring(0, 1000) + "...");
-            }
-
             if (context.isBlank()) {
                 logger.warn("No relevant context found for question='{}'. Returning fallback response.", trimmedQuestion);
                 return "I could not find enough relevant information in Isaac's portfolio data for that question. " +
@@ -97,11 +94,12 @@ public class ChatServiceImpl implements ChatService {
             }
 
             logger.info("Calling OpenAI chat completion for question='{}' with contextLength={} chars", trimmedQuestion, context.length());
-            return chatCompletion(trimmedQuestion, context);
+            String answer = chatCompletion(trimmedQuestion, context);
+            persistInteraction(trimmedQuestion, answer, queryVector);
+            return answer;
         } catch (Exception ex) {
             logger.error("Exception while handling question='{}'", trimmedQuestion, ex);
-            return "I hit a problem while answering that question. Please try again or ask a simpler question about Isaac's professional background. " +
-                    ex.getMessage();
+            return "I hit a problem while answering that question. Please try again or ask a simpler question about Isaac's professional background.";
         }
     }
 
@@ -249,5 +247,27 @@ public class ChatServiceImpl implements ChatService {
         String answer = json.path("choices").get(0).path("message").path("content").asText();
         logger.info("Received answer length={} chars from OpenAI", answer.length());
         return answer;
+    }
+
+    private void persistInteraction(String question, String answer, float[] embeddingVector) {
+        ChatInteraction interaction = new ChatInteraction();
+        interaction.setQuestion(question);
+        interaction.setAnswer(answer);
+        interaction.setEmbedding(toPgVectorLiteral(embeddingVector));
+        interaction.setEmbeddingModel(embeddingModel);
+        interaction.setChatModel(chatModel);
+        chatInteractionRepository.save(interaction);
+    }
+
+    private String toPgVectorLiteral(float[] embeddingVector) {
+        StringBuilder builder = new StringBuilder("[");
+        for (int i = 0; i < embeddingVector.length; i++) {
+            if (i > 0) {
+                builder.append(",");
+            }
+            builder.append(embeddingVector[i]);
+        }
+        builder.append("]");
+        return builder.toString();
     }
 }
