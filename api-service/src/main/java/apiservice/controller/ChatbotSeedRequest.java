@@ -1,4 +1,4 @@
-package parkinglot.common.request;
+package apiservice.controller;
 
 import jakarta.validation.constraints.NotBlank;
 

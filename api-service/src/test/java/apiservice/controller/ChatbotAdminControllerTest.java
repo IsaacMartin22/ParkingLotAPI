@@ -5,7 +5,6 @@ import apiservice.service.PortfolioDocumentSeedService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
-import parkinglot.common.request.ChatbotSeedRequest;
 import parkinglot.common.response.ChatbotSeedResponse;
 
 import java.lang.reflect.Field;
