@@ -26,7 +26,7 @@ public class AnalyticsRepository {
             "operatingSystem", "operating_system",
             "sessionId", "session_id",
             "ipAddress", "ip_address",
-            "timestamp", "a.\"timestamp\"",
+            "timestamp", "\"timestamp\"",
             "id", "id"
     );
 
@@ -72,11 +72,11 @@ public class AnalyticsRepository {
                 : "ASC";
 
         StringBuilder sql = new StringBuilder("""
-                SELECT * 
+                SELECT *
                 """)
                 .append(baseSql)
                 .append("""
-                        
+
                         ORDER BY
                         """)
                 .append(column)
@@ -84,7 +84,7 @@ public class AnalyticsRepository {
                 .append(direction)
                 .append(", id ASC")
                 .append("""
-                        
+
                         LIMIT :limit
                         OFFSET :offset
                         """);
@@ -105,8 +105,8 @@ public class AnalyticsRepository {
 
     private String buildBaseSql(List<AnalyticsQueryFilter> filters) {
         StringBuilder sql = new StringBuilder("""
-                FROM analytics a
-                WHERE 1 = 1 
+                FROM analytics
+                WHERE 1 = 1
                 """);
 
         int filterIndex = 0;
