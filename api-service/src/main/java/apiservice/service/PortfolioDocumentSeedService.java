@@ -50,6 +50,7 @@ public class PortfolioDocumentSeedService {
         for (PortfolioDocument document : documents) {
             insertedCount += upsertDocument(document) ? 1 : 0;
         }
+
         return insertedCount;
     }
 

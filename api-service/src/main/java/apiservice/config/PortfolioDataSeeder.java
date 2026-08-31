@@ -38,6 +38,36 @@ public class PortfolioDataSeeder {
     private List<PortfolioDocument> buildSeedDocuments() {
         List<PortfolioDocument> docs = new ArrayList<>();
 
+        // What are you looking for in your next role? What are your career goals?
+        docs.add(buildDocument(
+                """
+                I want to become a better engineer. I want to be able to improve things to be newer and better than they were before.
+                I want to work with other developers in a team environment. I believe working with other people is the best path for
+                career longevity, growth, staying motivated, and overall just a more enjoyable life. People lead very different lives
+                and have different experiences and perspectives. So much can be learned from people, so that's the environment I would
+                like to be in.
+                
+                So in short, being a software engineer on a team and contributing towards a project with other developers is what I want 
+                to be doing.
+                """,
+                "career_goals",
+                "personal_profile"
+        ));
+
+        // Why are you leaving your current position or seeking a new role?
+        docs.add(buildDocument(
+                """
+                I'm currently unemployed, I had worked at my previous job Widen for almost 5 years and my position was eliminated during company downsizing.
+                In addition to wanting to actually contribute to larger projects in meaningful ways alongside other developers, I have bills
+                to pay and have decided that I want to stick with software engineering as a career, so I'm seeking employment in a software
+                engineering role. I like working with other people in any shape - on a team, at a company, as friends - it keeps me motivated
+                and reminds me that the work I do is important - so although I might be able to strengthen my skills or learn new technologies
+                on my own, I would rather work alongside other developers so that we can grow and learn from each other together.
+                """,
+                "seeking_employment",
+                "personal_profile"
+        ));
+
         // Do you have a Bachelor's degree or higher in Computer Science or a related field?
         docs.add(buildDocument(
                 """
@@ -87,7 +117,7 @@ public class PortfolioDataSeeder {
 
         docs.add(buildDocument(
                 """
-                I reduced database load and increased user clarity by adding validation and snackbar messaging to a frontend application,
+                At Widen I reduced database load and increased user clarity by adding validation and snackbar messaging to a frontend application,
                 reducing total frontend requests sent. This work covered TypeScript and React.
                 """,
                 "accomplishment",
@@ -96,7 +126,7 @@ public class PortfolioDataSeeder {
 
         docs.add(buildDocument(
                 """
-                I expanded coverage for public APIs and internal APIs/SDKs by adding Java Spring Boot endpoints and publishing the new endpoints in the app's SDK.
+                At Widen I expanded coverage for public APIs and internal APIs/SDKs by adding Java Spring Boot endpoints and publishing the new endpoints in the app's SDK.
                 This included API design, backend implementation, and SDK integration work.
                 """,
                 "accomplishment",
@@ -105,7 +135,7 @@ public class PortfolioDataSeeder {
 
         docs.add(buildDocument(
                 """
-                I eliminated unnecessary tripling of specific network requests by leveraging knowledge of frontend render cycles in React,
+                At Widen I eliminated unnecessary tripling of specific network requests by leveraging knowledge of frontend render cycles in React,
                 improving performance and application responsiveness for users.
                 """,
                 "accomplishment",
@@ -114,7 +144,7 @@ public class PortfolioDataSeeder {
 
         docs.add(buildDocument(
                 """
-                I extracted functionality from a 25-year-old monolithic application into new services and refactored functionality to be easier to extract.
+                At Widen I extracted functionality from a 25-year-old monolithic application into new services and refactored functionality to be easier to extract.
                 I worked with Java, Spring, and Apache Tapestry in legacy modernization efforts.
                 """,
                 "accomplishment",
@@ -123,7 +153,7 @@ public class PortfolioDataSeeder {
 
         docs.add(buildDocument(
                 """
-                I used SQL knowledge to improve performance for several database queries, working with Hibernate and relational database optimization.
+                At Widen I used SQL knowledge to improve performance for several database queries, working with Hibernate and relational database optimization.
                 This included understanding query behavior, indexing, and application-level tuning.
                 """,
                 "accomplishment",
@@ -145,12 +175,153 @@ public class PortfolioDataSeeder {
         ));
 
 
-
         addResumeDocuments(docs);
         addAccomplishmentsDocuments(docs);
         addRecruiterQuestionDocuments(docs);
+        addDashboardOverviewDocuments(docs);
 
         return docs;
+    }
+
+    private void addDashboardOverviewDocuments(List<PortfolioDocument> docs) {
+        // Add more dashboard overview documents here if needed
+
+        docs.add(buildDocument("""
+            I made the frontend and needed a way to store data for the parking app and analytics. Frontends shouldn't directly query databases.
+            I'm most familiar with Java for the backend so I created a
+            basic CRUD API for the parking database entities. I removed many update/delete endpoints because I just didn't see any
+            use case for end users updating or deleting floors or lots, those changes are best done via migrations. So I removed
+            those, and when I did want to remove some floors at a later point I did write a migration using flyway, which worked
+            well.
+
+            I later expanded the API past just a CRUD wrapper around parking lot entities. It's now my core backend application,
+            any functionality I don't want to route from the frontend goes through this service. So it now makes requests with
+            API tokens for the build and deploy dashboards and persists analytics data emitted from the frontend for the analytics
+            dashboard. It also interacts with my MongoDB vector database for the RAG chatbot, and queries OpenAI for embeddings and 
+            completions at the end of the RAG pipeline.
+        """,
+                "dashboard_overview",
+                "backend_api"
+        ));
+
+        docs.add(buildDocument("""
+            I built an SDK for my backend API. My initial reason for doing so was to have a separate "Event Generator" service that automatically 
+            made a constant stream of API calls to update the parking spaces, which would make my server sent events feature very visible. My goal 
+            was to showcase the server sent events by having the generator constantly be updating the frontend so whenever anyone viewed floor data 
+            they'd see it updating live. I also wanted to create an SDK, knowledge of how to create and publish an SDK could be something companies 
+            are looking for. Those were my reasons, functionally though in terms of the app the impetus for the SDK was to use it in the Event Generator service.
+
+            At some point I changed my mind, I scrapped the Event Generator service idea. In my mind it would be overkill.
+            It would just be some background worker artificially creating random traffic. It would cost me money to host, it would
+            slow down my site by using up the API's bandwidth and memory, and it could also just be confusing for site viewers.
+            They wouldn't know where the events were coming from until they read about the generator service. So I decided to instead
+            allow the user to create a random car in a parking space or remove a car via the frontend, they could just
+            open another tab to see the SSE effect. So I scrapped the generator service idea and left the project as just an SDK.
+        """,
+                "dashboard_overview",
+                "sdk"
+        ));
+
+        docs.add(buildDocument("""
+            The parking explorer was the first thing I decided to build for my site. I wanted to solve a real world problem. I had seen a hand
+            placed sign at the LAS airport where I live saying a lot was full. It was not full. I figured a website would provide more
+            up-to-date information and be more reliable than a sign, so I started building the Parking Lot app.
+
+            It's a simple application, not very impressive. But it is a real world problem and I had to start somewhere. I figured I
+            could add features and improve it over time if it proved too simple a task, which I did. The server sent events are the
+            best aspect. My idea is that something would trigger API requests, which would update server state. The trigger could be a
+            pressure plate under the parking space, a drone taking a photo and having it be processed, or a human on a computer.
+            Something makes an API request and then after the API updates the database it sends a server sent event to update all
+            subscribed clients. A pretty good use case for SSE. I could make more improvements but I wanted to spend time elsewhere.
+
+            I used React and Typescript because I'm most familiar with them for frontend work. Reusable component libraries are good
+            practice so I have resuable components, and tanstack query is a great library for making network calls so I used tanstack.
+        """,
+                "dashboard_overview",
+                "parking_app"
+        ));
+
+        docs.add(buildDocument("""
+            Analytics was an "I need to make my site better somehow" feature. Analytics is very useful, figuring out how
+            users are using the product is helpful to know. It lets product make data driven decisions. What users like,
+            what they don't like, what they're spending time on and clicking and viewing, these kinds of things are really
+            important to product. Being able to build that kind of thing out on my site seems incredibly useful.
+
+            As mentioned in the database segment if I expected my site to get a ton of traffic I would have
+            a separate service and database just for analytics because it scales much differently and isn't
+            a truly core customer experience.
+
+            I wanted all my code to be publicly available so I didn't want any PII. The closest the site does to identify
+            a user is generate a random id and persist it to session storage. The logic is not secure. Someone could easily
+            copy the value and give it to someone else to spoof data, but it should be safe to assume that most users
+            aren't doing that and therefore that most events sharing the same session id were done by the same end user.
+        """,
+                "dashboard_overview",
+                "analytics"
+        ));
+
+        docs.add(buildDocument("""
+            I found myself trying to come up with ways to demonstrate that I'm following good development practice. At
+            this point I had implemented pipelines and deployed my services publicly, so there were more things involved
+            than was immediately visible on the site. Infrastructure is incredibly relevant for developers and my site
+            tries to showcase my development skills so I wanted to provide insight into my CI pipelines somehow. I had
+            automated pipelines at this point, I just needed to find a way to make the pipelines publicly available without
+            letting someone modify or break anything.
+            
+            I originally just had buildkite listed as one of the technologies on the home page. I didn't like that, to me
+            it wasn't enough visual insight. I had written tests and created multiple pipelines, it seemed like too much
+            effort I had gone through to just leave as a dumb text oval in a list. I then remembered I was a developer, I
+            could just create a buildkite API token and use it. I assumed correctly that buildkite would have an API, I
+            looked at the documentation and found I could run a simple GET builds request to get all the information I wanted.
+            It showed my pipelines, build status, build duration, dates, it was perfect. So that was the builds dashboard.
+            
+            I only have very minimal unit tests, ideally I'd add integration tests, end to end tests, and smoke tests.
+            I'd use playwright for the frontend, I've used it before, and the backend I'd want to set up
+            some hard data that doesn't change in a staging environment to test. It's just me though, tests seem much
+            less important with less developers because there aren't other people who aren't as familiar with my code
+            trying to change it. Usually those situations are when bugs happen so the automated tests are to prevent it,
+            but being a solo dev lowers that priority for me.
+        """,
+                "dashboard_overview",
+                "buildkite"
+        ));
+
+        docs.add(buildDocument("""
+            The deployments dashboard was pretty much the same as the build dashboard but instead of Buildkite it was Render. I wanted
+            visibility into deployment activity so I did the same thing - checked if Render had an API, generated
+            a key, used the key in the one request I wanted, and now it displays Deployment information.
+
+            Render actually had an outage when I was testing which made me think I had wired it up wrong,
+            eventually I verified with Postman that it just wasn't up and checked the status page and it
+            was having issues. So out of that now both the Deployments and Builds pages link to their
+            respective status pages while loading in case they're down. Not much I can do in that case.
+        """,
+                "dashboard_overview",
+                "render"
+        ));
+
+        docs.add(buildDocument("""
+            I was originally just keeping API logs in memory and exposing them via a diagnostic endpoint. After I
+            started using API keys for buildkite and render and using environment variables I realized there was
+            a good chance one of those might accidentally get exposed via that method, so I probably shouldn't make
+            all service logs publicly available. It also wasn't scalable or standard of me to do that.
+            
+            So I decided to start using Sumologic for logs. I can access all logs for the API service in Sumo.
+            The API is really the only service that has logs. The frontend will emit analytics events for errors and
+            post those errors to the API for me to check out if desired so I don't feel the need to have separate
+            logging for the frontend. I use a Trello board for Project Management. I thought about exposing
+            some sort of feature request functionality on my site but I think I'm just going to work on what I
+            work on. Trello is already good enough standalone, I don't feel the need to add an API wrapper and
+            have a separate dashboard for it. It should already be clear I know how to integrate with APIs so
+            another API integration seems redundant in terms of expressing knowledge of development concepts.
+            I also have my portfolio linked to friends, I wouldn't put it past them to put something undesired
+            on a feature request board if I built that feature.
+        """,
+                "dashboard_overview",
+                "logging_and_project_management"
+        ));
+
+
     }
 
     private void addResumeDocuments(List<PortfolioDocument> docs) {
@@ -271,6 +442,30 @@ public class PortfolioDataSeeder {
 
     private void addRecruiterQuestionDocuments(List<PortfolioDocument> docs) {
         // Add more recruiter question documents here if needed
+
+        // What are your strengths?
+        docs.add(buildDocument("""
+            I'm proactive about making myself useful. It's usually very easy to find stuff that needs to be done, if it's not strictly 
+            someone else's responsibility or not already being worked on I'll usually pick it up and get it done or mention it to someone who
+            is in a better position to take care of it. Rather than waiting for someone to tell me what to do I do stuff until someone tells me 
+            not to. I also want to be a better engineer and developer, I want to be able to come up with better solutions and make things work
+            better, so I will actively seek out and take on new things to learn and tasks I haven't yet fully mastered.
+        """,
+                "strengths",
+                "personal_profile"
+        ));
+
+        // What are your weaknesses?
+        docs.add(buildDocument("""
+            In relation to the strengths I described, being proactive about making myself useful can be a double edged sword in a way. Sometimes
+            the things I end up doing would be better handled by someone else and I end up stepping on toes, or I end up duplicating portions of tasks
+            because someone was already working on what I jumped on and hadn't mentioned it yet. I get frustrated when the same problems pop up over 
+            and over, I don't really care what someone's reasons are for not taking care of it, maybe they have other priorities or they don't know how
+            to fix the issue, I will step in and resolve the issue or at least start working towards resolving it.
+        """,
+                "weaknesses",
+                "personal_profile"
+        ));
 
         // Give me a brief overview of who you are and your software engineering experience.
         docs.add(buildDocument("""

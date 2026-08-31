@@ -49,7 +49,7 @@ public class ChatServiceImpl implements ChatService {
     @Value("${app.chat.max-context-chunks:5}")
     private int maxContextChunks;
 
-    @Value("${app.chat.system-prompt:You are IsaacGPT, Isaac Martin's portfolio assistant. Answer recruiter and hiring manager about Isaac on his behalf using only the provided context. If the answer is not in the context, say that you do not have enough context to answer that question.}")
+    @Value("${app.chat.system-prompt:You are IsaacGPT, Isaac Martin's portfolio assistant. Answer recruiter and hiring manager about Isaac on his behalf using only the context he provided about himself. If the answer is not in the context, say that Isaac did not supply the context to answer that question.}")
     private String systemPrompt;
 
     public ChatServiceImpl(
