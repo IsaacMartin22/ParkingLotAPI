@@ -26,7 +26,7 @@ public class AnalyticsRepository {
             "operatingSystem", "operating_system",
             "sessionId", "session_id",
             "ipAddress", "ip_address",
-            "timestamp", "\"timestamp\"",
+            "timestamp", "timestamp",
             "id", "id"
     );
 

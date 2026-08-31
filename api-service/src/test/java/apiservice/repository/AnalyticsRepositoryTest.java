@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.jdbc.Sql;
 import parkinglot.common.model.AnalyticsEventTypes;
 import parkinglot.common.request.AnalyticsQuery;
 import parkinglot.common.request.AnalyticsQueryFilter;
@@ -23,6 +24,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Import(AnalyticsRepository.class)
+@Sql(statements = {
+        "DROP TABLE IF EXISTS analytics",
+        """
+        CREATE TABLE analytics (
+            id BIGSERIAL PRIMARY KEY,
+            event_type VARCHAR(255),
+            current_url VARCHAR(255),
+            browser VARCHAR(255),
+            operating_system VARCHAR(255),
+            ip_address VARCHAR(255),
+            session_id VARCHAR(255),
+            "timestamp" TIMESTAMP,
+            payload JSON
+        )
+        """
+}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class AnalyticsRepositoryTest {
 
     @Autowired
