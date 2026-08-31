@@ -1,7 +1,6 @@
 package apiservice.service;
 
 import apiservice.model.PortfolioDocument;
-import apiservice.dbentity.ChatInteraction;
 import apiservice.repository.ChatInteractionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -250,13 +249,13 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private void persistInteraction(String question, String answer, float[] embeddingVector) {
-        ChatInteraction interaction = new ChatInteraction();
-        interaction.setQuestion(question);
-        interaction.setAnswer(answer);
-        interaction.setEmbedding(toPgVectorLiteral(embeddingVector));
-        interaction.setEmbeddingModel(embeddingModel);
-        interaction.setChatModel(chatModel);
-        chatInteractionRepository.save(interaction);
+        chatInteractionRepository.insertWithVectorCast(
+                question,
+                answer,
+                toPgVectorLiteral(embeddingVector),
+                embeddingModel,
+                chatModel
+        );
     }
 
     private String toPgVectorLiteral(float[] embeddingVector) {
