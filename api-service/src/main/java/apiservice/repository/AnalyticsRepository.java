@@ -26,7 +26,7 @@ public class AnalyticsRepository {
             "operatingSystem", "operating_system",
             "sessionId", "session_id",
             "ipAddress", "ip_address",
-            "timestamp", "\"timestamp\"",
+            "timestamp", "a.\"timestamp\"",
             "id", "id"
     );
 
@@ -105,7 +105,7 @@ public class AnalyticsRepository {
 
     private String buildBaseSql(List<AnalyticsQueryFilter> filters) {
         StringBuilder sql = new StringBuilder("""
-                FROM analytics 
+                FROM analytics a
                 WHERE 1 = 1 
                 """);
 
