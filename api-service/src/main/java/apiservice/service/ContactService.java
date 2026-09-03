@@ -32,31 +32,46 @@ public class ContactService {
         this.mailSender = mailSender;
     }
 
-    public void sendContactEmail(String content) {
-        validateContent(content);
+    public void sendContactEmail(String messageText, String subjectLine) {
+        validateContent(messageText);
+        validateSubject(subjectLine);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
         message.setFrom(fromEmail);
-        message.setSubject(subject);
-        message.setText(content);
+        message.setSubject(subjectLine);
+        message.setText(messageText);
         mailSender.send(message);
     }
 
     private void validateContent(String content) {
         if (content == null || content.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Content is required.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message is required.");
         }
 
         if (content.length() > MAX_MESSAGE_LENGTH) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Content exceeds max length of " + MAX_MESSAGE_LENGTH + " characters."
+                    "Message exceeds max length of " + MAX_MESSAGE_LENGTH + " characters."
             );
         }
 
         if (MALICIOUS_PATTERN.matcher(content).find()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Content contains disallowed patterns.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message contains disallowed patterns.");
+        }
+    }
+
+    private void validateSubject(String subjectLine) {
+        if (subjectLine == null || subjectLine.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Subject is required.");
+        }
+
+        if (subjectLine.length() > 200) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Subject exceeds max length of 200 characters.");
+        }
+
+        if (MALICIOUS_PATTERN.matcher(subjectLine).find()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Subject contains disallowed patterns.");
         }
     }
 }

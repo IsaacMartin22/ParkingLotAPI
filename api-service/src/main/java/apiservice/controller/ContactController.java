@@ -18,10 +18,13 @@ public class ContactController {
 
     @PostMapping("/contact")
     public ResponseEntity<Void> sendContactEmail(@Valid @RequestBody ContactRequest request) {
-        contactService.sendContactEmail(request.content());
+        contactService.sendContactEmail(request.message(), request.subject());
         return ResponseEntity.accepted().build();
     }
 
-    public record ContactRequest(@NotBlank(message = "Content is required") String content) {
+    public record ContactRequest(
+            @NotBlank(message = "Message is required") String message,
+            @NotBlank(message = "Subject is required") String subject
+    ) {
     }
 }

@@ -14,9 +14,9 @@ class ContactControllerTest {
         ContactService contactService = mock(ContactService.class);
         ContactController controller = new ContactController(contactService);
 
-        var response = controller.sendContactEmail(new ContactController.ContactRequest("Hello there"));
+        var response = controller.sendContactEmail(new ContactController.ContactRequest("Hello there", "Portfolio Contact"));
 
         assertEquals(202, response.getStatusCode().value());
-        verify(contactService).sendContactEmail("Hello there");
+        verify(contactService).sendContactEmail("Hello there", "Portfolio Contact");
     }
 }

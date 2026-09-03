@@ -20,9 +20,8 @@ class ContactServiceTest {
         ContactService service = new ContactService(mailSender);
         ReflectionTestUtils.setField(service, "toEmail", "IsaacMartin151@gmail.com");
         ReflectionTestUtils.setField(service, "fromEmail", "no-reply@parkinglot.local");
-        ReflectionTestUtils.setField(service, "subject", "Contact");
 
-        service.sendContactEmail("Need help with parking access.");
+        service.sendContactEmail("Need help with parking access.", "Portfolio Contact");
 
         verify(mailSender).send(any(SimpleMailMessage.class));
     }
@@ -34,7 +33,7 @@ class ContactServiceTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.sendContactEmail("<script>alert('xss')</script>")
+                () -> service.sendContactEmail("<script>alert('xss')</script>", "Portfolio Contact")
         );
 
         assertEquals(400, exception.getStatusCode().value());
@@ -47,7 +46,20 @@ class ContactServiceTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.sendContactEmail("   ")
+                () -> service.sendContactEmail("   ", "Portfolio Contact")
+        );
+
+        assertEquals(400, exception.getStatusCode().value());
+    }
+
+    @Test
+    void sendContactEmailRejectsBlankSubject() {
+        JavaMailSender mailSender = mock(JavaMailSender.class);
+        ContactService service = new ContactService(mailSender);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.sendContactEmail("Need help with parking access.", "   ")
         );
 
         assertEquals(400, exception.getStatusCode().value());
