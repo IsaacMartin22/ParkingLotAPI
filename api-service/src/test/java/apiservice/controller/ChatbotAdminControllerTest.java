@@ -25,8 +25,7 @@ class ChatbotAdminControllerTest {
     @Test
     void seedDocumentReturnsSeededResponseWhenAuthorized() throws Exception {
         PortfolioDocumentSeedService seedService = mock(PortfolioDocumentSeedService.class);
-        ChatInteractionRepository chatInteractionRepository = mock(ChatInteractionRepository.class);
-        ChatbotAdminController controller = new ChatbotAdminController(seedService, chatInteractionRepository);
+        ChatbotAdminController controller = new ChatbotAdminController(seedService);
         setAdminToken(controller, "secret");
 
         PortfolioDocument document = new PortfolioDocument();
@@ -50,8 +49,7 @@ class ChatbotAdminControllerTest {
     @Test
     void seedDocumentRejectsUnauthorizedRequests() {
         PortfolioDocumentSeedService seedService = mock(PortfolioDocumentSeedService.class);
-        ChatInteractionRepository chatInteractionRepository = mock(ChatInteractionRepository.class);
-        ChatbotAdminController controller = new ChatbotAdminController(seedService, chatInteractionRepository);
+        ChatbotAdminController controller = new ChatbotAdminController(seedService);
         setAdminToken(controller, "secret");
 
         ResponseStatusException exception = assertThrows(
@@ -68,8 +66,7 @@ class ChatbotAdminControllerTest {
     @Test
     void seedDocumentRejectsWhenAdminTokenNotConfigured() {
         PortfolioDocumentSeedService seedService = mock(PortfolioDocumentSeedService.class);
-        ChatInteractionRepository chatInteractionRepository = mock(ChatInteractionRepository.class);
-        ChatbotAdminController controller = new ChatbotAdminController(seedService, chatInteractionRepository);
+        ChatbotAdminController controller = new ChatbotAdminController(seedService);
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -80,36 +77,6 @@ class ChatbotAdminControllerTest {
         );
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatusCode());
-    }
-
-    @Test
-    void getRecentChatbotInteractionsReturnsQuestionResponseAndTimestampForMostRecentItems() {
-        PortfolioDocumentSeedService seedService = mock(PortfolioDocumentSeedService.class);
-        ChatInteractionRepository chatInteractionRepository = mock(ChatInteractionRepository.class);
-        ChatbotAdminController controller = new ChatbotAdminController(seedService, chatInteractionRepository);
-
-        ChatInteraction first = new ChatInteraction();
-        first.setQuestion("Q1");
-        first.setAnswer("A1");
-        first.setCreatedAt(Instant.parse("2026-09-03T18:00:00Z"));
-        ChatInteraction second = new ChatInteraction();
-        second.setQuestion("Q2");
-        second.setAnswer("A2");
-        second.setCreatedAt(Instant.parse("2026-09-03T17:59:00Z"));
-
-        when(chatInteractionRepository.findByOrderByCreatedAtDesc(any())).thenReturn(List.of(first, second));
-
-        var response = controller.getRecentChatbotInteractions();
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        var body = response.getBody();
-        assertEquals(2, body.interactions().size());
-        assertEquals("Q1", body.interactions().get(0).question());
-        assertEquals("A1", body.interactions().get(0).response());
-        assertEquals(Instant.parse("2026-09-03T18:00:00Z"), body.interactions().get(0).timestamp());
-        assertEquals("Q2", body.interactions().get(1).question());
-        assertEquals("A2", body.interactions().get(1).response());
-        assertEquals(Instant.parse("2026-09-03T17:59:00Z"), body.interactions().get(1).timestamp());
     }
 
     private void setAdminToken(ChatbotAdminController controller, String value) {

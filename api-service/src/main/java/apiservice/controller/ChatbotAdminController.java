@@ -28,35 +28,17 @@ import java.io.IOException;
 public class ChatbotAdminController {
 
     private static final String ADMIN_TOKEN_HEADER = "X-Admin-Token";
-    private static final int RECENT_INTERACTIONS_LIMIT = 100;
 
     private final PortfolioDocumentSeedService portfolioDocumentSeedService;
-    private final ChatInteractionRepository chatInteractionRepository;
+
 
     @Value("${app.chat.admin-token:}")
     private String adminToken;
 
     public ChatbotAdminController(
-            PortfolioDocumentSeedService portfolioDocumentSeedService,
-            ChatInteractionRepository chatInteractionRepository
+            PortfolioDocumentSeedService portfolioDocumentSeedService
     ) {
         this.portfolioDocumentSeedService = portfolioDocumentSeedService;
-        this.chatInteractionRepository = chatInteractionRepository;
-    }
-
-    @GetMapping("/recent-interactions")
-    public ResponseEntity<RecentChatbotInteractionsResponse> getRecentChatbotInteractions() {
-        var recentInteractions = chatInteractionRepository.findByOrderByCreatedAtDesc(
-                PageRequest.of(0, RECENT_INTERACTIONS_LIMIT)
-        ).stream()
-                .map(interaction -> new ChatbotInteractionResponse(
-                        interaction.getQuestion(),
-                        interaction.getAnswer(),
-                        interaction.getCreatedAt()
-                ))
-                .toList();
-
-        return ResponseEntity.ok(new RecentChatbotInteractionsResponse(recentInteractions));
     }
 
     @PostMapping("/seed")

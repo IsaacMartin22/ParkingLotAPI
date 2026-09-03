@@ -1,14 +1,13 @@
 package apiservice.controller;
 
+import apiservice.repository.ChatInteractionRepository;
 import apiservice.service.ChatService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -16,9 +15,27 @@ import org.springframework.web.server.ResponseStatusException;
 public class ChatController {
 
     private final ChatService chatService;
+    private final ChatInteractionRepository chatInteractionRepository;
+    private static final int RECENT_INTERACTIONS_LIMIT = 100;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService, ChatInteractionRepository chatInteractionRepository) {
         this.chatService = chatService;
+        this.chatInteractionRepository = chatInteractionRepository;
+    }
+
+    @GetMapping("/recent-interactions")
+    public ResponseEntity<RecentChatbotInteractionsResponse> getRecentChatbotInteractions() {
+        var recentInteractions = chatInteractionRepository.findByOrderByCreatedAtDesc(
+                        PageRequest.of(0, RECENT_INTERACTIONS_LIMIT)
+                ).stream()
+                .map(interaction -> new ChatbotInteractionResponse(
+                        interaction.getQuestion(),
+                        interaction.getAnswer(),
+                        interaction.getCreatedAt()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(new RecentChatbotInteractionsResponse(recentInteractions));
     }
 
     @PostMapping("/chat")
