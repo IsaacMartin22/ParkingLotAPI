@@ -1,6 +1,7 @@
 package parkinglot.common.response;
 
 import parkinglot.common.model.EndpointDiagnostics;
+import parkinglot.common.model.HeapMemoryUsage;
 import parkinglot.common.model.LogEntry;
 
 import java.time.Instant;
@@ -13,8 +14,8 @@ public record ApiDiagnosticsResponse(
         long totalRequests,
         long successfulRequests,
         long failedRequests,
+        HeapMemoryUsage heapMemoryUsage,
         Map<String, EndpointDiagnostics> endpoints,
         List<LogEntry> recentLogs
 ) {
 }
-
