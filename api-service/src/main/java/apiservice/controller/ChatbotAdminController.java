@@ -1,12 +1,15 @@
 package apiservice.controller;
 
 import apiservice.model.PortfolioDocument;
+import apiservice.repository.ChatInteractionRepository;
 import apiservice.service.PortfolioDocumentSeedService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -25,14 +28,35 @@ import java.io.IOException;
 public class ChatbotAdminController {
 
     private static final String ADMIN_TOKEN_HEADER = "X-Admin-Token";
+    private static final int RECENT_INTERACTIONS_LIMIT = 100;
 
     private final PortfolioDocumentSeedService portfolioDocumentSeedService;
+    private final ChatInteractionRepository chatInteractionRepository;
 
     @Value("${app.chat.admin-token:}")
     private String adminToken;
 
-    public ChatbotAdminController(PortfolioDocumentSeedService portfolioDocumentSeedService) {
+    public ChatbotAdminController(
+            PortfolioDocumentSeedService portfolioDocumentSeedService,
+            ChatInteractionRepository chatInteractionRepository
+    ) {
         this.portfolioDocumentSeedService = portfolioDocumentSeedService;
+        this.chatInteractionRepository = chatInteractionRepository;
+    }
+
+    @GetMapping("/recent-interactions")
+    public ResponseEntity<RecentChatbotInteractionsResponse> getRecentChatbotInteractions() {
+        var recentInteractions = chatInteractionRepository.findByOrderByCreatedAtDesc(
+                PageRequest.of(0, RECENT_INTERACTIONS_LIMIT)
+        ).stream()
+                .map(interaction -> new ChatbotInteractionResponse(
+                        interaction.getQuestion(),
+                        interaction.getAnswer(),
+                        interaction.getCreatedAt()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(new RecentChatbotInteractionsResponse(recentInteractions));
     }
 
     @PostMapping("/seed")
