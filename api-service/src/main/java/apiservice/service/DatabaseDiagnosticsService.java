@@ -17,8 +17,8 @@ public class DatabaseDiagnosticsService {
     }
 
     public DatabaseDiagnosticsResponse getDiagnostics() {
-        boolean connectivity = checkConnectivity();
         long latency = measureLatency();
+        boolean connectivity = latency != -1L;
         long uptimeMillis = queryUptimeMillis();
         long activeConnections = queryActiveConnections();
         long maxConnections = queryMaxConnections();
@@ -34,15 +34,6 @@ public class DatabaseDiagnosticsService {
                 databaseSize,
                 longRunningQueries
         );
-    }
-
-    private boolean checkConnectivity() {
-        try {
-            jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     private long measureLatency() {

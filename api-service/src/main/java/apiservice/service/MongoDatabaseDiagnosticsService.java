@@ -24,8 +24,8 @@ public class MongoDatabaseDiagnosticsService {
     }
 
     public MongoDatabaseDiagnosticsResponse getDiagnostics() {
-        boolean connectivity = checkConnectivity();
         long latency = measureLatency();
+        boolean connectivity = latency != UNAVAILABLE_METRIC;
         Document serverStatus = queryServerStatus();
         Document databaseStats = queryDatabaseStats();
 
@@ -38,15 +38,6 @@ public class MongoDatabaseDiagnosticsService {
                 getLong(databaseStats, "totalSize"),
                 queryLongRunningOperations()
         );
-    }
-
-    private boolean checkConnectivity() {
-        try {
-            executeCommand(new Document("ping", 1));
-            return true;
-        } catch (MongoException | DataAccessException exception) {
-            return false;
-        }
     }
 
     private long measureLatency() {
