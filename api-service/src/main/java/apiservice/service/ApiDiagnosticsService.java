@@ -1,6 +1,7 @@
 package apiservice.service;
 
 import parkinglot.common.model.EndpointDiagnostics;
+import parkinglot.common.model.HeapMemoryUsage;
 import parkinglot.common.response.ApiDiagnosticsResponse;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -10,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -31,6 +34,7 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
 
     private final Instant startedAt = Instant.now();
     private final ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider;
+    private final MemoryMXBean memoryMXBean;
 
     private final AtomicLong totalRequests = new AtomicLong();
     private final AtomicLong successfulRequests = new AtomicLong();
@@ -42,7 +46,15 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
             @Qualifier("requestMappingHandlerMapping")
             ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider
     ) {
+        this(requestMappingHandlerMappingProvider, ManagementFactory.getMemoryMXBean());
+    }
+
+    ApiDiagnosticsService(
+            ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider,
+            MemoryMXBean memoryMXBean
+    ) {
         this.requestMappingHandlerMappingProvider = requestMappingHandlerMappingProvider;
+        this.memoryMXBean = memoryMXBean;
     }
 
     @Override
@@ -115,6 +127,7 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
                 totalRequests.get(),
                 successfulRequests.get(),
                 failedRequests.get(),
+                HeapMemoryUsage.from(memoryMXBean.getHeapMemoryUsage()),
                 endpoints,
                 // Used to be logs, can be removed. Need to update frontend response object to remove this
                 new ArrayList<>()
