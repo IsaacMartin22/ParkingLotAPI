@@ -40,13 +40,13 @@ public class SumoLogPusher extends AppenderBase<ILoggingEvent> {
             return;
         }
 
-        encoder.start();
+        //encoder.start();
 
         if (endpointUrl == null || endpointUrl.isBlank()) {
             addInfo("No Sumo HTTP source URL configured; log shipping is disabled");
         }
 
-        super.start();
+        //super.start();
     }
 
     @Override

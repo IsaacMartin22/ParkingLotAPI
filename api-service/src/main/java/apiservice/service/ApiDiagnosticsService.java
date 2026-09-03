@@ -4,6 +4,7 @@ import parkinglot.common.model.EndpointDiagnostics;
 import parkinglot.common.response.ApiDiagnosticsResponse;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -38,6 +39,7 @@ public class ApiDiagnosticsService implements SmartInitializingSingleton {
 
     private final ConcurrentHashMap<String, EndpointMetrics> endpointMetrics = new ConcurrentHashMap<>();
 
+    @Autowired
     public ApiDiagnosticsService(
             @Qualifier("requestMappingHandlerMapping")
             ObjectProvider<RequestMappingHandlerMapping> requestMappingHandlerMappingProvider
