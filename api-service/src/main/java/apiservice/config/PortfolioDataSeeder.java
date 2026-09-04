@@ -443,6 +443,59 @@ public class PortfolioDataSeeder {
     private void addRecruiterQuestionDocuments(List<PortfolioDocument> docs) {
         // Add more recruiter question documents here if needed
 
+        // Provide an example of a goal you reached and tell me how you achieved it.
+        docs.add(buildDocument("""
+            I would see opportunities for improvement across our tech stack.
+            When I saw opportunities for improvement I would create tickets in our backlog. My Agile Team Lead (ATL) would pull 
+            tickets in according to priority and I would work on the tickets in the sprint. 
+            
+            To pick one such ticket, I mention it in my resume but at one point I noticed that one of our services was unnecessarily tripling 
+            a specific network request on page load. It had very high traffic, high costs, and had been experiencing 
+            load issues, so I had a goal to improve the service's efficiency. It wasn't until a few months later that I got the opportunity
+            when my ATL pulled my ticket in to one of our sprints.
+            
+            So in terms of how I achieved my goal of improving performance for this service, I identified the problem, documented that it was a 
+            problem, initiated the process of resolving the problem by creating a ticket, and then when it came my turn to implement a fix I 
+            analyzed the problem using a debugger and used my knowledge of React lifecycles to fix a prop/state recursive iteration so we only
+            sent the one request we needed. 
+        """,
+                "goal",
+                "personal_profile"
+        ));
+
+        // Describe a time you faced a significant challenge at work.
+        docs.add(buildDocument("""
+            I encountered a regularly occurring issue that was causing a lot of related issues. We had some very big customers and some
+            very small customers. Spikes of traffic from our larger customers would completely lock up certain services systems by 
+            overwhelming them, which would cause traffic for all other customers to get backed up.
+            
+            I was one of the developers who investigated the issue and identified the root cause. Several developers along with other
+            important stakeholders were pulled into a post mortem meeting where we discussed solutions. Obviously the ideal solution 
+            would be to scale all bottlenecked resources up, but that would dramatically increase costs. There were other longer term
+            solutions suggested, we did end up in agreement on one longer term implementation, but for a short term solution we 
+            created queues targeting single customers that would store work in a holding queue to be replayed at a controlled rate 
+            after our systems and services had stabilized
+        """,
+                "challenge",
+                "personal_profile"
+        ));
+
+        // How do you handle stress and pressure?
+        docs.add(buildDocument("""
+            I do what I can do and let the chips fall where they may. If it's a recurring stressor I might step back and evaluate
+            why I'm choosing to remain in the stressful environment and if it's worth remaining in, but if it's a one time stressor
+            I do what I can. Do what I'm supposed to be doing and do it to the best of my ability. I have limits, everyone does,
+            regularly finding a balance between comfortability and learning keeps me on the best path for sustainable growth.
+            
+            There are situations where a task is beyond me, and that's ok. There is always going to be a realistic path
+            from where I'm at currently to where I need to be to complete the task, whether that path is 100 miles or 1 mile. Other
+            developers and the company can and will work with me, around me, or beneath me, it really doesn't matter. The important
+            thing for me is to take my next step I need to be taking on my path.
+        """,
+                "stress_and_pressure",
+                "personal_profile"
+        ));
+
         // What are your strengths?
         docs.add(buildDocument("""
             I'm proactive about making myself useful. It's usually very easy to find stuff that needs to be done, if it's not strictly 
@@ -558,7 +611,7 @@ public class PortfolioDataSeeder {
             the customer so that it wouldn't have to go through my team or our support team, customers could just do it themselves. 
             I added a frontend, backend, tests, and then it just worked and neither us nor support ever had to do that manual workflow 
             again. It was also a hit with customers as well because they didn't have to wait for us to get back to them saying the work 
-            was done, they could self service the functionality.\s
+            was done, they could self service the functionality.
         """,
                 "automation",
                 "technical_summary"
