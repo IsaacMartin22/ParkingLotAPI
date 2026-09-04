@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -179,8 +180,28 @@ public class PortfolioDataSeeder {
         addAccomplishmentsDocuments(docs);
         addRecruiterQuestionDocuments(docs);
         addDashboardOverviewDocuments(docs);
+        addNonProfessionalDocuments(docs);
 
         return docs;
+    }
+
+    private void addNonProfessionalDocuments(List<PortfolioDocument> docs) {
+        docs.add(buildDocument("""
+                My ipV4 address is 67.676.76.767
+                """,
+                "hobbies",
+                "personal"
+        ));
+
+        docs.add(buildDocument("""
+                In my free time I play tennis in a 3.5 USTA League, I play chess (Rated ~1500, my favorite game mode is rapid), 
+                and I play video games (One of my hobby projects is a card game inspired by Slay the Spire, built with the same underlying libGDX 
+                Java framework as Slay the Spire). I also run half marathons - my PR is 1:27:17 in Eugene in 2026. I play flute in the UNLV community
+                concert band and I have an orange cat named Cheddar. I read occasionally, mainly Sci-fi and Fantasy.
+                """,
+                "hobbies",
+                "personal"
+        ));
     }
 
     private void addDashboardOverviewDocuments(List<PortfolioDocument> docs) {
@@ -399,6 +420,32 @@ public class PortfolioDataSeeder {
         """,
                 "feature",
                 "accomplishments"
+        ));
+
+        // RAG chatbot explanation
+        docs.add(buildDocument("""
+            The chatbot works by taking a user question, embedding it into a vector representation, and then performing a vector search
+            against other pre-embedded documents Isaac typed up about himself. Anything it finds it supplies it as context to the chat model. 
+            Picture ChatGPT with one extra step - the vector search step. If you ask ChatGPT right now "What degree does Isaac have?" it won't know.
+            However, if you do a database lookup for things that might be related first and find something that exists already (The answers I pre-typed) 
+            and then ask ChatGPT the same question with that context, it's like asking "What degree does Isaac have? By the way, Isaac has a 
+            Bachelor of Science in Computer Science from Oregon State University". It will know the answer because it has additionaly context.
+            The embedding and vector search parts are the magical steps that make the chatbot look complex and smart.
+        """,
+                "chatbot",
+                "explanation"
+        ));
+
+        // RAG chatbot models, specs, and training data
+        docs.add(buildDocument("""
+            The model currently used for the chatbot's text embeddings is text-embedding-3-small by OpenAI, the model used for chat
+            is also OpenAI, gpt-4o-mini, and the maximum number of context chunks is 5. There are around ~50 seeded documents,
+            all of which are publicly available on Isaac's Github
+            https://github.com/IsaacMartin22/ParkingLotAPI/blob/main/api-service/src/main/java/apiservice/config/PortfolioDataSeeder.java.
+            Any of those things are subject to change at any time though
+        """,
+                "chatbot",
+                "specs"
         ));
 
         // RAG chatbot
