@@ -12,7 +12,8 @@ COPY api-service/pom.xml api-service/pom.xml
 COPY sdk/pom.xml sdk/pom.xml
 COPY parking-lot-common/pom.xml parking-lot-common/pom.xml
 
-RUN chmod +x ./mvnw
+COPY mvnw .
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 RUN ./mvnw -B -ntp dependency:go-offline
 
 COPY parking-lot-common/src parking-lot-common/src

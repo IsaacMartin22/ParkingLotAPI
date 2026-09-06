@@ -1,5 +1,6 @@
 services:
   app:
+    image: isaaccmartin151/parkinglotapi-app
     build: .
     ports:
       - "8081:8081"
