@@ -1,5 +1,6 @@
 package apiservice.service;
 
+import apiservice.dbentity.ChatInteraction;
 import apiservice.model.PortfolioDocument;
 import apiservice.repository.ChatInteractionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
