@@ -14,20 +14,7 @@ import static org.mockito.Mockito.when;
 class ChatServiceImplTest {
 
     @Test
-    void returnsRedisCachedAnswerWithoutQueryingTheDatabase() {
-        ChatInteractionRepository repository = mock(ChatInteractionRepository.class);
-        ChatAnswerCache cache = mock(ChatAnswerCache.class);
-        when(cache.get("What is your Java experience?")).thenReturn("Cached answer");
-        ChatServiceImpl service = new ChatServiceImpl(null, repository, new ObjectMapper(), cache);
-
-        String answer = service.ask("What is your Java experience?");
-
-        assertEquals("Cached answer", answer);
-        verify(repository, never()).findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc("What is your Java experience?");
-    }
-
-    @Test
-    void returnsPersistedAnswerAndAddsItToRedisWithoutCallingOpenAi() {
+    void returnsPersistedAnswerWithoutUsingRedisCache() {
         ChatInteractionRepository repository = mock(ChatInteractionRepository.class);
         ChatAnswerCache cache = mock(ChatAnswerCache.class);
         ChatInteraction interaction = new ChatInteraction();
@@ -39,6 +26,7 @@ class ChatServiceImplTest {
         String answer = service.ask("What is your Java experience?");
 
         assertEquals("Stored answer", answer);
-        verify(cache).put("What is your Java experience?", "Stored answer");
+        verify(cache, never()).get("What is your Java experience?");
+        verify(cache, never()).put("What is your Java experience?", "Stored answer");
     }
 }

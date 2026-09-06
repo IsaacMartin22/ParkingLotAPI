@@ -30,7 +30,6 @@ public class ChatServiceImpl implements ChatService {
 
     private final MongoTemplate mongoTemplate;
     private final ChatInteractionRepository chatInteractionRepository;
-    private final ChatAnswerCache chatAnswerCache;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
@@ -59,12 +58,11 @@ public class ChatServiceImpl implements ChatService {
             MongoTemplate mongoTemplate,
             ChatInteractionRepository chatInteractionRepository,
             ObjectMapper objectMapper,
-            ChatAnswerCache chatAnswerCache
+            ChatAnswerCache unusedChatAnswerCache
     ) {
         this.mongoTemplate = mongoTemplate;
         this.chatInteractionRepository = chatInteractionRepository;
         this.objectMapper = objectMapper;
-        this.chatAnswerCache = chatAnswerCache;
         this.httpClient = HttpClient.newHttpClient();
     }
 
@@ -77,17 +75,10 @@ public class ChatServiceImpl implements ChatService {
             return "Question cannot be empty.";
         }
 
-        String cachedAnswer = chatAnswerCache.get(trimmedQuestion);
-        if (cachedAnswer != null) {
-            logger.info("Serving cached answer for question='{}'", trimmedQuestion);
-            return cachedAnswer;
-        }
-
         ChatInteraction existingInteraction =
                 chatInteractionRepository.findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc(trimmedQuestion);
         if (existingInteraction != null) {
             logger.info("Serving stored answer for question='{}'", trimmedQuestion);
-            chatAnswerCache.put(trimmedQuestion, existingInteraction.getAnswer());
             return existingInteraction.getAnswer();
         }
 
@@ -124,7 +115,6 @@ public class ChatServiceImpl implements ChatService {
                     vectorSearchResult.durationMs(),
                     vectorSearchResult.documentCount()
             );
-            chatAnswerCache.put(trimmedQuestion, answer);
             return answer;
         } catch (Exception ex) {
             logger.error("Exception while handling question='{}'", trimmedQuestion, ex);
