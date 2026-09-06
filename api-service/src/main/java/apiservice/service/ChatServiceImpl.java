@@ -20,6 +20,7 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @Service
@@ -97,9 +98,12 @@ public class ChatServiceImpl implements ChatService {
 
         try {
             logger.info("Generating embedding for question='{}' using model={}", trimmedQuestion, embeddingModel);
+            long embeddingStartedAt = System.nanoTime();
             float[] queryVector = embedText(trimmedQuestion);
+            long embeddingLatencyMs = elapsedMillisSince(embeddingStartedAt);
             logger.info("Searching MongoDB vector index for relevant documents for question='{}'", trimmedQuestion);
-            List<PortfolioDocument> relevantDocuments = findRelevantDocuments(queryVector, trimmedQuestion);
+            VectorSearchResult vectorSearchResult = findRelevantDocuments(queryVector, trimmedQuestion);
+            List<PortfolioDocument> relevantDocuments = vectorSearchResult.documents();
             logger.info("Retrieved {} candidate documents from MongoDB for question='{}'",
                     relevantDocuments.size(), trimmedQuestion);
 
@@ -112,7 +116,14 @@ public class ChatServiceImpl implements ChatService {
 
             logger.info("Calling OpenAI chat completion for question='{}' with contextLength={} chars", trimmedQuestion, context.length());
             String answer = chatCompletion(trimmedQuestion, context);
-            persistInteraction(trimmedQuestion, answer, queryVector);
+            persistInteraction(
+                    trimmedQuestion,
+                    answer,
+                    queryVector,
+                    embeddingLatencyMs,
+                    vectorSearchResult.durationMs(),
+                    vectorSearchResult.documentCount()
+            );
             chatAnswerCache.put(trimmedQuestion, answer);
             return answer;
         } catch (Exception ex) {
@@ -122,7 +133,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<PortfolioDocument> findRelevantDocuments(float[] queryVector, String queryText) {
+    private VectorSearchResult findRelevantDocuments(float[] queryVector, String queryText) {
         List<Double> vector = new ArrayList<>();
         for (float value : queryVector) {
             vector.add((double) value);
@@ -140,6 +151,7 @@ public class ChatServiceImpl implements ChatService {
                         .append("score", new Document("$meta", "vectorSearchScore")))
         );
 
+        long vectorSearchStartedAt = System.nanoTime();
         List<PortfolioDocument> results = new ArrayList<>();
         for (Document document : mongoTemplate.getCollection(collectionName).aggregate(pipeline)) {
             PortfolioDocument chunk = new PortfolioDocument();
@@ -150,14 +162,15 @@ public class ChatServiceImpl implements ChatService {
             chunk.setMetadata((Map<String, Object>) (Map<?, ?>) document.get("metadata", Map.class));
             results.add(chunk);
         }
+        long vectorSearchDurationMs = elapsedMillisSince(vectorSearchStartedAt);
 
         logger.info("Vector search result count={}", results.size());
         if (!results.isEmpty()) {
-            return results;
+            return new VectorSearchResult(results, vectorSearchDurationMs, results.size());
         }
 
         logger.warn("No vector matches found for query='{}'; falling back to text search with normalized query terms.", queryText);
-        return findRelevantDocumentsByText(queryText);
+        return new VectorSearchResult(findRelevantDocumentsByText(queryText), vectorSearchDurationMs, 0);
     }
 
     @SuppressWarnings("unchecked")
@@ -267,14 +280,29 @@ public class ChatServiceImpl implements ChatService {
         return answer;
     }
 
-    private void persistInteraction(String question, String answer, float[] embeddingVector) {
+    private void persistInteraction(
+            String question,
+            String answer,
+            float[] embeddingVector,
+            long embeddingLatencyMs,
+            long vectorSearchDurationMs,
+            int vectorSearchDocumentCount
+    ) {
         chatInteractionRepository.insertWithVectorCast(
                 question,
                 answer,
                 toPgVectorLiteral(embeddingVector),
                 embeddingModel,
-                chatModel
+                chatModel,
+                false,
+                embeddingLatencyMs,
+                vectorSearchDurationMs,
+                vectorSearchDocumentCount
         );
+    }
+
+    private long elapsedMillisSince(long startedAt) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
     }
 
     private String toPgVectorLiteral(float[] embeddingVector) {
@@ -287,5 +315,12 @@ public class ChatServiceImpl implements ChatService {
         }
         builder.append("]");
         return builder.toString();
+    }
+
+    private record VectorSearchResult(
+            List<PortfolioDocument> documents,
+            long durationMs,
+            int documentCount
+    ) {
     }
 }

@@ -21,14 +21,38 @@ public interface ChatInteractionRepository extends JpaRepository<ChatInteraction
     @Modifying
     @Transactional
     @Query(value = """
-            INSERT INTO chat_interactions (question, answer, embedding, embedding_model, chat_model)
-            VALUES (:question, :answer, CAST(:embedding AS vector), :embeddingModel, :chatModel)
+            INSERT INTO chat_interactions (
+                question,
+                answer,
+                embedding,
+                embedding_model,
+                chat_model,
+                cache_hit,
+                embedding_latency_ms,
+                vector_search_duration_ms,
+                vector_search_document_count
+            )
+            VALUES (
+                :question,
+                :answer,
+                CAST(:embedding AS vector),
+                :embeddingModel,
+                :chatModel,
+                :cacheHit,
+                :embeddingLatencyMs,
+                :vectorSearchDurationMs,
+                :vectorSearchDocumentCount
+            )
             """, nativeQuery = true)
     void insertWithVectorCast(
             @Param("question") String question,
             @Param("answer") String answer,
             @Param("embedding") String embedding,
             @Param("embeddingModel") String embeddingModel,
-            @Param("chatModel") String chatModel
+            @Param("chatModel") String chatModel,
+            @Param("cacheHit") boolean cacheHit,
+            @Param("embeddingLatencyMs") long embeddingLatencyMs,
+            @Param("vectorSearchDurationMs") long vectorSearchDurationMs,
+            @Param("vectorSearchDocumentCount") int vectorSearchDocumentCount
     );
 }
