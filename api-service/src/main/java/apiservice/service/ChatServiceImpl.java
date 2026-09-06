@@ -28,6 +28,7 @@ public class ChatServiceImpl implements ChatService {
 
     private final MongoTemplate mongoTemplate;
     private final ChatInteractionRepository chatInteractionRepository;
+    private final ChatAnswerCache chatAnswerCache;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
@@ -55,11 +56,13 @@ public class ChatServiceImpl implements ChatService {
     public ChatServiceImpl(
             MongoTemplate mongoTemplate,
             ChatInteractionRepository chatInteractionRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            ChatAnswerCache chatAnswerCache
     ) {
         this.mongoTemplate = mongoTemplate;
         this.chatInteractionRepository = chatInteractionRepository;
         this.objectMapper = objectMapper;
+        this.chatAnswerCache = chatAnswerCache;
         this.httpClient = HttpClient.newHttpClient();
     }
 
@@ -70,6 +73,20 @@ public class ChatServiceImpl implements ChatService {
         if (trimmedQuestion.isBlank()) {
             logger.warn("ask() received blank question");
             return "Question cannot be empty.";
+        }
+
+        String cachedAnswer = chatAnswerCache.get(trimmedQuestion);
+        if (cachedAnswer != null) {
+            logger.info("Serving cached answer for question='{}'", trimmedQuestion);
+            return cachedAnswer;
+        }
+
+        ChatInteraction existingInteraction =
+                chatInteractionRepository.findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc(trimmedQuestion);
+        if (existingInteraction != null) {
+            logger.info("Serving stored answer for question='{}'", trimmedQuestion);
+            chatAnswerCache.put(trimmedQuestion, existingInteraction.getAnswer());
+            return existingInteraction.getAnswer();
         }
 
         if (openAiApiKey == null || openAiApiKey.isBlank()) {
@@ -95,6 +112,7 @@ public class ChatServiceImpl implements ChatService {
             logger.info("Calling OpenAI chat completion for question='{}' with contextLength={} chars", trimmedQuestion, context.length());
             String answer = chatCompletion(trimmedQuestion, context);
             persistInteraction(trimmedQuestion, answer, queryVector);
+            chatAnswerCache.put(trimmedQuestion, answer);
             return answer;
         } catch (Exception ex) {
             logger.error("Exception while handling question='{}'", trimmedQuestion, ex);
