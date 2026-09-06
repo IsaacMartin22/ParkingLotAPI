@@ -36,6 +36,21 @@ public class ChatInteraction {
     @Column(name = "chat_model", nullable = false)
     private String chatModel;
 
+    @Column(name = "cache_hit")
+    private Boolean cacheHit;
+
+    @Column(name = "embedding_latency_ms")
+    private Long embeddingLatencyMs;
+
+    @Column(name = "vector_search_duration_ms")
+    private Long vectorSearchDurationMs;
+
+    @Column(name = "vector_search_document_count")
+    private Integer vectorSearchDocumentCount;
+
+    @Column(name = "rating")
+    private Integer rating;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 }

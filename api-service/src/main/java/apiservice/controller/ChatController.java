@@ -31,7 +31,12 @@ public class ChatController {
                 .map(interaction -> new ChatbotInteractionResponse(
                         interaction.getQuestion(),
                         interaction.getAnswer(),
-                        interaction.getCreatedAt()
+                        interaction.getCreatedAt(),
+                        interaction.getCacheHit(),
+                        interaction.getEmbeddingLatencyMs(),
+                        interaction.getVectorSearchDurationMs(),
+                        interaction.getVectorSearchDocumentCount(),
+                        interaction.getRating()
                 ))
                 .toList();
 
