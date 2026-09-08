@@ -6,442 +6,285 @@
   <title>Parking Lot API Endpoints</title>
   <style>
     :root {
-              --bg: #f2f6fb;
-              --panel: #ffffff;
-              --text: #111827;
-              --muted: #4b5563;
-              --border: #d6dfeb;
-              --header: #eef4fc;
-              --accent: #1d4ed8;
-              --get: #0f766e;
-              --post: #b45309;
-              --put: #7c3aed;
-            }
-
-    * {
-      box-sizing: border-box;
+      --bg: #f2f6fb;
+      --panel: #ffffff;
+      --text: #111827;
+      --muted: #4b5563;
+      --border: #d6dfeb;
+      --header: #eef4fc;
+      --get: #0f766e;
+      --post: #b45309;
+      --put: #7c3aed;
+      --delete: #dc2626;
     }
 
-            body {
-              margin: 0;
-              background: radial-gradient(circle at top, #f8fbff, var(--bg));
-              color: var(--text);
-              font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-              line-height: 1.6;
-              padding: 2rem 1rem 3rem;
-            }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #f8fbff, var(--bg));
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1rem 3rem;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .hero, .section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    }
+    .hero {
+      background: linear-gradient(145deg, #ffffff, #edf4ff);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    }
+    .section { padding: 1rem; margin-bottom: 1rem; }
+    h1, h2 { margin: 0; color: #0f172a; }
+    h1 { font-size: 1.95rem; line-height: 1.2; }
+    h2 { font-size: 1.2rem; margin-bottom: 0.2rem; }
+    .intro, .section-note { color: var(--muted); max-width: 90ch; }
+    .intro { margin: 0.6rem 0 0; }
+    .legend { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 670px; }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.7rem 0.8rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--header); font-weight: 600; }
+    tr:nth-child(even) td { background: #fbfdff; }
+    code {
+      background: #ecf1f8;
+      border-radius: 5px;
+      padding: 0.14rem 0.35rem;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.93em;
+    }
+    .method {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 0.14rem 0.62rem;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+      min-width: 52px;
+      text-align: center;
+    }
+    .method.get { background: var(--get); }
+    .method.post { background: var(--post); }
+    .method.put { background: var(--put); }
+    .method.delete { background: var(--delete); }
+    .samples {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 0.9rem;
+    }
+    .sample-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fbfdff;
+    }
+    .sample-head {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.7rem 0.8rem;
+      background: #eef4fc;
+      border-bottom: 1px solid var(--border);
+    }
+    .sample-endpoint { margin: 0; color: #0f172a; font-size: 0.94rem; }
+    pre {
+      margin: 0;
+      padding: 0.8rem;
+      overflow-x: auto;
+      background: #f9fbff;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+    pre code { background: transparent; padding: 0; }
+    @media (max-width: 768px) {
+      body { padding: 1rem 0.65rem 2rem; }
+      .hero, .section { border-radius: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <h1>Parking Lot API Documentation</h1>
+      <p class="intro">Base URL: <code>https://api-service-i1ms.onrender.com</code></p>
+      <p class="intro">
+        This service exposes parking lot inventory, floor and section lookup, parking-space mutation,
+        analytics, diagnostics, chat, contact, and integration endpoints.
+      </p>
+      <p class="intro">
+        Public writes are limited to parking-space updates, analytics events, contact messages, and chat.
+        Lot, floor, and section creation is handled outside the public API.
+      </p>
+      <p class="intro">
+        Capacity limits are enforced in the domain: lots may have up to 6 floors, floors up to 10 sections,
+        and sections up to 10 parking spaces.
+      </p>
+      <div class="legend" aria-label="HTTP method legend">
+        <span class="method get">GET</span>
+        <span class="method post">POST</span>
+        <span class="method put">PUT</span>
+        <span class="method delete">DELETE</span>
+      </div>
+    </header>
 
-            .container {
-              max-width: 1100px;
-              margin: 0 auto;
-            }
+    <section class="section">
+      <h2>Parking Lots</h2>
+      <p class="section-note">Top-level parking lot lookup and nested floor details.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/lots</code></td><td>Get all parking lots.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/lots/{id}</code></td><td>Get a parking lot by ID.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/lots/{lotId}/floors/{floorId}/details</code></td><td>Get floor details for a specific lot and floor.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-            .hero {
-              background: linear-gradient(145deg, #ffffff, #edf4ff);
-              border: 1px solid var(--border);
-              border-radius: 16px;
-              padding: 1.5rem;
-              margin-bottom: 1rem;
-              box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
-            }
+    <section class="section">
+      <h2>Floors</h2>
+      <p class="section-note">Floor-level data within a parking lot.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/floors</code></td><td>Get all floors.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/floors/{id}</code></td><td>Get a floor by ID.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-            h1 {
-              margin: 0 0 0.5rem;
-              color: #0f172a;
-              font-size: 1.95rem;
-              line-height: 1.2;
-            }
+    <section class="section">
+      <h2>Sections</h2>
+      <p class="section-note">Sections group parking spaces on a floor.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/sections</code></td><td>Get all sections.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/sections/{id}</code></td><td>Get a section by ID.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-            .intro {
-              margin: 0;
-              color: var(--muted);
-              max-width: 90ch;
-            }
+    <section class="section">
+      <h2>Parking Spaces</h2>
+      <p class="section-note">Parking-space lookup and occupancy updates.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/spaces</code></td><td>Get all parking spaces.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/spaces/{id}</code></td><td>Get a parking space by ID.</td></tr>
+            <tr><td><span class="method put">PUT</span></td><td><code>/api/spaces/{id}</code></td><td>Assign a car to an empty parking space.</td></tr>
+            <tr><td><span class="method delete">DELETE</span></td><td><code>/api/spaces/{id}</code></td><td>Remove a car from an occupied parking space.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-            .intro + .intro {
-              margin-top: 0.6rem;
-            }
+    <section class="section">
+      <h2>Analytics</h2>
+      <p class="section-note">Record events and query aggregated analytics.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method post">POST</span></td><td><code>/api/analytics</code></td><td>Record an analytics event.</td></tr>
+            <tr><td><span class="method post">POST</span></td><td><code>/api/analytics/search</code></td><td>Query analytics with filters.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-            .legend {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 0.5rem;
-              margin: 1rem 0 0;
-            }
+    <section class="section">
+      <h2>Chat and Contact</h2>
+      <p class="section-note">User-facing support endpoints.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/recent-interactions</code></td><td>Get recent chatbot interactions.</td></tr>
+            <tr><td><span class="method post">POST</span></td><td><code>/api/chat</code></td><td>Submit a chat question.</td></tr>
+            <tr><td><span class="method post">POST</span></td><td><code>/api/contact</code></td><td>Send a contact message.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-            .section {
-              background: var(--panel);
-              border: 1px solid var(--border);
-              border-radius: 14px;
-              padding: 1rem;
-              margin-bottom: 1rem;
-              box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
-            }
+    <section class="section">
+      <h2>Diagnostics, Integrations, and Events</h2>
+      <p class="section-note">Operational visibility, deployment info, and SSE updates.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/diagnostics/ping</code></td><td>Lightweight health ping.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/diagnostics/api</code></td><td>API diagnostics including request and heap metrics.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/diagnostics/database</code></td><td>Database diagnostics.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/diagnostics/mongodb</code></td><td>MongoDB diagnostics.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/integrations/bk</code></td><td>Buildkite build information.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/integrations/deploy</code></td><td>Deployment information.</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/lots/{lotId}/floors/{floorId}/events</code></td><td>Subscribe to floor SSE updates.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-            h2 {
-              margin: 0 0 0.2rem;
-              font-size: 1.2rem;
-              color: #0f172a;
-            }
-
-            .section-note {
-              margin: 0 0 0.8rem;
-              color: var(--muted);
-              font-size: 0.94rem;
-            }
-
-            .table-wrap {
-              overflow-x: auto;
-            }
-
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              min-width: 670px;
-            }
-
-            th,
-            td {
-              border: 1px solid var(--border);
-              padding: 0.7rem 0.8rem;
-              text-align: left;
-              vertical-align: top;
-            }
-
-            th {
-              background: var(--header);
-              color: #0f172a;
-              font-weight: 600;
-            }
-
-            tr:nth-child(even) td {
-              background: #fbfdff;
-            }
-
-            code {
-              background: #ecf1f8;
-              border-radius: 5px;
-              padding: 0.14rem 0.35rem;
-              font-family: Consolas, "Courier New", monospace;
-              color: #0b1220;
-              font-size: 0.93em;
-            }
-
-            .method {
-              display: inline-block;
-              border-radius: 999px;
-              padding: 0.14rem 0.62rem;
-              font-size: 0.76rem;
-              font-weight: 700;
-              letter-spacing: 0.04em;
-              color: #ffffff;
-              min-width: 52px;
-              text-align: center;
-              box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.2);
-            }
-
-            .method.get {
-              background: var(--get);
-            }
-
-            .method.post {
-              background: var(--post);
-            }
-
-            .method.put {
-              background: var(--put);
-            }
-
-            .method.delete {
-              background: #dc2626;
-            }
-
-            .samples {
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-              gap: 0.9rem;
-            }
-
-            .sample-card {
-              border: 1px solid var(--border);
-              border-radius: 10px;
-              overflow: hidden;
-              background: #fbfdff;
-            }
-
-            .sample-head {
-              display: flex;
-              align-items: center;
-              gap: 0.55rem;
-              padding: 0.7rem 0.8rem;
-              background: #eef4fc;
-              border-bottom: 1px solid var(--border);
-            }
-
-            .sample-endpoint {
-              margin: 0;
-              color: #0f172a;
-              font-size: 0.94rem;
-            }
-
-            pre {
-              margin: 0;
-              padding: 0.8rem;
-              overflow-x: auto;
-              background: #f9fbff;
-              color: #0f172a;
-              font-family: Consolas, "Courier New", monospace;
-              font-size: 0.84rem;
-              line-height: 1.45;
-            }
-
-            pre code {
-              background: transparent;
-              padding: 0;
-              border-radius: 0;
-            }
-
-            @media (max-width: 768px) {
-              body {
-                padding: 1rem 0.65rem 2rem;
-              }
-
-              .hero,
-              .section {
-                border-radius: 11px;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <main class="container">
-            <header class="hero">
-              <h1>Parking Lot API Documentation</h1>
-              <h2>Base URL - Hosted via Render at https://api-service-i1ms.onrender.com/</h2>
-              <p class="intro">
-                The Parking Lot API helps you manage parking lots, floors, sections and parking spaces
-                from a single service. It also includes diagnostics, a lightweight health ping, and
-                event-streaming endpoints to support
-                operations dashboards and real-time client updates.
-              </p>
-              <p class="intro">
-                Use the endpoint tables below for a quick reference, and use the sample request bodies when
-                testing create/update operations from Postman, curl, or your frontend integration.
-              </p>
-              <p class="intro">
-                Lot, floor, and section creation is handled outside the public API. Operational writes are
-                limited to parking-space updates.
-              </p>
-              <p class="intro">
-                Enforced capacity limits: parking lots have no count limit, each parking lot can have up to 6 floors,
-                each floor can have up to 10 sections, and each section can have up to 10 parking spaces.
-              </p>
-              <div class="legend" aria-label="HTTP method legend">
-                <span class="method get">GET</span>
-                <span class="method post">POST</span>
-                <span class="method put">PUT</span>
-                <span class="method delete">DELETE</span>
-              </div>
-            </header>
-
-            <section class="section">
-              <h2>Floors</h2>
-              <p class="section-note">Floor-level data within a parking lot.</p>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Method</th>
-                      <th>Endpoint</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/floors</code></td>
-                      <td>Get all floors.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/floors/{id}</code></td>
-                      <td>Get a floor by ID.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="section">
-              <h2>Sections</h2>
-              <p class="section-note">Sections group parking spaces on a floor.</p>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Method</th>
-                      <th>Endpoint</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/sections</code></td>
-                      <td>Get all sections.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/sections/{id}</code></td>
-                      <td>Get a section by ID.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="section">
-              <h2>Parking Lots</h2>
-              <p class="section-note">Top-level parking lot management and floor details.</p>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Method</th>
-                      <th>Endpoint</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/lots</code></td>
-                      <td>Get all parking lots.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/lots/{id}</code></td>
-                      <td>Get a parking lot by ID.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/lots/{lotId}/floors/{floorId}/details</code></td>
-                      <td>Get details for a specific floor in a parking lot.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="section">
-              <h2>Parking Spaces</h2>
-              <p class="section-note">Parking-space records and updates.</p>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Method</th>
-                      <th>Endpoint</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/spaces</code></td>
-                      <td>Get all parking spaces.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/spaces/{id}</code></td>
-                      <td>Get a parking space by ID.</td>
-                    </tr>
-                     <tr>
-                       <td><span class="method put">PUT</span></td>
-                       <td><code>/api/spaces/{id}</code></td>
-                       <td>Update an existing parking space.</td>
-                     </tr>
-                     <tr>
-                       <td><span class="method delete">DELETE</span></td>
-                       <td><code>/api/spaces/{id}</code></td>
-                       <td>Remove a car from a parking space.</td>
-                     </tr>
-                   </tbody>
-                 </table>
-              </div>
-            </section>
-
-            <section class="section">
-              <h2>Diagnostics and Events</h2>
-              <p class="section-note">Runtime visibility and server-sent floor events.</p>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Method</th>
-                      <th>Endpoint</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/diagnostics/ping</code></td>
-                      <td>Lightweight health ping for quick liveness checks.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/diagnostics/api</code></td>
-                      <td>Get API diagnostics, including heapMemoryUsage used and max byte metrics (-1 when unavailable).</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/diagnostics/database</code></td>
-                      <td>Get database diagnostics and connection details.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/diagnostics/mongodb</code></td>
-                      <td>Get MongoDB diagnostics, connection capacity, storage size, and long-running operations.</td>
-                    </tr>
-                    <tr>
-                      <td><span class="method get">GET</span></td>
-                      <td><code>/api/lots/{lotId}/floors/{floorId}/events</code></td>
-                      <td>Subscribe to real-time floor events as a server-sent event stream. Events include ADD, UPDATE, and REMOVE operations.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="section">
-              <h2>Sample JSON Request Bodies</h2>
-              <p class="section-note">
-                For nested references, provide existing entity IDs such as <code>parkingSpace.id</code> or
-                <code>section.id</code>.
-              </p>
-              <div class="samples">
-                <article class="sample-card">
-                  <div class="sample-head">
-                    <span class="method put">PUT</span>
-                    <p class="sample-endpoint"><code>/api/spaces/{id}</code></p>
-                  </div>
-                  <pre><code>{
-  "number": "A-21",
-  "clearCar": false
+    <section class="section">
+      <h2>Sample JSON Request Bodies</h2>
+      <p class="section-note">Examples for the current write endpoints.</p>
+      <div class="samples">
+        <article class="sample-card">
+          <div class="sample-head">
+            <span class="method put">PUT</span>
+            <p class="sample-endpoint"><code>/api/spaces/{id}</code></p>
+          </div>
+          <pre><code>{
+  "color": "Red",
+  "make": "Toyota",
+  "model": "Corolla",
+  "manufacturingYear": 2022,
+  "licensePlate": "ABC-123"
 }</code></pre>
-                </article>
-
-                <article class="sample-card">
-                  <div class="sample-head">
-                    <span class="method delete">DELETE</span>
-                    <p class="sample-endpoint"><code>/api/spaces/{id}</code></p>
-                  </div>
-                  <pre><code>// No request body required
-// Removes the car from the parking space</code></pre>
-                </article>
-              </div>
-            </section>
-          </main>
-        </body>
-        </html>
+        </article>
+        <article class="sample-card">
+          <div class="sample-head">
+            <span class="method post">POST</span>
+            <p class="sample-endpoint"><code>/api/chat</code></p>
+          </div>
+          <pre><code>{
+  "question": "How many floors are available?"
+}</code></pre>
+        </article>
+        <article class="sample-card">
+          <div class="sample-head">
+            <span class="method post">POST</span>
+            <p class="sample-endpoint"><code>/api/contact</code></p>
+          </div>
+          <pre><code>{
+  "subject": "Support request",
+  "message": "I need help with a parking space update."
+}</code></pre>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
