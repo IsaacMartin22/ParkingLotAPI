@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # publish-docker-image.sh
 # Builds the API service Docker image and pushes it to Docker Hub.
 #
@@ -9,14 +9,10 @@
 # Optional environment variables:
 #   DOCKER_IMAGE_TAG    – Full image tag to build and push
 
-set -euo pipefail
+set -eu
 
-for required_var in DOCKERHUB_USERNAME DOCKERHUB_TOKEN; do
-  if [[ -z "${!required_var:-}" ]]; then
-    echo "${required_var} is required to push the Docker image"
-    exit 1
-  fi
-done
+: "${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required to push the Docker image}"
+: "${DOCKERHUB_TOKEN:?DOCKERHUB_TOKEN is required to push the Docker image}"
 
 DOCKER_IMAGE_TAG="${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app}"
 

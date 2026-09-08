@@ -27,7 +27,7 @@ steps:
             - "/var/run/docker.sock:/var/run/docker.sock"
     command:
       - "chmod +x .buildkite/scripts/publish-docker-image.sh"
-      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app bash .buildkite/scripts/publish-docker-image.sh"
+      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/publish-docker-image.sh"
 
   - input: ":rocket: Optional Common Release"
     key: "optional-common-release"
