@@ -16,17 +16,14 @@ class ChatServiceImplTest {
     @Test
     void returnsPersistedAnswerWithoutUsingRedisCache() {
         ChatInteractionRepository repository = mock(ChatInteractionRepository.class);
-        ChatAnswerCache cache = mock(ChatAnswerCache.class);
         ChatInteraction interaction = new ChatInteraction();
         interaction.setAnswer("Stored answer");
         when(repository.findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc("What is your Java experience?"))
                 .thenReturn(interaction);
-        ChatServiceImpl service = new ChatServiceImpl(null, repository, new ObjectMapper(), cache);
+        ChatServiceImpl service = new ChatServiceImpl(null, repository, new ObjectMapper());
 
         String answer = service.ask("What is your Java experience?");
 
         assertEquals("Stored answer", answer);
-        verify(cache, never()).get("What is your Java experience?");
-        verify(cache, never()).put("What is your Java experience?", "Stored answer");
     }
 }

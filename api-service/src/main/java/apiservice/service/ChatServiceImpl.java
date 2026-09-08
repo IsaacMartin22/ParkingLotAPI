@@ -57,8 +57,7 @@ public class ChatServiceImpl implements ChatService {
     public ChatServiceImpl(
             MongoTemplate mongoTemplate,
             ChatInteractionRepository chatInteractionRepository,
-            ObjectMapper objectMapper,
-            ChatAnswerCache unusedChatAnswerCache
+            ObjectMapper objectMapper
     ) {
         this.mongoTemplate = mongoTemplate;
         this.chatInteractionRepository = chatInteractionRepository;
