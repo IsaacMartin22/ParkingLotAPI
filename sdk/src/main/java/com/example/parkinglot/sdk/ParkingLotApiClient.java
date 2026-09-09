@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.List;
 
 public class ParkingLotApiClient {
-    private static final String DEFAULT_BASE_URL = "https://api-service-i1ms.onrender.com/api";
+    private static final String DEFAULT_BASE_URL = "https://sh-a66cb3aaf6c24d84a13a50a2e4a0eb71.ecs.us-east-2.on.aws/api";
 
     private final String baseUrl;
     private final HttpClient httpClient;
