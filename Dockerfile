@@ -26,7 +26,7 @@ FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
-COPY newrelic /tmp/newrelic
+COPY newrelic /app/newrelic
 
 COPY --from=build /app/api-service/target/*.jar app.jar
 
