@@ -25,8 +25,7 @@ FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
-COPY newrelic/newrelic.jar /app/newrelic/newrelic.jar
-COPY newrelic/newrelic.yml /app/newrelic/newrelic.yml
+COPY newrelic/ /app/newrelic/
 COPY --from=build /app/api-service/target/*.jar app.jar
 
 EXPOSE 8080
