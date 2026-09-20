@@ -26,15 +26,7 @@ FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
-ADD https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip /tmp/newrelic-java.zip
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends unzip \
-    && unzip /tmp/newrelic-java.zip -d /app \
-    && rm /tmp/newrelic-java.zip \
-    && apt-get purge -y --auto-remove unzip \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY newrelic/newrelic.yml /app/newrelic/newrelic.yml
+COPY newrelic /app/newrelic
 
 COPY --from=build /app/api-service/target/*.jar app.jar
 
