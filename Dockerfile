@@ -18,19 +18,18 @@ RUN ./mvnw -B -ntp dependency:go-offline
 
 COPY parking-lot-common/src parking-lot-common/src
 COPY api-service/src api-service/src
+COPY newrelic newrelic
 
-RUN ./mvnw -B -ntp -pl api-service -am clean package -DskipTests
+RUN ./mvnw -B -ntp -pl api-service -am clean package -DskipTests \
+    && mkdir -p /app/newrelic \
+    && python -c "import zipfile; z=zipfile.ZipFile('newrelic/newrelic-java-9.4.0.zip'); z.extractall('/app/newrelic')"
 
 # Runtime stage
 FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
-COPY newrelic /tmp/newrelic
-RUN mkdir -p /app/newrelic \
-    && unzip /tmp/newrelic/newrelic-java-9.4.0.zip -d /app/newrelic \
-    && rm -rf /tmp/newrelic
-
+COPY --from=build /app/newrelic /app/newrelic
 COPY --from=build /app/api-service/target/*.jar app.jar
 
 EXPOSE 8080
