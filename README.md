@@ -44,7 +44,7 @@ This service uses the New Relic Java agent for APM and log forwarding.
 
 - Set `NEW_RELIC_LICENSE_KEY` in the runtime environment to enable log forwarding.
 - Optionally set `NEW_RELIC_APP_NAME` to override the default app name of `parking-lot-api`.
-- The Docker image copies the checked-in `newrelic/` directory and starts the JVM with `-javaagent:/app/newrelic/newrelic.jar`.
+- The Docker image unpacks the checked-in `newrelic/newrelic-java-9.4.0.zip`, copies `newrelic/newrelic.yml`, and starts the JVM with `-javaagent:/app/newrelic/newrelic.jar`.
 - For ECS, store the license key in AWS Secrets Manager or SSM Parameter Store and inject it into the task definition as an environment secret.
 - Logback continues writing structured JSON to stdout; the New Relic agent handles automatic application log forwarding from the JVM.
 
