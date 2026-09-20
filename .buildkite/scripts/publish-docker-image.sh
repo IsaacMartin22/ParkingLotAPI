@@ -19,6 +19,11 @@ DOCKER_IMAGE_TAG="${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app}"
 echo "--- :whale: Logging in to Docker Hub"
 echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
+echo "--- :mag_right: Verifying New Relic agent files are present"
+ls -la newrelic
+[ -f newrelic/newrelic.jar ] || { echo "Missing newrelic/newrelic.jar in the build context"; exit 1; }
+[ -f newrelic/newrelic.yml ] || { echo "Missing newrelic/newrelic.yml in the build context"; exit 1; }
+
 echo "--- :building_construction: Building Docker image ${DOCKER_IMAGE_TAG}"
 docker build -t "${DOCKER_IMAGE_TAG}" .
 
