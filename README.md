@@ -12,6 +12,8 @@ via a docker image and hosted 24/7 because it powers my portfolio site on my git
 for me which is currently Render's free tier. The hosted url is currently hardcoded into both the SDK and the frontend query so
 if I ever change where it's hosted I will need to update those two places.
 
+The repository's container workflow is centered on the root `Dockerfile`. There is no separate Docker Compose setup to maintain.
+
 API documentation is available at the hosted URL, which should be listed on the github repository page in the upper right corner.
 It lists the endpoints available and payload shapes for those endpoints.
 
