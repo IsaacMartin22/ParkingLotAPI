@@ -7,14 +7,14 @@ Uses Maven multi-module build. New version publishing should be triggered only v
 There is the api-service module which is the main application, there is an sdk module which is the sdk for the API service, 
 and lastly a shared common module which contains code used in both the api-service and sdk modules.
 
-The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The api service is built 
-via a docker image and hosted 24/7 because it powers my portfolio site on my github pages. It is hosted wherever is cheapest 
-for me which is currently Render's free tier. The hosted url is currently hardcoded into both the SDK and the frontend query so
-if I ever change where it's hosted I will need to update those two places.
+The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The api service is built
+via a Docker image and hosted 24/7 because it powers my portfolio site on GitHub Pages. It is now deployed on AWS using ECS.
+The hosted URL is currently hardcoded into both the SDK and the frontend query, so if I ever change where it's hosted I will
+need to update those two places.
 
 The repository's container workflow is centered on the root `Dockerfile`. There is no separate Docker Compose setup to maintain.
 
-API documentation is available at the hosted URL, which should be listed on the github repository page in the upper right corner.
+API documentation is available at the hosted URL, which should be listed on the GitHub repository page in the upper right corner.
 It lists the endpoints available and payload shapes for those endpoints.
 
 ## Java SDK
