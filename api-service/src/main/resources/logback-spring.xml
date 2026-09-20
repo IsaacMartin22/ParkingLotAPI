@@ -9,23 +9,7 @@
         </encoder>
     </appender>
 
-    <appender name="SUMO_HTTP" class="apiservice.logging.SumoLogPusher">
-        <endpointUrl>${SUMOLOGIC_HTTP_SOURCE_URL}</endpointUrl>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>
-                {"environment":"${environment}"}
-            </customFields>
-        </encoder>
-    </appender>
-
-    <appender name="ASYNC_SUMO_HTTP" class="ch.qos.logback.classic.AsyncAppender">
-        <queueSize>8192</queueSize>
-        <discardingThreshold>0</discardingThreshold>
-        <appender-ref ref="SUMO_HTTP"/>
-    </appender>
-
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="ASYNC_SUMO_HTTP"/>
     </root>
 </configuration>

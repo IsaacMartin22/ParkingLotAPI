@@ -36,6 +36,16 @@ the database's inception so go off those and add a new migration.
 The only time those things would need to be changed is if some sort of construction work was done for the airport and the number of parking spaces 
 increased or decreased. That would be a rare occurrence and only one person would need to change the database so a migration seems appropriate. 
 
+## Logging
+
+This service uses the New Relic Java agent for APM and log forwarding.
+
+- Set `NEW_RELIC_LICENSE_KEY` in the runtime environment to enable log forwarding.
+- Optionally set `NEW_RELIC_APP_NAME` to override the default app name of `parking-lot-api`.
+- The Docker image includes the agent and starts the JVM with `-javaagent:/app/newrelic/newrelic.jar`.
+- For ECS, store the license key in AWS Secrets Manager or SSM Parameter Store and inject it into the task definition as an environment secret.
+- Logback continues writing structured JSON to stdout; the New Relic agent handles automatic application log forwarding from the JVM.
+
 ## !!! Hard reset the database - Dangerous !!!
 ### Dev testing only! Staging environments only!
 
