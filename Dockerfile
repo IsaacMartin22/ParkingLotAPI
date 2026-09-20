@@ -21,12 +21,14 @@ COPY api-service/src api-service/src
 RUN ./mvnw -B -ntp -pl api-service -am clean package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
 COPY newrelic/ /app/newrelic/
 COPY --from=build /app/api-service/target/*.jar app.jar
+
+RUN cd /app/newrelic && jar xf newrelic-java-9.4.0.zip && test -f /app/newrelic/newrelic.jar
 
 EXPOSE 8080
 
