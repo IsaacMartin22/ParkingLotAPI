@@ -26,7 +26,10 @@ FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
-COPY newrelic /app/newrelic
+COPY newrelic/newrelic-java-9.4.0.zip /tmp/newrelic.zip
+RUN mkdir -p /app/newrelic \
+    && unzip /tmp/newrelic.zip -d /app/newrelic \
+    && rm /tmp/newrelic.zip
 
 COPY --from=build /app/api-service/target/*.jar app.jar
 
