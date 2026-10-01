@@ -1,5 +1,6 @@
 package apiservice.controller;
 
+import apiservice.model.OpenAiChatModel;
 import apiservice.repository.ChatInteractionRepository;
 import apiservice.service.ChatService;
 import jakarta.validation.Valid;
@@ -9,6 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -43,19 +47,40 @@ public class ChatController {
         return ResponseEntity.ok(new RecentChatbotInteractionsResponse(recentInteractions));
     }
 
+    @GetMapping("/chat/models")
+    public ResponseEntity<AvailableModelsResponse> getAvailableModels() {
+        List<String> models = Arrays.stream(OpenAiChatModel.values())
+                .map(OpenAiChatModel::getValue)
+                .sorted()
+                .toList();
+
+        return ResponseEntity.ok(new AvailableModelsResponse(models));
+    }
+
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> chat(@Valid @RequestBody ChatRequest request) {
         if (request == null || request.question() == null || request.question().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Question is required.");
         }
 
-        String answer = chatService.ask(request.question());
-        return ResponseEntity.ok(new ChatResponse(answer));
+        if (request.model() != null && !request.model().isBlank()) {
+            OpenAiChatModel.fromValue(request.model());
+        }
+
+        try {
+            String answer = chatService.ask(request.question(), request.model());
+            return ResponseEntity.ok(new ChatResponse(answer));
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 
-    public record ChatRequest(@NotBlank(message = "Question is required") String question) {
+    public record ChatRequest(@NotBlank(message = "Question is required") String question, String model) {
     }
 
     public record ChatResponse(String answer) {
+    }
+
+    public record AvailableModelsResponse(List<String> models) {
     }
 }

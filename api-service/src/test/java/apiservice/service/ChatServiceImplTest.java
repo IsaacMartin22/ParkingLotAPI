@@ -18,8 +18,10 @@ class ChatServiceImplTest {
         ChatInteractionRepository repository = mock(ChatInteractionRepository.class);
         ChatInteraction interaction = new ChatInteraction();
         interaction.setAnswer("Stored answer");
-        when(repository.findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc("What is your Java experience?"))
-                .thenReturn(interaction);
+        when(repository.findFirstByQuestionIgnoreCaseAndChatModelOrderByCreatedAtDesc(
+                "What is your Java experience?",
+                "gpt-4o-mini"
+        )).thenReturn(interaction);
         ChatServiceImpl service = new ChatServiceImpl(null, repository, new ObjectMapper());
 
         String answer = service.ask("What is your Java experience?");

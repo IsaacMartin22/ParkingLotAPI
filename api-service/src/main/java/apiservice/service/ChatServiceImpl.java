@@ -1,6 +1,7 @@
 package apiservice.service;
 
 import apiservice.dbentity.ChatInteraction;
+import apiservice.model.OpenAiChatModel;
 import apiservice.model.PortfolioDocument;
 import apiservice.repository.ChatInteractionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,6 +19,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -36,11 +38,11 @@ public class ChatServiceImpl implements ChatService {
     @Value("${app.chat.openai-api-key:}")
     private String openAiApiKey;
 
-    @Value("${app.chat.openai-embedding-model:text-embedding-3-small}")
+    @Value("${app.chat.openai-embedding-model:text-embedding-3-large}")
     private String embeddingModel;
 
-    @Value("${app.chat.openai-chat-model:gpt-4o-mini}")
-    private String chatModel;
+    @Value("${app.chat.openai-chat-model:gpt-6.1-sol}")
+    private String defaultChatModel;
 
     @Value("${app.chat.collection:portfolio_documents}")
     private String collectionName;
@@ -67,6 +69,11 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public String ask(String question) {
+        return ask(question, null);
+    }
+
+    @Override
+    public String ask(String question, String model) {
         String trimmedQuestion = question == null ? "" : question.trim();
 
         if (trimmedQuestion.isBlank()) {
@@ -74,10 +81,12 @@ public class ChatServiceImpl implements ChatService {
             return "Question cannot be empty.";
         }
 
+        String selectedModel = resolveChatModel(model);
+
         ChatInteraction existingInteraction =
-                chatInteractionRepository.findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc(trimmedQuestion);
+                chatInteractionRepository.findFirstByQuestionIgnoreCaseAndChatModelOrderByCreatedAtDesc(trimmedQuestion, selectedModel);
         if (existingInteraction != null) {
-            logger.info("Serving stored answer for question='{}'", trimmedQuestion);
+            logger.info("Serving stored answer for question='{}' with model={}", trimmedQuestion, selectedModel);
             return existingInteraction.getAnswer();
         }
 
@@ -104,15 +113,17 @@ public class ChatServiceImpl implements ChatService {
                         "Ask about his Java work, backend systems, product experience, or technical background.";
             }
 
-            logger.info("Calling OpenAI chat completion for question='{}' with contextLength={} chars", trimmedQuestion, context.length());
-            String answer = chatCompletion(trimmedQuestion, context);
+            logger.info("Calling OpenAI chat completion for question='{}' with model={} and contextLength={} chars",
+                    trimmedQuestion, selectedModel, context.length());
+            String answer = chatCompletion(trimmedQuestion, context, selectedModel);
             persistInteraction(
                     trimmedQuestion,
                     answer,
                     queryVector,
                     embeddingLatencyMs,
                     vectorSearchResult.durationMs(),
-                    vectorSearchResult.documentCount()
+                    vectorSearchResult.documentCount(),
+                    selectedModel
             );
             return answer;
         } catch (Exception ex) {
@@ -235,12 +246,13 @@ public class ChatServiceImpl implements ChatService {
         return embedding;
     }
 
-    private String chatCompletion(String question, String context) throws IOException, InterruptedException {
+    private String chatCompletion(String question, String context, String selectedModel)
+            throws IOException, InterruptedException {
         String userContent = "Question: " + question + System.lineSeparator() + System.lineSeparator() +
                 "Relevant context:" + System.lineSeparator() + context;
 
         String body = objectMapper.writeValueAsString(Map.of(
-                "model", chatModel,
+                "model", selectedModel,
                 "temperature", 0.2,
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
@@ -248,7 +260,8 @@ public class ChatServiceImpl implements ChatService {
                 )
         ));
 
-        logger.info("Sending chat completion request. model={}, question='{}', contextLength={}", chatModel, question, context.length());
+        logger.info("Sending chat completion request. model={}, question='{}', contextLength={}",
+                selectedModel, question, context.length());
 
         HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.openai.com/v1/chat/completions"))
                 .header("Authorization", "Bearer " + openAiApiKey)
@@ -275,19 +288,31 @@ public class ChatServiceImpl implements ChatService {
             float[] embeddingVector,
             long embeddingLatencyMs,
             long vectorSearchDurationMs,
-            int vectorSearchDocumentCount
+            int vectorSearchDocumentCount,
+            String selectedModel
     ) {
         chatInteractionRepository.insertWithVectorCast(
                 question,
                 answer,
                 toPgVectorLiteral(embeddingVector),
                 embeddingModel,
-                chatModel,
+                selectedModel,
                 false,
                 embeddingLatencyMs,
                 vectorSearchDurationMs,
                 vectorSearchDocumentCount
         );
+    }
+
+    private String resolveChatModel(String requestedModel) {
+        String fallbackDefault = defaultChatModel == null || defaultChatModel.isBlank() ? "gpt-6.1-sol" : defaultChatModel;
+        String selectedValue = requestedModel == null ? fallbackDefault : requestedModel.trim();
+        if (selectedValue.isBlank()) {
+            selectedValue = fallbackDefault;
+        }
+
+        OpenAiChatModel model = OpenAiChatModel.fromValue(selectedValue);
+        return model.getValue();
     }
 
     private long elapsedMillisSince(long startedAt) {

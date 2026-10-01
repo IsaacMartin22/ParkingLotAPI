@@ -34,7 +34,7 @@ public class PortfolioDocumentSeedService {
     @Value("${app.chat.openai-api-key:}")
     private String openAiApiKey;
 
-    @Value("${app.chat.openai-embedding-model:text-embedding-3-small}")
+    @Value("${app.chat.openai-embedding-model:text-embedding-3-large}")
     private String embeddingModel;
 
     public PortfolioDocumentSeedService(MongoTemplate mongoTemplate, ObjectMapper objectMapper) {
