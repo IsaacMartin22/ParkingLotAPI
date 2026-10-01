@@ -83,10 +83,13 @@ public class ChatServiceImpl implements ChatService {
 
         String selectedModel = resolveChatModel(model);
 
-        ChatInteraction existingInteraction =
-                chatInteractionRepository.findFirstByQuestionIgnoreCaseAndChatModelOrderByCreatedAtDesc(trimmedQuestion, selectedModel);
+        ChatInteraction existingInteraction = model == null || model.isBlank()
+                ? chatInteractionRepository.findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc(trimmedQuestion)
+                : chatInteractionRepository.findFirstByQuestionIgnoreCaseAndChatModelOrderByCreatedAtDesc(trimmedQuestion, selectedModel);
         if (existingInteraction != null) {
-            logger.info("Serving stored answer for question='{}' with model={}", trimmedQuestion, selectedModel);
+            logger.info("Serving stored answer for question='{}'{}",
+                    trimmedQuestion,
+                    model == null || model.isBlank() ? "" : " with model=" + selectedModel);
             return existingInteraction.getAnswer();
         }
 

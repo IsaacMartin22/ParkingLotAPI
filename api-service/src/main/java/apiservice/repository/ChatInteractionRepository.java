@@ -16,6 +16,8 @@ public interface ChatInteractionRepository extends JpaRepository<ChatInteraction
 
     List<ChatInteraction> findByOrderByCreatedAtDesc(Pageable pageable);
 
+    ChatInteraction findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc(String question);
+
     ChatInteraction findFirstByQuestionIgnoreCaseAndChatModelOrderByCreatedAtDesc(String question, String chatModel);
 
     @Modifying
