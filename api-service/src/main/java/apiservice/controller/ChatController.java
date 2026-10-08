@@ -2,6 +2,7 @@ package apiservice.controller;
 
 import apiservice.model.OpenAiChatModel;
 import apiservice.repository.ChatInteractionRepository;
+import apiservice.service.ChatAnswer;
 import apiservice.service.ChatService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -59,13 +60,7 @@ public class ChatController {
 
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> chat(@Valid @RequestBody ChatRequest request) {
-        if (request == null || request.question() == null || request.question().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Question is required.");
-        }
-
-        if (request.model() != null && !request.model().isBlank()) {
-            OpenAiChatModel.fromValue(request.model());
-        }
+        validateChatRequest(request);
 
         try {
             String answer = chatService.ask(request.question(), request.model());
@@ -75,10 +70,35 @@ public class ChatController {
         }
     }
 
+    @PostMapping("/chat-with-citation")
+    public ResponseEntity<ChatWithCitationResponse> chatWithCitation(@Valid @RequestBody ChatRequest request) {
+        validateChatRequest(request);
+
+        try {
+            ChatAnswer answer = chatService.askWithCitation(request.question(), request.model());
+            return ResponseEntity.ok(new ChatWithCitationResponse(answer.answer(), answer.citation()));
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+    }
+
+    private void validateChatRequest(ChatRequest request) {
+        if (request == null || request.question() == null || request.question().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Question is required.");
+        }
+
+        if (request.model() != null && !request.model().isBlank()) {
+            OpenAiChatModel.fromValue(request.model());
+        }
+    }
+
     public record ChatRequest(@NotBlank(message = "Question is required") String question, String model) {
     }
 
     public record ChatResponse(String answer) {
+    }
+
+    public record ChatWithCitationResponse(String answer, String citation) {
     }
 
     public record AvailableModelsResponse(List<String> models) {

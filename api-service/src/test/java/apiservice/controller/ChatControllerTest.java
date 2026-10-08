@@ -2,6 +2,7 @@ package apiservice.controller;
 
 import apiservice.dbentity.ChatInteraction;
 import apiservice.repository.ChatInteractionRepository;
+import apiservice.service.ChatAnswer;
 import apiservice.service.ChatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -73,5 +75,22 @@ class ChatControllerTest {
         assertEquals(false, response.has("cache_hit"));
         assertEquals(true, response.get("cacheHit").isNull());
         assertEquals(true, response.get("rating").isNull());
+    }
+
+    @Test
+    void chatWithCitationReturnsAnswerAndOptionalCitation() {
+        ChatService chatService = mock(ChatService.class);
+        ChatInteractionRepository repository = mock(ChatInteractionRepository.class);
+        when(chatService.askWithCitation(eq("Where did this come from?"), eq("gpt-6.1-sol")))
+                .thenReturn(new ChatAnswer("From seeded data.", "https://example.com/citation"));
+
+        ChatController controller = new ChatController(chatService, repository);
+
+        ChatController.ChatWithCitationResponse response = controller.chatWithCitation(
+                        new ChatController.ChatRequest("Where did this come from?", "gpt-6.1-sol"))
+                .getBody();
+
+        assertEquals("From seeded data.", response.answer());
+        assertEquals("https://example.com/citation", response.citation());
     }
 }

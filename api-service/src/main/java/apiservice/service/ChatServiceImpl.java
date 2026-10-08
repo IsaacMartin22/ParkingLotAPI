@@ -69,16 +69,26 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public String ask(String question) {
-        return ask(question, null);
+        return askWithCitation(question, null).answer();
     }
 
     @Override
     public String ask(String question, String model) {
+        return askWithCitation(question, model).answer();
+    }
+
+    @Override
+    public ChatAnswer askWithCitation(String question) {
+        return askWithCitation(question, null);
+    }
+
+    @Override
+    public ChatAnswer askWithCitation(String question, String model) {
         String trimmedQuestion = question == null ? "" : question.trim();
 
         if (trimmedQuestion.isBlank()) {
             logger.warn("ask() received blank question");
-            return "Question cannot be empty.";
+            return new ChatAnswer("Question cannot be empty.", null);
         }
 
         String selectedModel = resolveChatModel(model);
@@ -90,12 +100,12 @@ public class ChatServiceImpl implements ChatService {
             logger.info("Serving stored answer for question='{}'{}",
                     trimmedQuestion,
                     model == null || model.isBlank() ? "" : " with model=" + selectedModel);
-            return existingInteraction.getAnswer();
+            return new ChatAnswer(existingInteraction.getAnswer(), null);
         }
 
         if (openAiApiKey == null || openAiApiKey.isBlank()) {
             logger.error("ask() aborted: OPENAI_API_KEY is missing");
-            return "The portfolio chatbot is not configured yet. ";
+            return new ChatAnswer("The portfolio chatbot is not configured yet. ", null);
         }
 
         try {
@@ -112,8 +122,11 @@ public class ChatServiceImpl implements ChatService {
             String context = buildContext(relevantDocuments);
             if (context.isBlank()) {
                 logger.warn("No relevant context found for question='{}'. Returning fallback response.", trimmedQuestion);
-                return "I could not find enough relevant information in Isaac's portfolio data for that question. " +
-                        "Ask about his Java work, backend systems, product experience, or technical background.";
+                return new ChatAnswer(
+                        "I could not find enough relevant information in Isaac's portfolio data for that question. " +
+                                "Ask about his Java work, backend systems, product experience, or technical background.",
+                        null
+                );
             }
 
             logger.info("Calling OpenAI chat completion for question='{}' with model={} and contextLength={} chars",
@@ -128,10 +141,13 @@ public class ChatServiceImpl implements ChatService {
                     vectorSearchResult.documentCount(),
                     selectedModel
             );
-            return answer;
+            return new ChatAnswer(answer, findCitation(relevantDocuments));
         } catch (Exception ex) {
             logger.error("Exception while handling question='{}'", trimmedQuestion, ex);
-            return "I hit a problem while answering that question. Please try again or ask a simpler question about Isaac's professional background.";
+            return new ChatAnswer(
+                    "I hit a problem while answering that question. Please try again or ask a simpler question about Isaac's professional background.",
+                    null
+            );
         }
     }
 
@@ -221,6 +237,25 @@ public class ChatServiceImpl implements ChatService {
         String result = context.toString().trim();
         logger.info("buildContext() produced {} chars from {} docs", result.length(), documents.size());
         return result;
+    }
+
+    private String findCitation(List<PortfolioDocument> documents) {
+        if (documents == null) {
+            return null;
+        }
+
+        for (PortfolioDocument document : documents) {
+            if (document == null || document.getMetadata() == null) {
+                continue;
+            }
+
+            Object citation = document.getMetadata().get("citation");
+            if (citation instanceof String citationValue && !citationValue.isBlank()) {
+                return citationValue;
+            }
+        }
+
+        return null;
     }
 
     private float[] embedText(String text) throws IOException, InterruptedException {
