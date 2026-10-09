@@ -29,6 +29,28 @@ steps:
       - "chmod +x .buildkite/scripts/publish-docker-image.sh"
       - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/publish-docker-image.sh"
 
+  - input: ":wastebasket: Optional MongoDB Wipe"
+    key: "optional-mongodb-wipe"
+    if: build.branch == "main"
+
+  - label: ":wastebasket: Wipe portfolio_documents in MongoDB"
+    key: "wipe-mongodb-portfolio-documents"
+    depends_on: "optional-mongodb-wipe"
+    if: build.branch == "main"
+    secrets:
+      - "MONGODB_URI"
+    plugins:
+      - docker#v5.12.0:
+          image: "public.ecr.aws/docker/library/mongo:8"
+          mount-buildkite-agent: true
+          environment:
+            - MONGODB_URI
+            - MONGODB_DATABASE
+            - MONGODB_COLLECTION
+    command:
+      - "chmod +x .buildkite/scripts/wipe-portfolio-documents.sh"
+      - "MONGODB_DATABASE=portfolio MONGODB_COLLECTION=portfolio_documents sh .buildkite/scripts/wipe-portfolio-documents.sh"
+
   - input: ":rocket: Optional Common Release"
     key: "optional-common-release"
   - label: ":package: Publish parking-lot-common to Maven Central"

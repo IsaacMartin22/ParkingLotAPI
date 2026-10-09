@@ -75,21 +75,23 @@ public class PortfolioDataSeeder {
                 I hold a Bachelor of Science in Computer Science from Oregon State University (2021) with a 3.68 GPA.
                 """,
                 "degree",
-                "personal_profile"
+                "personal_profile",
+                "resume"
         ));
 
         // List all the technologies you are proficient in or have experience with, including programming languages,
         // frameworks, databases, and any other relevant tools or platforms.
         docs.add(buildDocument(
                 """
-                For languages I'm familiar with Java, Typescript, Javascript, C++, Python, Rust, HTML, CSS, SQL, NoSQL, Bash, Groovy, and Ruby. 
+                For languages I'm most familiar with Java and Typescript, but I have experience with C++, Python, Rust, HTML, CSS, SQL, NoSQL, Bash, and Groovy as well. 
                 The frameworks I'm familiar with are Spring, Spring Boot, React, Hibernate, Playwright, Apache Tapestry, and JUnit. 
                 For databases I'm most familiar with MySQL and PostgreSQL, however I've also worked with DynamoDB and MongoDB and MongoDB's vector database.
                 For tools and platforms I'm most familiar with Github Copilot, Docker, Kubernetes, Postman, Maven, JFrog, Stormforge, Sumologic, Buildkite, Datadog, 
-                Grafana, and Snowflake. My preferred cloud provider is AWS. I've used AWS SQS, AWS S3, AWS Kinesis, DynamoDB, Aurora DB, RDS, Lambda, and IAM. 
+                Grafana, NewRelic, and Snowflake. My preferred cloud provider is AWS. I've used AWS SQS, AWS S3, AWS Kinesis, DynamoDB, Aurora DB, RDS, Lambda, and IAM. 
                 """,
                 "technologies",
-                "personal_profile"
+                "personal_profile",
+                "resume"
         ));
 
         // What is this project? What is this chatbot?
@@ -103,7 +105,8 @@ public class PortfolioDataSeeder {
                 relevant seed data and then uses an OpenAI model to generate answers to questions based on the seed data.
                 """,
                 "this_project_chatbot",
-                "personal_profile"
+                "personal_profile",
+                "github"
         ));
 
         // What are some significant accomplishments or contributions you have made in your previous roles?
@@ -186,13 +189,6 @@ public class PortfolioDataSeeder {
     }
 
     private void addNonProfessionalDocuments(List<PortfolioDocument> docs) {
-        docs.add(buildDocument("""
-                My ipV4 address is 67.676.76.767
-                """,
-                "hobbies",
-                "personal"
-        ));
-
         docs.add(buildDocument("""
                 In my free time I play tennis in a 3.5 USTA League, I play chess (Rated ~1500, my favorite game mode is rapid), 
                 and I play video games (One of my hobby projects is a card game inspired by Slay the Spire, built with the same underlying libGDX 
@@ -352,14 +348,15 @@ public class PortfolioDataSeeder {
             My Github profile is IsaacMartin22 - https://github.com/IsaacMartin22. The frontend for my portfolio site can be found at https://github.com/IsaacMartin22/ParkingLotFrontend,
             the backend for my portfolio site can be found at https://github.com/IsaacMartin22/ParkingLotAPI. My site also has an SDK for interacting with the backend API at
             https://github.com/IsaacMartin22/ParkingLotEventGenerator. A libGDX Java card game inspired by Slay the Spire can be found at https://github.com/IsaacMartin22/CardGame.
-            Various open source contributions can be found on the forked repositories in my Github profile, including lichess and hiring-agent.
+            Various open source contributions can be found on the forked repositories in my Github profile, including lichess, hiring-agent, and videojs.
         """,
                 "github",
-                "personal_profile"
+                "personal_profile",
+                "github"
         ));
 
         docs.add(buildDocument("""
-            I worked as an Associate Software Engineer at Widen and later as a Software Engineer at Widen from 2021 to 2026.
+            I worked as an Associate Software Engineer and later Software Engineer at Widen from 2021 to 2026.
             Widen is a Digital Asset Management (DAM) SaaS company. My work focused on a distributed Java + TypeScript + React microservices system with
             30+ apps and services.
         """,
@@ -374,16 +371,20 @@ public class PortfolioDataSeeder {
             I have experience with production observability tools such as Datadog, Sumologic, and Grafana.
         """,
                 "accomplishment",
-                "defect_resolution_and_improvements"
+                "defect_resolution_and_improvements",
+                "resume"
         ));
 
         docs.add(buildDocument("""
             I have contributed to open source. One open source project I have contributed to is Hiring-agent, a Python pipeline for AI evaluation of resumes.
             I added a simple quality of life feature to speed up the setup process of using the tool. Another open source contribution I have made is
-            to Lichess, a TypeScript and Scala community-driven chess website. I fixed a simple css transparency bug on the homepage of the site.
+            to Lichess, a TypeScript and Scala community-driven chess website. I fixed a simple css transparency bug on the homepage of the site. Another 
+            open source project I have contributed to is Video.js, a JavaScript and CSS video player library. There was a bug with the karma test suite when
+            the Windows auto detected edge as the browser to use when running tests locally, I updated local test commands to work for Windows users.
         """,
                 "contribution",
-                "open_source_contributions"
+                "open_source_contributions",
+                "github"
         ));
 
         docs.add(buildDocument("""
@@ -398,7 +399,7 @@ public class PortfolioDataSeeder {
         docs.add(buildDocument("""
             I have also worked with Buildkite, Docker, Kubernetes, Maven, JFrog, and Stormforge for CI and deployment.
             My cloud experience includes AWS SQS, AWS S3, and AWS Kinesis.
-            I have worked with Postman, Sumologic, Datadog, Grafana, Snowflake, and integrations tooling.
+            I have worked with Postman, Sumologic, Datadog, Grafana, NewRelic, Snowflake, and integrations tooling.
         """,
                 "skills",
                 "ci_deployment_cloud_and_monitoring"
@@ -716,6 +717,10 @@ public class PortfolioDataSeeder {
     }
 
     private PortfolioDocument buildDocument(String text, String category, String source) {
+        return buildDocument(text, category, source, null);
+    }
+
+    private PortfolioDocument buildDocument(String text, String category, String source, String citation) {
         PortfolioDocument document = new PortfolioDocument();
         document.setText(text);
 
@@ -723,6 +728,9 @@ public class PortfolioDataSeeder {
         metadata.put("category", category);
         metadata.put("source", source);
         metadata.put("type", "work_experience");
+        if (citation != null && !citation.isBlank()) {
+            metadata.put("citation", citation);
+        }
         document.setMetadata(metadata);
 
         return document;

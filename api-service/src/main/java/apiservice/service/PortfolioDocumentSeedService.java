@@ -109,18 +109,6 @@ public class PortfolioDocumentSeedService {
         return embedding;
     }
 
-    private PortfolioDocument buildDocument(String text, String category, String source) {
-        PortfolioDocument document = new PortfolioDocument();
-        document.setText(text);
-
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("category", category);
-        metadata.put("source", source);
-        metadata.put("type", "work_experience");
-        document.setMetadata(metadata);
-        return document;
-    }
-
     private String normalizeText(String text) {
         return text == null ? "" : text.trim();
     }
