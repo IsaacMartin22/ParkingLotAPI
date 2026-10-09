@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,15 +45,12 @@ class FlywayMigrationsTest {
     }
 
     @Test
-    void latestMigrationShouldIncreaseEmbeddingDimension() throws IOException {
-        Path latestMigration = Files.list(MIGRATIONS_DIR)
-                .filter(Files::isRegularFile)
-                .max(Comparator.comparing(path -> path.getFileName().toString()))
-                .orElseThrow();
+    void v9ShouldRebuildChatEmbeddingColumnFor3072Dimensions() throws IOException {
+        String sql = Files.readString(MIGRATIONS_DIR.resolve("V9__rebuild_chat_embedding_column_for_3072.sql"));
 
-        String sql = Files.readString(latestMigration);
-
-        assertTrue(sql.contains("vector(3072)"),
-                "Latest migration should include the current embedding dimension");
+        assertTrue(sql.contains("DROP COLUMN embedding"),
+                "V9 should drop the incompatible 1536-dimension embedding column.");
+        assertTrue(sql.contains("ADD COLUMN embedding vector(3072)"),
+                "V9 should recreate the embedding column with 3072 dimensions.");
     }
 }
