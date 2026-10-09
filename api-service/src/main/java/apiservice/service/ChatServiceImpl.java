@@ -38,7 +38,7 @@ public class ChatServiceImpl implements ChatService {
     @Value("${app.chat.openai-api-key:}")
     private String openAiApiKey;
 
-    @Value("${app.chat.openai-embedding-model:text-embedding-3-large}")
+    @Value("${app.chat.openai-embedding-model:text-embedding-3-small}")
     private String embeddingModel;
 
     @Value("${app.chat.openai-chat-model:gpt-6.1-sol}")
@@ -291,7 +291,6 @@ public class ChatServiceImpl implements ChatService {
 
         String body = objectMapper.writeValueAsString(Map.of(
                 "model", selectedModel,
-                "temperature", 0.2,
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
                         Map.of("role", "user", "content", userContent)
