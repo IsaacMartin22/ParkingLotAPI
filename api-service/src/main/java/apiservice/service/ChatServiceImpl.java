@@ -38,7 +38,7 @@ public class ChatServiceImpl implements ChatService {
     @Value("${app.chat.openai-api-key:}")
     private String openAiApiKey;
 
-    @Value("${app.chat.openai-embedding-model:text-embedding-3-small}")
+    @Value("${app.chat.openai-embedding-model:text-embedding-3-large}")
     private String embeddingModel;
 
     @Value("${app.chat.openai-chat-model:gpt-6.1-sol}")
