@@ -54,13 +54,6 @@ public class PortfolioDocumentSeedService {
         return insertedCount;
     }
 
-    public PortfolioDocument addDocument(String text, String category, String source) throws IOException, InterruptedException {
-        PortfolioDocument document = buildDocument(text, category, source);
-        boolean inserted = upsertDocument(document);
-        document.getMetadata().put("seedStatus", inserted ? "seeded" : "existing");
-        return document;
-    }
-
     private boolean upsertDocument(PortfolioDocument document) throws IOException, InterruptedException {
         String normalizedText = normalizeText(document.getText());
         String documentId = buildDocumentId(normalizedText);
