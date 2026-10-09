@@ -37,8 +37,6 @@ steps:
     key: "wipe-mongodb-portfolio-documents"
     depends_on: "optional-mongodb-wipe"
     if: build.branch == "main"
-    secrets:
-      - "MONGODB_URI"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/mongo:8"
