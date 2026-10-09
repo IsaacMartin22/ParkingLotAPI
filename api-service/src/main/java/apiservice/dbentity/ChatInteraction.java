@@ -27,7 +27,7 @@ public class ChatInteraction {
     @Column(nullable = false)
     private String answer;
 
-    @Column(name = "embedding", nullable = false, columnDefinition = "vector(1536)")
+    @Column(name = "embedding", nullable = false, columnDefinition = "vector(3072)")
     private String embedding;
 
     @Column(name = "embedding_model", nullable = false)
