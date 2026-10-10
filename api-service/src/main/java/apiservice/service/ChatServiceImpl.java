@@ -19,7 +19,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -240,22 +241,75 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private String findCitation(List<PortfolioDocument> documents) {
-        if (documents == null) {
+        return chooseCitation(documents);
+    }
+
+    static String chooseCitation(List<PortfolioDocument> documents) {
+        if (documents == null || documents.isEmpty()) {
             return null;
         }
 
-        for (PortfolioDocument document : documents) {
+        Map<String, CitationVote> citationVotes = new HashMap<>();
+        for (int index = 0; index < documents.size(); index++) {
+            PortfolioDocument document = documents.get(index);
             if (document == null || document.getMetadata() == null) {
                 continue;
             }
 
             Object citation = document.getMetadata().get("citation");
-            if (citation instanceof String citationValue && !citationValue.isBlank()) {
-                return citationValue;
+            if (!(citation instanceof String citationValue) || citationValue.isBlank()) {
+                continue;
             }
+
+            String normalizedCitation = citationValue.trim();
+            CitationVote vote = citationVotes.computeIfAbsent(
+                    normalizedCitation,
+                    ignored -> new CitationVote(normalizedCitation)
+            );
+            vote.increment(index, document.getScore() == null ? 0.0 : document.getScore());
         }
 
-        return null;
+        return citationVotes.values().stream()
+                .max(Comparator
+                        .comparingInt(CitationVote::count)
+                        .thenComparingInt(CitationVote::bestRank)
+                        .thenComparingDouble(CitationVote::bestScore)
+                        .thenComparing(CitationVote::citation))
+                .map(CitationVote::citation)
+                .orElse(null);
+    }
+
+    private static final class CitationVote {
+        private final String citation;
+        private int count;
+        private int bestRank = Integer.MAX_VALUE;
+        private double bestScore;
+
+        private CitationVote(String citation) {
+            this.citation = citation;
+        }
+
+        private void increment(int index, double score) {
+            this.count += 1;
+            this.bestRank = Math.min(this.bestRank, index);
+            this.bestScore = Math.max(this.bestScore, score);
+        }
+
+        private int count() {
+            return count;
+        }
+
+        private int bestRank() {
+            return bestRank;
+        }
+
+        private double bestScore() {
+            return bestScore;
+        }
+
+        private String citation() {
+            return citation;
+        }
     }
 
     private float[] embedText(String text) throws IOException, InterruptedException {
