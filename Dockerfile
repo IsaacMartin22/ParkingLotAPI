@@ -11,6 +11,7 @@ COPY pom.xml .
 COPY api-service/pom.xml api-service/pom.xml
 COPY sdk/pom.xml sdk/pom.xml
 COPY parking-lot-common/pom.xml parking-lot-common/pom.xml
+COPY mcp-server/pom.xml mcp-server/pom.xml
 
 COPY mvnw .
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw

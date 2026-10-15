@@ -5,7 +5,8 @@ I may modify some endpoints to add authentication later, but for now it's intend
 
 Uses Maven multi-module build. New version publishing should be triggered only via the Buildkite pipeline on the main branch.
 There is the api-service module which is the main application, there is an sdk module which is the sdk for the API service, 
-and lastly a shared common module which contains code used in both the api-service and sdk modules.
+and a shared common module which contains code used in both the api-service and sdk modules.
+The `mcp-server` module is a separate HTTP service exposing tools to the chatbot.
 
 The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The api service is built
 via a Docker image and hosted 24/7 because it powers my portfolio site on GitHub Pages. It is now deployed on AWS using ECS.
@@ -21,6 +22,54 @@ It lists the endpoints available and payload shapes for those endpoints.
 
 A standalone SDK module is available in `sdk/` with an API client and request/response DTOs for easier integration from other Java projects. See `sdk/README.md` for usage.
 If a new SDK is to be published use the Buildkite pipeline, make sure the version is correct in pom.xml, and unblock the sdk release step.
+
+## MCP server
+
+The standalone `mcp-server` module uses Java 17 and the MCP Java SDK's HTTP/SSE transport
+without changing the existing Spring Boot version. It does not require MongoDB or an OpenAI key.
+Its tools are registered in `mcp-server\src\main\java\parkinglot\mcp\McpServerConfiguration.java`:
+
+- `get_site_analytics` (`SiteAnalyticsTool.java`) reads the API database's `analytics` table and returns
+  aggregate statistics only: total events, unique sessions, first/last event times, and optional counts grouped by
+  `eventType`, `currentUrl`, `browser`, `operatingSystem`, or `day`. Optional filters are `startTime`, `endTime`,
+  `eventType`, and `urlContains`. IP addresses, session ids, and payloads are never returned.
+- `tool_two` is still a placeholder that returns an MCP error result until its contract is supplied.
+
+The analytics tool uses the same PostgreSQL database as the API service, configured by the same
+`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` variables with the same
+local defaults. Connections are opened read-only
+(Hikari `read-only` plus pgjdbc `readOnlyMode=always`) and the tool only issues `SELECT` statements. In deployed
+environments, you can additionally point the MCP server's `SPRING_DATASOURCE_USERNAME`/`PASSWORD` at a role limited
+to `SELECT` on `analytics`, for example:
+
+```sql
+CREATE ROLE mcp_analytics_reader LOGIN PASSWORD '<secret>';
+GRANT CONNECT ON DATABASE "api-service" TO mcp_analytics_reader;
+GRANT USAGE ON SCHEMA public TO mcp_analytics_reader;
+GRANT SELECT ON analytics TO mcp_analytics_reader;
+```
+
+Start it separately from the repository root:
+
+```powershell
+.\mvnw.cmd -pl mcp-server spring-boot:run
+```
+
+It binds to `127.0.0.1:8081` by default (`MCP_SERVER_ADDRESS` / `MCP_SERVER_PORT` override this).
+Clients connect to `GET /mcp/sse`; protocol messages use `POST /mcp/messages`.
+There is no authentication in this scaffold: keep it local or on a trusted private network.
+Add authentication before exposing it publicly or implementing sensitive tools.
+
+The API's MCP integration is disabled by default. Start the MCP server first, then set
+`CHAT_MCP_ENABLED=true` and optionally `CHAT_MCP_BASE_URL` (default `http://localhost:8081`)
+in the API service's environment. An enabled API initializes its MCP connection at startup;
+an unavailable server fails startup rather than silently disabling tools.
+`ChatServiceImpl` discovers the tools and lets the model select them using `tool_choice=auto`,
+then sends their results back for the final answer, with at most four tool-calling rounds.
+The existing portfolio retrieval remains in place; empty retrieval can proceed to tools.
+Stored-answer lookup and persistence are bypassed while MCP is enabled to avoid stale tool answers.
+Tool or transport failures follow the chatbot's existing logged error-response path.
+The root Dockerfile still packages only the API service; run/deploy the MCP service separately.
 
 ## Database and Principle of Least Privilege
 

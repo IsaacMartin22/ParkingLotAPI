@@ -16,12 +16,13 @@
     <packaging>pom</packaging>
 
     <name>Parking Lot Parent</name>
-    <description>Parent reactor for API service, common, and Java SDK modules</description>
+    <description>Parent reactor for API service, MCP server, common, and Java SDK modules</description>
 
     <modules>
         <module>parking-lot-common</module>
         <module>api-service</module>
         <module>sdk</module>
+        <module>mcp-server</module>
     </modules>
 
     <build>
@@ -39,5 +40,6 @@
 
     <properties>
         <java.version>17</java.version>
+        <mcp.version>0.10.0</mcp.version>
     </properties>
 </project>

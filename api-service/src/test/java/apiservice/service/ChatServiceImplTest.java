@@ -25,7 +25,7 @@ class ChatServiceImplTest {
         interaction.setAnswer("Stored answer");
         when(repository.findFirstByQuestionIgnoreCaseOrderByCreatedAtDesc("What is your Java experience?"))
                 .thenReturn(interaction);
-        ChatServiceImpl service = new ChatServiceImpl(null, repository, new ObjectMapper());
+        ChatServiceImpl service = new ChatServiceImpl(null, repository, new ObjectMapper(), null);
 
         String answer = service.ask("What is your Java experience?");
 
