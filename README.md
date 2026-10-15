@@ -13,7 +13,7 @@ via a Docker image and hosted 24/7 because it powers my portfolio site on GitHub
 The hosted URL is currently hardcoded into both the SDK and the frontend query, so if I ever change where it's hosted I will
 need to update those two places.
 
-The repository's container workflow is centered on the root `Dockerfile`. There is no separate Docker Compose setup to maintain.
+The repository's container workflow uses the root `Dockerfile` (API service) and `mcp-server\Dockerfile` (MCP server), deployed together by Buildkite. There is no separate Docker Compose setup to maintain.
 
 API documentation is available at the hosted URL, which should be listed on the GitHub repository page in the upper right corner.
 It lists the endpoints available and payload shapes for those endpoints.
@@ -69,7 +69,22 @@ then sends their results back for the final answer, with at most four tool-calli
 The existing portfolio retrieval remains in place; empty retrieval can proceed to tools.
 Stored-answer lookup and persistence are bypassed while MCP is enabled to avoid stale tool answers.
 Tool or transport failures follow the chatbot's existing logged error-response path.
-The root Dockerfile still packages only the API service; run/deploy the MCP service separately.
+
+### Docker and deployment
+
+The API and MCP server ship as two images that are always built, published, and deployed together:
+
+- API: root `Dockerfile` → `isaaccmartin151/parkinglotapi-app`
+- MCP server: `mcp-server\Dockerfile` (build from the repo root: `docker build -f mcp-server/Dockerfile .`)
+  → `isaaccmartin151/parkinglotapi-mcp-server`
+
+The Buildkite "Publish" step builds both images and pushes them only after both builds succeed.
+The "Deploy" step (`.buildkite\scripts\deploy-docker-image-to-ec2.sh`) runs both containers on the EC2 host
+on a private Docker network (`parkinglotapi-net`). Both containers use the same `POSTGRES_DATASOURCE_*` secrets.
+It starts the MCP container first and waits until it logs that it started. Only then does it replace the API
+container, which runs with `CHAT_MCP_ENABLED=true` and `CHAT_MCP_BASE_URL=http://parkinglotapi-mcp-server:8081`.
+If the MCP server fails to start, the deploy fails and the existing API container is left running.
+Only the API port is published on the host; the MCP port is reachable only inside the Docker network.
 
 ## Database and Principle of Least Privilege
 
