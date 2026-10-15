@@ -19,7 +19,8 @@ RUN ./mvnw -B -ntp dependency:go-offline
 
 COPY parking-lot-common/src parking-lot-common/src
 COPY api-service/src api-service/src
-RUN ./mvnw -B -ntp -pl api-service -am clean package -DskipTests
+COPY mcp-server/src mcp-server/src
+RUN ./mvnw -B -ntp -pl api-service,mcp-server -am clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:17-jdk
@@ -28,9 +29,13 @@ WORKDIR /app
 
 COPY newrelic/ /app/newrelic/
 COPY --from=build /app/api-service/target/*.jar app.jar
+COPY --from=build /app/mcp-server/target/*.jar mcp-server.jar
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 
 RUN cd /app/newrelic && jar xf newrelic-java-9.4.0.zip && test -f /app/newrelic/newrelic.jar
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
 
+# Only the API port is exposed; the bundled MCP server listens on 127.0.0.1:8081 inside the container.
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-javaagent:/app/newrelic/newrelic.jar", "-Dnewrelic.config.file=/app/newrelic/newrelic.yml", "-jar", "app.jar"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

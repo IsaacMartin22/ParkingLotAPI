@@ -13,7 +13,7 @@ via a Docker image and hosted 24/7 because it powers my portfolio site on GitHub
 The hosted URL is currently hardcoded into both the SDK and the frontend query, so if I ever change where it's hosted I will
 need to update those two places.
 
-The repository's container workflow uses the root `Dockerfile` (API service) and `mcp-server\Dockerfile` (MCP server), deployed together by Buildkite. There is no separate Docker Compose setup to maintain.
+The repository's container workflow is centered on the root `Dockerfile`, which bundles the API service and the MCP server into one image. There is no separate Docker Compose setup to maintain.
 
 API documentation is available at the hosted URL, which should be listed on the GitHub repository page in the upper right corner.
 It lists the endpoints available and payload shapes for those endpoints.
@@ -60,31 +60,32 @@ Clients connect to `GET /mcp/sse`; protocol messages use `POST /mcp/messages`.
 There is no authentication in this scaffold: keep it local or on a trusted private network.
 Add authentication before exposing it publicly or implementing sensitive tools.
 
-The API's MCP integration is disabled by default. Start the MCP server first, then set
-`CHAT_MCP_ENABLED=true` and optionally `CHAT_MCP_BASE_URL` (default `http://localhost:8081`)
-in the API service's environment. An enabled API initializes its MCP connection at startup;
-an unavailable server fails startup rather than silently disabling tools.
+The API's MCP integration is always on. The API connects to `CHAT_MCP_BASE_URL` (default `http://localhost:8081`)
+at startup and fails startup if the MCP server is unavailable, so when running locally start the MCP server first.
 `ChatServiceImpl` discovers the tools and lets the model select them using `tool_choice=auto`,
 then sends their results back for the final answer, with at most four tool-calling rounds.
 The existing portfolio retrieval remains in place; empty retrieval can proceed to tools.
-Stored-answer lookup and persistence are bypassed while MCP is enabled to avoid stale tool answers.
+Chat answers are neither stored nor reused (the `chat_interactions` table is no longer written), so tool-backed
+answers such as analytics are never stale.
 Tool or transport failures follow the chatbot's existing logged error-response path.
 
 ### Docker and deployment
 
-The API and MCP server ship as two images that are always built, published, and deployed together:
+The root `Dockerfile` builds a single image that contains both the API service and the MCP server.
+`docker-entrypoint.sh` starts the MCP server first on `127.0.0.1:8081`, waits for its port to open, then starts the
+API with `CHAT_MCP_BASE_URL=http://127.0.0.1:8081`. Only port 8080 is exposed, so the
+MCP server is never reachable from outside the container. If either process exits, the entrypoint stops the other
+and the container exits, so ECS (or Docker's restart policy) replaces it. Both processes share the container's
+`SPRING_DATASOURCE_*` settings, so no new environment variables are required.
 
-- API: root `Dockerfile` → `isaaccmartin151/parkinglotapi-app`
-- MCP server: `mcp-server\Dockerfile` (build from the repo root: `docker build -f mcp-server/Dockerfile .`)
-  → `isaaccmartin151/parkinglotapi-mcp-server`
+Runtime knobs (all optional):
 
-The Buildkite "Publish" step builds both images and pushes them only after both builds succeed.
-The "Deploy" step (`.buildkite\scripts\deploy-docker-image-to-ec2.sh`) runs both containers on the EC2 host
-on a private Docker network (`parkinglotapi-net`). Both containers use the same `POSTGRES_DATASOURCE_*` secrets.
-It starts the MCP container first and waits until it logs that it started. Only then does it replace the API
-container, which runs with `CHAT_MCP_ENABLED=true` and `CHAT_MCP_BASE_URL=http://parkinglotapi-mcp-server:8081`.
-If the MCP server fails to start, the deploy fails and the existing API container is left running.
-Only the API port is published on the host; the MCP port is reachable only inside the Docker network.
+- `MCP_JAVA_OPTS`: MCP server JVM options (default `-XX:MaxRAMPercentage=15 -XX:+UseSerialGC`).
+- `API_JAVA_OPTS`: extra API JVM options (default none). `JAVA_TOOL_OPTIONS` applies to both JVMs.
+- `MCP_STARTUP_TIMEOUT_SECONDS`: how long to wait for the MCP server before failing (default `120`).
+
+Two JVMs run in the container, so give the ECS task at least 1 GB of memory (2 GB is comfortable).
+The Express Mode default of 512 MiB is not enough.
 
 ## Database and Principle of Least Privilege
 

@@ -1,6 +1,5 @@
 package apiservice.service;
 
-import apiservice.repository.ChatInteractionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -21,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -35,24 +33,10 @@ class ChatMcpToolsTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = mock(HttpClient.class);
     private final McpSyncClient mcpClient = mock(McpSyncClient.class);
-    private final ChatInteractionRepository repository = mock(ChatInteractionRepository.class);
-
-    @Test
-    void disabledIntegrationKeepsRequestsToolFree() throws Exception {
-        ChatServiceImpl service = service(null);
-        respondWith("{\"role\":\"assistant\",\"content\":\"Portfolio answer\"}");
-
-        assertEquals("Portfolio answer", complete(service));
-
-        var requests = ArgumentCaptor.forClass(HttpRequest.class);
-        verify(httpClient).send(requests.capture(), any(HttpResponse.BodyHandler.class));
-        assertFalse(body(requests.getValue()).has("tools"));
-        verifyNoInteractions(mcpClient);
-    }
 
     @Test
     void letsModelSelectToolAndSendsErrorResultBackWithoutHidingIt() throws Exception {
-        ChatServiceImpl service = service(mcpClient);
+        ChatServiceImpl service = service();
         advertiseTool();
         when(mcpClient.callTool(new McpSchema.CallToolRequest("tool_one", Map.of())))
                 .thenReturn(new McpSchema.CallToolResult("Not implemented", true));
@@ -77,7 +61,7 @@ class ChatMcpToolsTest {
 
     @Test
     void rejectsUnadvertisedTools() throws Exception {
-        ChatServiceImpl service = service(mcpClient);
+        ChatServiceImpl service = service();
         advertiseTool();
         respondWith(toolCall("unknown_tool"));
 
@@ -87,7 +71,7 @@ class ChatMcpToolsTest {
 
     @Test
     void stopsToolCallingAfterFourRounds() throws Exception {
-        ChatServiceImpl service = service(mcpClient);
+        ChatServiceImpl service = service();
         advertiseTool();
         when(mcpClient.callTool(any())).thenReturn(new McpSchema.CallToolResult("Done", false));
         respondWith(toolCall("tool_one"));
@@ -101,17 +85,17 @@ class ChatMcpToolsTest {
     }
 
     @Test
-    void enabledIntegrationDoesNotServeStoredAnswers() {
-        ChatServiceImpl service = service(mcpClient);
+    void missingApiKeyReturnsConfigurationMessageWithoutCallingMcp() {
+        ChatServiceImpl service = service();
         ReflectionTestUtils.setField(service, "openAiApiKey", "");
 
         assertEquals("The portfolio chatbot is not configured yet. ", service.ask("Question"));
 
-        verifyNoInteractions(repository);
+        verifyNoInteractions(mcpClient);
     }
 
-    private ChatServiceImpl service(McpSyncClient client) {
-        ChatServiceImpl service = new ChatServiceImpl(null, repository, objectMapper, client);
+    private ChatServiceImpl service() {
+        ChatServiceImpl service = new ChatServiceImpl(null, objectMapper, mcpClient);
         ReflectionTestUtils.setField(service, "httpClient", httpClient);
         ReflectionTestUtils.setField(service, "openAiApiKey", "test-key");
         ReflectionTestUtils.setField(service, "systemPrompt", "Use portfolio context.");

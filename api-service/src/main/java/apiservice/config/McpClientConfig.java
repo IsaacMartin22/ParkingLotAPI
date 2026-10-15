@@ -5,14 +5,12 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
 @Configuration
-@ConditionalOnProperty(name = "app.chat.mcp.enabled", havingValue = "true")
 public class McpClientConfig {
 
     @Bean(initMethod = "initialize", destroyMethod = "closeGracefully")

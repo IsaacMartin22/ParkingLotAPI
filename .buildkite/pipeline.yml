@@ -9,7 +9,7 @@ steps:
       - "java -version"
       - "./mvnw -B -ntp test"
 
-  - label: ":whale: Publish API and MCP server Docker images"
+  - label: ":whale: Publish Docker image"
     key: "publish-docker-image"
     if: build.branch == "main"
     secrets:
@@ -27,7 +27,7 @@ steps:
             - "/var/run/docker.sock:/var/run/docker.sock"
     command:
       - "chmod +x .buildkite/scripts/publish-docker-image.sh"
-      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app MCP_DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-mcp-server sh .buildkite/scripts/publish-docker-image.sh"
+      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/publish-docker-image.sh"
 
   - input: ":wastebasket: Optional MongoDB Wipe"
     key: "optional-mongodb-wipe"
@@ -55,7 +55,7 @@ steps:
     key: "optional-deploy-to-ec2"
     if: build.branch == "main"
 
-  - label: ":aws: Deploy API and MCP server Docker images to EC2"
+  - label: ":aws: Deploy Docker image to EC2"
     key: "deploy-docker-image-to-ec2"
     depends_on:
       - "publish-docker-image"
@@ -101,7 +101,7 @@ steps:
             - POSTGRES_DATASOURCE_PASSWORD
     command:
       - "chmod +x .buildkite/scripts/deploy-docker-image-to-ec2.sh"
-      - "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app} MCP_DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-mcp-server sh .buildkite/scripts/deploy-docker-image-to-ec2.sh"
+      - "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app} sh .buildkite/scripts/deploy-docker-image-to-ec2.sh"
 
   - input: ":rocket: Optional Common Release"
     key: "optional-common-release"
