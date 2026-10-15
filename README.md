@@ -69,6 +69,35 @@ Chat answers are neither stored nor reused (the `chat_interactions` table is no 
 answers such as analytics are never stale.
 Tool or transport failures follow the chatbot's existing logged error-response path.
 
+### OpenAI model compatibility checks
+
+`OpenAiChatModel` is the application's supported-model list, not a live OpenAI catalog.
+Both the offline request tests and the opt-in live tests iterate over every enum value,
+so adding a model automatically adds coverage. With tools, `gpt-6.1-sol` explicitly uses
+`reasoning_effort=none` for Chat Completions; other models retain their defaults.
+
+Run the offline checks from the repository root (no credentials or running services required):
+
+```powershell
+.\mvnw.cmd -pl api-service -am "-Dtest=ChatMcpToolsTest,ChatServiceImplTest,OpenAiIntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
+```
+
+To run live OpenAI checks, make `OPENAI_API_KEY` available in the process environment,
+then explicitly enable them:
+
+```powershell
+.\mvnw.cmd -pl api-service -am "-Dtest=OpenAiIntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" "-Dopenai.integration=true" test
+```
+
+Live checks incur API charges and send only synthetic prompts and tool results to OpenAI.
+They check each configured model's availability with `GET /v1/models/{id}`, then exercise
+the production Chat Completions code for a plain answer and a full tool-call/result/answer
+round trip. MCP is mocked; PostgreSQL, MongoDB, and the MCP server are not required.
+Missing credentials, unavailable models, unsupported request parameters, and tool-flow
+failures fail the live run rather than being silently skipped. Without the opt-in flag,
+live tests are skipped even if a key exists. Run them before deploying model-list changes;
+a successful model lookup alone does not establish Chat Completions or tool compatibility.
+
 ### Docker and deployment
 
 The root `Dockerfile` builds a single image that contains both the API service and the MCP server.
