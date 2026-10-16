@@ -54,13 +54,13 @@ class ChatMcpToolsTest {
         verify(httpClient, times(2)).send(requests.capture(), any(HttpResponse.BodyHandler.class));
         JsonNode first = body(requests.getAllValues().get(0));
         assertEquals(model.getValue(), first.path("model").asText());
-        assertReasoningEffort(first, model);
+        assertFalse(first.has("reasoning_effort"));
         assertEquals("auto", first.path("tool_choice").asText());
         assertEquals("tool_one", first.path("tools").path(0).path("function").path("name").asText());
         assertEquals("object", first.path("tools").path(0).path("function").path("parameters").path("type").asText());
         JsonNode second = body(requests.getAllValues().get(1));
         assertEquals(model.getValue(), second.path("model").asText());
-        assertReasoningEffort(second, model);
+        assertFalse(second.has("reasoning_effort"));
         assertEquals("call_1", second.path("messages").path(2).path("tool_calls").path(0).path("id").asText());
         JsonNode result = second.path("messages").path(3);
         assertEquals("tool", result.path("role").asText());
@@ -87,14 +87,6 @@ class ChatMcpToolsTest {
         assertFalse(payload.has("reasoning_effort"));
     }
 
-    private void assertReasoningEffort(JsonNode payload, OpenAiChatModel model) {
-        if (model == OpenAiChatModel.GPT_6_1_SOL) {
-            assertEquals("none", payload.path("reasoning_effort").asText());
-        } else {
-            assertFalse(payload.has("reasoning_effort"));
-        }
-    }
-
     @Test
     void rejectsUnadvertisedTools() throws Exception {
         ChatServiceImpl service = service();
@@ -118,7 +110,7 @@ class ChatMcpToolsTest {
         verify(httpClient, times(5)).send(requests.capture(), any(HttpResponse.BodyHandler.class));
         assertEquals("none", body(requests.getAllValues().get(4)).path("tool_choice").asText());
         for (HttpRequest request : requests.getAllValues()) {
-            assertEquals("none", body(request).path("reasoning_effort").asText());
+            assertFalse(body(request).has("reasoning_effort"));
         }
         verify(mcpClient, times(4)).callTool(any());
     }

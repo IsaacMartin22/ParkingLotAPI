@@ -345,9 +345,6 @@ public class ChatServiceImpl implements ChatService {
                 payload.put("tools", toolDefinitions);
                 payload.put("tool_choice", round == MAX_TOOL_ROUNDS ? "none" : "auto");
                 payload.put("parallel_tool_calls", false);
-                if (OpenAiChatModel.GPT_6_1_SOL.getValue().equals(selectedModel)) {
-                    payload.put("reasoning_effort", "none");
-                }
             }
             JsonNode message = sendChatCompletion(payload, selectedModel, question, context.length());
             JsonNode toolCalls = message.path("tool_calls");
