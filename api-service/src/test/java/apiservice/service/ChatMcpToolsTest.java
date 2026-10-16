@@ -12,6 +12,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
@@ -108,6 +109,56 @@ class ChatMcpToolsTest {
             logger.detachAppender(appender);
             appender.stop();
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "42P01, Analytics table not found",
+            "42703, Analytics column not found",
+            "42501, Database permission denied",
+            "3D000, Database not found",
+            "3F000, Schema not found",
+            "57014, Database query canceled or timed out",
+            "08001, Database connection failed",
+            "28P01, Database authentication failed",
+            "XX000, Check the MCP server stack trace",
+            "unknown, verify its SPRING_DATASOURCE_* settings"
+    })
+    void logsDatabaseSqlStateAndActionableHint(String sqlState, String hint) throws Exception {
+        ChatServiceImpl service = service();
+        advertiseTool();
+        String diagnostic = "[MCP errorCode=DATABASE_ERROR sqlState=" + sqlState
+                + " errorId=577daf18-8abc-4932-9981-66f9382cd133]";
+        when(mcpClient.callTool(any()))
+                .thenReturn(new McpSchema.CallToolResult("private-tool-result " + diagnostic, true));
+        respondWith(toolCall("tool_one"), assistantMessage("Tool unavailable"));
+        Logger logger = (Logger) LoggerFactory.getLogger(ChatServiceImpl.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            assertEquals("Tool unavailable", complete(service));
+
+            assertThat(appender.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                assertThat(event.getFormattedMessage()).contains("callId=call_1", diagnostic, "hint=", hint);
+            });
+            assertThat(appender.list).allSatisfy(event ->
+                    assertThat(event.getFormattedMessage()).doesNotContain("private-tool-result"));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+    }
+
+    @Test
+    void doesNotLogUntrustedDatabaseDiagnosticFields() {
+        String diagnostic = "[MCP errorCode=DATABASE_ERROR sqlState=private-value\nforged-log-entry"
+                + " errorId=577daf18-8abc-4932-9981-66f9382cd133]";
+        String logged = ReflectionTestUtils.invokeMethod(ChatServiceImpl.class, "toolErrorDiagnostic",
+                new McpSchema.CallToolResult(diagnostic, true));
+
+        assertEquals("unavailable (tool returned no diagnostic tag)", logged);
     }
 
     @Test

@@ -65,6 +65,10 @@ at startup and fails startup if the MCP server is unavailable, so when running l
 then sends their results back for the final answer, with at most four tool-calling rounds.
 The existing portfolio retrieval remains in place; empty retrieval can proceed to tools.
 Tool failures include a safe `errorCode` and generated `errorId` in the API warning and MCP tool response.
+Database failures also include `sqlState` (or `unknown` when the driver supplies none).
+The API warning translates SQLSTATE into an actionable hint for connection/authentication failures,
+missing tables or columns, permissions, and canceled queries. Only the validated SQLSTATE is forwarded,
+not raw database messages, connection strings, or tool arguments.
 Search the MCP server's console logs for that `errorId` to find the exception and full cause/stack trace
 (for database failures), or a validation-rejection warning (`INVALID_ARGUMENTS`).
 The OpenAI `callId` belongs to the API and is not the MCP protocol request ID; use `errorId` to correlate

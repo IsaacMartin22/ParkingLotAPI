@@ -42,6 +42,7 @@ public class ChatServiceImpl implements ChatService {
     private static final int MAX_TOOL_ROUNDS = 4;
     private static final Pattern MCP_ERROR_DIAGNOSTIC = Pattern.compile(
             "\\[MCP errorCode=(INVALID_ARGUMENTS|DATABASE_ERROR|SERIALIZATION_ERROR|INTERNAL_ERROR)"
+                    + "(?: sqlState=([0-9A-Z]{5}|unknown))?"
                     + " errorId=[0-9a-f-]{36}\\]$");
 
     @Value("${app.chat.openai-api-key:}")
@@ -418,11 +419,38 @@ public class ChatServiceImpl implements ChatService {
             if (content instanceof McpSchema.TextContent text) {
                 var matcher = MCP_ERROR_DIAGNOSTIC.matcher(text.text());
                 if (matcher.find()) {
+                    if ("DATABASE_ERROR".equals(matcher.group(1))) {
+                        return matcher.group() + " hint=" + databaseFailureHint(matcher.group(2));
+                    }
                     return matcher.group();
                 }
             }
         }
         return "unavailable (tool returned no diagnostic tag)";
+    }
+
+    private static String databaseFailureHint(String sqlState) {
+        if (sqlState == null || "unknown".equals(sqlState)) {
+            return "Check the MCP server stack trace using errorId; verify its SPRING_DATASOURCE_* settings "
+                    + "point to the API database (the production API uses PROD_DATASOURCE_*).";
+        }
+        return switch (sqlState) {
+            case "42P01" -> "Analytics table not found; check the MCP database/schema and API Flyway migrations.";
+            case "42703" -> "Analytics column not found; check API Flyway migrations and MCP schema compatibility.";
+            case "42501" -> "Database permission denied; check MCP role schema USAGE and analytics SELECT grants.";
+            case "3D000" -> "Database not found; check the database name in MCP SPRING_DATASOURCE_URL.";
+            case "3F000" -> "Schema not found; check the MCP connection search_path.";
+            case "57014" -> "Database query canceled or timed out; check query performance and statement timeouts.";
+            default -> {
+                if (sqlState.startsWith("08")) {
+                    yield "Database connection failed; check MCP SPRING_DATASOURCE_URL, network access, and TLS.";
+                }
+                if (sqlState.startsWith("28")) {
+                    yield "Database authentication failed; check MCP SPRING_DATASOURCE_USERNAME/PASSWORD and PostgreSQL authentication rules.";
+                }
+                yield "Check the MCP server stack trace using errorId for the underlying database exception.";
+            }
+        };
     }
 
     private JsonNode sendResponse(

@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -120,20 +121,35 @@ public class SiteAnalyticsTool {
         } catch (IllegalArgumentException ex) {
             logger.warn("MCP tool call rejected. tool={}, errorCode=INVALID_ARGUMENTS, errorId={}, durationMs={}",
                     NAME, errorId, (System.nanoTime() - startedAt) / 1_000_000);
-            return error("Invalid arguments: " + ex.getMessage(), "INVALID_ARGUMENTS", errorId);
+            return error("Invalid arguments: " + ex.getMessage(), "INVALID_ARGUMENTS", errorId, null);
         } catch (JsonProcessingException | RuntimeException ex) {
             String errorCode = ex instanceof DataAccessException ? "DATABASE_ERROR"
                     : ex instanceof JsonProcessingException ? "SERIALIZATION_ERROR" : "INTERNAL_ERROR";
-            logger.error("MCP tool call failed. tool={}, errorCode={}, errorId={}, durationMs={}, exceptionType={}",
+            String sqlState = databaseSqlState(ex);
+            logger.error("MCP tool call failed. tool={}, errorCode={}, errorId={}, durationMs={}, exceptionType={}, sqlState={}",
                     NAME, errorCode, errorId, (System.nanoTime() - startedAt) / 1_000_000,
-                    ex.getClass().getSimpleName(), ex);
-            return error("Site analytics are unavailable right now.", errorCode, errorId);
+                    ex.getClass().getSimpleName(), sqlState, ex);
+            return error("Site analytics are unavailable right now.", errorCode, errorId,
+                    ex instanceof DataAccessException ? sqlState : null);
         }
     }
 
-    private static McpSchema.CallToolResult error(String message, String errorCode, String errorId) {
+    private static String databaseSqlState(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sqlException) {
+                String state = sqlException.getSQLState();
+                if (state != null && state.matches("[0-9A-Z]{5}")) {
+                    return state;
+                }
+            }
+        }
+        return "unknown";
+    }
+
+    private static McpSchema.CallToolResult error(String message, String errorCode, String errorId, String sqlState) {
+        String databaseDiagnostic = sqlState == null ? "" : " sqlState=" + sqlState;
         return new McpSchema.CallToolResult(
-                message + " [MCP errorCode=" + errorCode + " errorId=" + errorId + "]", true);
+                message + " [MCP errorCode=" + errorCode + databaseDiagnostic + " errorId=" + errorId + "]", true);
     }
 
     private Map<String, Object> query(Map<String, Object> args) {

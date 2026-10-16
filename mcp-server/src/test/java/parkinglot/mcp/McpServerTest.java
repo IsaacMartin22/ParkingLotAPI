@@ -151,10 +151,12 @@ class McpServerTest {
 
             assertTrue(Boolean.TRUE.equals(result.isError()));
             assertTrue(text(result).contains("errorCode=DATABASE_ERROR"));
+            assertTrue(Pattern.compile("sqlState=42S0[24]").matcher(text(result)).find(), text(result));
             assertFalse(text(result).contains("SELECT"));
             assertFalse(text(result).contains("BadSqlGrammarException"));
             assertTrue(output.getAll().contains(errorId(result)));
             assertTrue(output.getAll().contains("exceptionType=BadSqlGrammarException"));
+            assertTrue(Pattern.compile("sqlState=42S0[24]").matcher(output.getAll()).find());
             assertTrue(output.getAll().contains("Caused by:"));
             assertFalse(output.getAll().contains("private-filter-value"));
         }
