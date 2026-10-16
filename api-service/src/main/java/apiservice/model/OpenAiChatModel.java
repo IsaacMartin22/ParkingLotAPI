@@ -5,9 +5,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public enum OpenAiChatModel {
-    GPT_5_6("gpt-5.6"),
-    GPT_6("gpt-6"),
-    GPT_6_1("gpt-6.1"),
+    GPT_5_6("gpt-5.5"),
+    GPT_5_6_SOL("gpt-5.6-sol"),
+    GPT_5_6_TERRA("gpt-5.6-terra"),
+    GPT_5_6_LUNA("gpt-5.6-luna"),
     GPT_6_1_SOL("gpt-6.1-sol"),
     GPT_6_ASTRA("gpt-6-astra"),
     GPT_6_LUNA("gpt-6-luna"),
