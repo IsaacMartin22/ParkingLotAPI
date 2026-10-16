@@ -1,7 +1,10 @@
 package apiservice.service;
 
+import apiservice.dbentity.ChatInteraction;
+import apiservice.dbentity.ChatToolUsage;
 import apiservice.model.OpenAiChatModel;
 import apiservice.model.PortfolioDocument;
+import apiservice.repository.ChatInteractionRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +41,7 @@ public class ChatServiceImpl implements ChatService {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private final McpSyncClient mcpClient;
+    private final ChatInteractionRepository chatInteractionRepository;
 
     private static final int MAX_TOOL_ROUNDS = 4;
     private static final Pattern MCP_ERROR_DIAGNOSTIC = Pattern.compile(
@@ -69,12 +73,14 @@ public class ChatServiceImpl implements ChatService {
     public ChatServiceImpl(
             MongoTemplate mongoTemplate,
             ObjectMapper objectMapper,
-            McpSyncClient mcpClient
+            McpSyncClient mcpClient,
+            ChatInteractionRepository chatInteractionRepository
     ) {
         this.mongoTemplate = mongoTemplate;
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newHttpClient();
         this.mcpClient = mcpClient;
+        this.chatInteractionRepository = chatInteractionRepository;
     }
 
     @Override
@@ -110,9 +116,13 @@ public class ChatServiceImpl implements ChatService {
 
         try {
             logger.info("Generating embedding for question='{}' using model={}", trimmedQuestion, embeddingModel);
+            long embeddingStartedAt = System.nanoTime();
             float[] queryVector = embedText(trimmedQuestion);
+            long embeddingLatencyMs = (System.nanoTime() - embeddingStartedAt) / 1_000_000;
             logger.info("Searching MongoDB vector index for relevant documents for question='{}'", trimmedQuestion);
+            long searchStartedAt = System.nanoTime();
             List<PortfolioDocument> relevantDocuments = findRelevantDocuments(queryVector, trimmedQuestion);
+            long vectorSearchDurationMs = (System.nanoTime() - searchStartedAt) / 1_000_000;
             logger.info("Retrieved {} candidate documents from MongoDB for question='{}'",
                     relevantDocuments.size(), trimmedQuestion);
 
@@ -121,7 +131,10 @@ public class ChatServiceImpl implements ChatService {
 
             logger.info("Calling OpenAI chat completion for question='{}' with model={} and contextLength={} chars",
                     trimmedQuestion, selectedModel, context.length());
-            String answer = chatCompletion(trimmedQuestion, context, selectedModel);
+            List<ChatToolUsage> toolUsages = new ArrayList<>();
+            String answer = chatCompletion(trimmedQuestion, context, selectedModel, toolUsages);
+            saveInteraction(trimmedQuestion, answer, queryVector, selectedModel, embeddingLatencyMs,
+                    vectorSearchDurationMs, relevantDocuments.size(), toolUsages);
             return new ChatAnswer(answer, findCitation(relevantDocuments));
         } catch (Exception ex) {
             logger.error("Exception while handling question='{}'", trimmedQuestion, ex);
@@ -316,7 +329,65 @@ public class ChatServiceImpl implements ChatService {
         return embedding;
     }
 
+    private void saveInteraction(
+            String question,
+            String answer,
+            float[] embedding,
+            String selectedModel,
+            long embeddingLatencyMs,
+            long vectorSearchDurationMs,
+            int vectorSearchDocumentCount,
+            List<ChatToolUsage> toolUsages
+    ) {
+        try {
+            ChatInteraction interaction = new ChatInteraction();
+            interaction.setQuestion(question);
+            interaction.setAnswer(answer);
+            interaction.setEmbedding(toVectorLiteral(embedding));
+            interaction.setEmbeddingModel(embeddingModel);
+            interaction.setChatModel(selectedModel);
+            interaction.setCacheHit(false);
+            interaction.setEmbeddingLatencyMs(embeddingLatencyMs);
+            interaction.setVectorSearchDurationMs(vectorSearchDurationMs);
+            interaction.setVectorSearchDocumentCount(vectorSearchDocumentCount);
+            toolUsages.forEach(interaction::addToolUsage);
+            chatInteractionRepository.save(interaction);
+        } catch (RuntimeException ex) {
+            // Persisting analytics must not prevent the user from receiving the answer.
+            logger.error("Failed to persist chat interaction with {} tool usages", toolUsages.size(), ex);
+        }
+    }
+
+    private static String toVectorLiteral(float[] vector) {
+        StringBuilder literal = new StringBuilder("[");
+        for (int i = 0; i < vector.length; i++) {
+            if (i > 0) {
+                literal.append(',');
+            }
+            literal.append(vector[i]);
+        }
+        return literal.append(']').toString();
+    }
+
+    private static ChatToolUsage toolUsage(
+            String name, String callId, int round, long durationMs, boolean error, String errorDiagnostic
+    ) {
+        ChatToolUsage usage = new ChatToolUsage();
+        usage.setToolName(name);
+        usage.setCallId(callId);
+        usage.setToolRound(round);
+        usage.setDurationMs(durationMs);
+        usage.setError(error);
+        usage.setErrorDiagnostic(errorDiagnostic);
+        return usage;
+    }
+
     private String chatCompletion(String question, String context, String selectedModel)
+            throws IOException, InterruptedException {
+        return chatCompletion(question, context, selectedModel, new ArrayList<>());
+    }
+
+    private String chatCompletion(String question, String context, String selectedModel, List<ChatToolUsage> toolUsages)
             throws IOException, InterruptedException {
         String userContent = "Question: " + question + System.lineSeparator() + System.lineSeparator() +
                 "Relevant context:" + System.lineSeparator() + context;
@@ -397,11 +468,14 @@ public class ChatServiceImpl implements ChatService {
                 }
                 long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
                 if (Boolean.TRUE.equals(result.isError())) {
+                    String diagnostic = toolErrorDiagnostic(result);
                     logger.warn("MCP tool call returned an error. tool={}, callId={}, durationMs={}, diagnostic={}",
-                            name, callId, durationMs, toolErrorDiagnostic(result));
+                            name, callId, durationMs, diagnostic);
+                    toolUsages.add(toolUsage(name, callId, round + 1, durationMs, true, diagnostic));
                 } else {
                     logger.info("MCP tool call completed. tool={}, callId={}, durationMs={}",
                             name, callId, durationMs);
+                    toolUsages.add(toolUsage(name, callId, round + 1, durationMs, false, null));
                 }
                 messages.add(Map.of(
                         "type", "function_call_output",

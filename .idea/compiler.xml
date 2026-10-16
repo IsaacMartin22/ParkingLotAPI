@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="parking-lot-api-sdk" />
         <module name="api-service" />
+        <module name="mcp-server" />
         <module name="parking-lot-common" />
       </profile>
     </annotationProcessing>
@@ -20,6 +21,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-service" options="-parameters" />
       <module name="api-service (1)" options="-parameters" />
+      <module name="mcp-server" options="-parameters" />
       <module name="parking-lot-api-sdk" options="" />
       <module name="parking-lot-common" options="" />
     </option>

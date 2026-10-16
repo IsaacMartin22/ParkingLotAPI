@@ -45,6 +45,14 @@ class FlywayMigrationsTest {
     }
 
     @Test
+    void v10ShouldCreateChatToolUsagesWithForeignKeyToChatInteractions() throws IOException {
+        String sql = Files.readString(MIGRATIONS_DIR.resolve("V10__create_chat_tool_usages.sql"));
+
+        assertTrue(sql.contains("CREATE TABLE chat_tool_usages"));
+        assertTrue(sql.contains("FOREIGN KEY (chat_interaction_id) REFERENCES chat_interactions (id)"));
+    }
+
+    @Test
     void v9ShouldRebuildChatEmbeddingColumnFor3072Dimensions() throws IOException {
         String sql = Files.readString(MIGRATIONS_DIR.resolve("V9__rebuild_chat_embedding_column_for_3072.sql"));
 

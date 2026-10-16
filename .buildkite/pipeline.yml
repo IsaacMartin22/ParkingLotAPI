@@ -102,6 +102,10 @@ steps:
   - label: ":droplet: Deploy Docker image to DigitalOcean"
     key: "deploy-docker-image-to-digitalocean"
     timeout_in_minutes: 10
+    retry:
+      automatic:
+        - exit_status: "*"
+          limit: 3
     depends_on:
       - "publish-docker-image"
     if: build.branch == "main"

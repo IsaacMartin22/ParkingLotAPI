@@ -1,15 +1,20 @@
 package apiservice.dbentity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "chat_interactions")
@@ -28,6 +33,7 @@ public class ChatInteraction {
     private String answer;
 
     @Column(name = "embedding", nullable = false, columnDefinition = "vector(3072)")
+    @ColumnTransformer(write = "CAST(? AS vector)")
     private String embedding;
 
     @Column(name = "embedding_model", nullable = false)
@@ -53,4 +59,12 @@ public class ChatInteraction {
 
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
+
+    @OneToMany(mappedBy = "chatInteraction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatToolUsage> toolUsages = new ArrayList<>();
+
+    public void addToolUsage(ChatToolUsage toolUsage) {
+        toolUsage.setChatInteraction(this);
+        toolUsages.add(toolUsage);
+    }
 }

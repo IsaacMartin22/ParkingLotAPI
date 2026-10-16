@@ -1,6 +1,9 @@
 package apiservice.service;
 
+import apiservice.dbentity.ChatInteraction;
+import apiservice.dbentity.ChatToolUsage;
 import apiservice.model.OpenAiChatModel;
+import apiservice.repository.ChatInteractionRepository;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -33,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -46,7 +50,54 @@ class ChatMcpToolsTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = mock(HttpClient.class);
     private final McpSyncClient mcpClient = mock(McpSyncClient.class);
+    private final ChatInteractionRepository chatInteractionRepository = mock(ChatInteractionRepository.class);
 
+    @Test
+    void recordsEachToolUsageWithoutToolPayloads() throws Exception {
+        ChatServiceImpl service = service();
+        advertiseTool();
+        String diagnostic = "[MCP errorCode=DATABASE_ERROR errorId=577daf18-8abc-4932-9981-66f9382cd133]";
+        when(mcpClient.callTool(any()))
+                .thenReturn(new McpSchema.CallToolResult("private-tool-result", false))
+                .thenReturn(new McpSchema.CallToolResult("private-tool-result " + diagnostic, true));
+        respondWith(toolCall("tool_one"), toolCall("tool_one"), assistantMessage("Answer"));
+        List<ChatToolUsage> usages = new java.util.ArrayList<>();
+
+        assertEquals("Answer", ReflectionTestUtils.invokeMethod(
+                service, "chatCompletion", "Question", "Context", "gpt-6.1-sol", usages));
+
+        assertEquals(2, usages.size());
+        assertEquals("tool_one", usages.get(0).getToolName());
+        assertEquals("call_1", usages.get(0).getCallId());
+        assertEquals(1, usages.get(0).getToolRound());
+        assertFalse(usages.get(0).getError());
+        assertEquals(null, usages.get(0).getErrorDiagnostic());
+        assertEquals(2, usages.get(1).getToolRound());
+        assertTrue(usages.get(1).getError());
+        assertEquals(diagnostic, usages.get(1).getErrorDiagnostic());
+    }
+
+    @Test
+    void savesInteractionWithLinkedToolUsages() {
+        ChatServiceImpl service = service();
+        ReflectionTestUtils.setField(service, "embeddingModel", "text-embedding-3-large");
+        ChatToolUsage usage = new ChatToolUsage();
+        usage.setToolName("tool_one");
+
+        ReflectionTestUtils.invokeMethod(service, "saveInteraction", "Question", "Answer",
+                new float[]{0.5f, -1.0f}, "gpt-6.1-sol", 10L, 20L, 3, List.of(usage));
+
+        var saved = ArgumentCaptor.forClass(ChatInteraction.class);
+        verify(chatInteractionRepository).save(saved.capture());
+        ChatInteraction interaction = saved.getValue();
+        assertEquals("Question", interaction.getQuestion());
+        assertEquals("Answer", interaction.getAnswer());
+        assertEquals("[0.5,-1.0]", interaction.getEmbedding());
+        assertEquals("gpt-6.1-sol", interaction.getChatModel());
+        assertEquals(3, interaction.getVectorSearchDocumentCount());
+        assertEquals(List.of(usage), interaction.getToolUsages());
+        assertSame(interaction, usage.getChatInteraction());
+    }
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void logsToolStartAndOutcomeWithoutToolPayloads(boolean isError) throws Exception {
@@ -312,7 +363,7 @@ class ChatMcpToolsTest {
     }
 
     private ChatServiceImpl service() {
-        ChatServiceImpl service = new ChatServiceImpl(null, objectMapper, mcpClient);
+        ChatServiceImpl service = new ChatServiceImpl(null, objectMapper, mcpClient, chatInteractionRepository);
         ReflectionTestUtils.setField(service, "httpClient", httpClient);
         ReflectionTestUtils.setField(service, "openAiApiKey", "test-key");
         ReflectionTestUtils.setField(service, "systemPrompt", "Use portfolio context.");
