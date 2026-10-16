@@ -58,6 +58,13 @@ class AnalyticsRepositoryTest {
     }
 
     @Test
+    void createsChatInteractionsTableWithEmbeddingColumn() {
+        assertThat(testEntityManager.getEntityManager()
+                .createNativeQuery("SELECT embedding FROM chat_interactions WHERE 1 = 0")
+                .getResultList()).isEmpty();
+    }
+
+    @Test
     void querySupportsPagingWithSortAndFilter() {
         AnalyticsQuery query = new AnalyticsQuery(
                 List.of(
