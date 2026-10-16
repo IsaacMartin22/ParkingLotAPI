@@ -51,34 +51,75 @@ steps:
       - "chmod +x .buildkite/scripts/wipe-portfolio-documents.sh"
       - "MONGODB_DATABASE=portfolio MONGODB_COLLECTION=portfolio_documents sh .buildkite/scripts/wipe-portfolio-documents.sh"
 
-  - input: ":rocket: Optional Deploy to EC2"
-    key: "optional-deploy-to-ec2"
+  # Retained for a possible EC2 redeployment; DigitalOcean is the active target for now.
+  # - input: ":rocket: Optional Deploy to EC2"
+  #   key: "optional-deploy-to-ec2"
+  #   if: build.branch == "main"
+  #
+  # - label: ":aws: Deploy Docker image to EC2"
+  #   key: "deploy-docker-image-to-ec2"
+  #   depends_on:
+  #     - "publish-docker-image"
+  #     - "optional-deploy-to-ec2"
+  #     - "wipe-mongodb-portfolio-documents"
+  #   if: build.branch == "main"
+  #   allow_dependency_failure: true
+  #   secrets:
+  #     - "DOCKERHUB_USERNAME"
+  #     - "DOCKERHUB_TOKEN"
+  #     - "DOCKER_IMAGE_TAG"
+  #     - "EC2_HOST"
+  #     - "EC2_SSH_PRIVATE_KEY"
+  #     - "EC2_DEPLOY_PATH"
+  #     - "EC2_CONTAINER_NAME"
+  #     - "EC2_APP_PORT"
+  #     - "EC2_HOST_PORT"
+  #     - "SPRING_PROFILES_ACTIVE"
+  #     - "NEW_RELIC_LICENSE_KEY"
+  #     - "NEW_RELIC_APP_NAME"
+  #     - "POSTGRES_DATASOURCE_URL"
+  #     - "POSTGRES_DATASOURCE_USERNAME"
+  #     - "POSTGRES_DATASOURCE_PASSWORD"
+  #   plugins:
+  #     - docker#v5.12.0:
+  #         image: "public.ecr.aws/docker/library/docker:27"
+  #         mount-buildkite-agent: true
+  #         environment:
+  #           - DOCKERHUB_USERNAME
+  #           - DOCKERHUB_TOKEN
+  #           - DOCKER_IMAGE_TAG
+  #           - EC2_HOST
+  #           - EC2_SSH_PRIVATE_KEY
+  #           - EC2_DEPLOY_PATH
+  #           - EC2_CONTAINER_NAME
+  #           - EC2_APP_PORT
+  #           - EC2_HOST_PORT
+  #           - SPRING_PROFILES_ACTIVE
+  #           - NEW_RELIC_LICENSE_KEY
+  #           - NEW_RELIC_APP_NAME
+  #           - POSTGRES_DATASOURCE_URL
+  #           - POSTGRES_DATASOURCE_USERNAME
+  #           - POSTGRES_DATASOURCE_PASSWORD
+  #   command:
+  #     - "chmod +x .buildkite/scripts/deploy-docker-image-to-ec2.sh"
+  #     - "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app} sh .buildkite/scripts/deploy-docker-image-to-ec2.sh"
+
+  - input: ":rocket: Optional Deploy to DigitalOcean"
+    key: "optional-deploy-to-digitalocean"
     if: build.branch == "main"
 
-  - label: ":aws: Deploy Docker image to EC2"
-    key: "deploy-docker-image-to-ec2"
+  - label: ":droplet: Deploy Docker image to DigitalOcean"
+    key: "deploy-docker-image-to-digitalocean"
     depends_on:
       - "publish-docker-image"
-      - "optional-deploy-to-ec2"
-      - "wipe-mongodb-portfolio-documents"
+      - "optional-deploy-to-digitalocean"
     if: build.branch == "main"
-    allow_dependency_failure: true
     secrets:
       - "DOCKERHUB_USERNAME"
       - "DOCKERHUB_TOKEN"
-      - "DOCKER_IMAGE_TAG"
-      - "EC2_HOST"
-      - "EC2_SSH_PRIVATE_KEY"
-      - "EC2_DEPLOY_PATH"
-      - "EC2_CONTAINER_NAME"
-      - "EC2_APP_PORT"
-      - "EC2_HOST_PORT"
-      - "SPRING_PROFILES_ACTIVE"
-      - "NEW_RELIC_LICENSE_KEY"
-      - "NEW_RELIC_APP_NAME"
-      - "POSTGRES_DATASOURCE_URL"
-      - "POSTGRES_DATASOURCE_USERNAME"
-      - "POSTGRES_DATASOURCE_PASSWORD"
+      - "DO_DROPLET_HOST"
+      - "DO_SSH_PRIVATE_KEY"
+      - "DO_SSH_KNOWN_HOSTS"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/docker:27"
@@ -86,22 +127,16 @@ steps:
           environment:
             - DOCKERHUB_USERNAME
             - DOCKERHUB_TOKEN
-            - DOCKER_IMAGE_TAG
-            - EC2_HOST
-            - EC2_SSH_PRIVATE_KEY
-            - EC2_DEPLOY_PATH
-            - EC2_CONTAINER_NAME
-            - EC2_APP_PORT
-            - EC2_HOST_PORT
-            - SPRING_PROFILES_ACTIVE
-            - NEW_RELIC_LICENSE_KEY
-            - NEW_RELIC_APP_NAME
-            - POSTGRES_DATASOURCE_URL
-            - POSTGRES_DATASOURCE_USERNAME
-            - POSTGRES_DATASOURCE_PASSWORD
+            - DO_DROPLET_HOST
+            - DO_SSH_USER
+            - DO_SSH_PRIVATE_KEY
+            - DO_SSH_KNOWN_HOSTS
+            - DO_DEPLOY_PATH
+            - DO_CONTAINER_NAME
+            - DO_HOST_PORT
     command:
-      - "chmod +x .buildkite/scripts/deploy-docker-image-to-ec2.sh"
-      - "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app} sh .buildkite/scripts/deploy-docker-image-to-ec2.sh"
+      - "chmod +x .buildkite/scripts/deploy-docker-image-to-digitalocean.sh"
+      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/deploy-docker-image-to-digitalocean.sh"
 
   - input: ":rocket: Optional Common Release"
     key: "optional-common-release"

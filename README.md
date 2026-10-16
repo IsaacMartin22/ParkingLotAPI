@@ -8,8 +8,7 @@ There is the api-service module which is the main application, there is an sdk m
 and a shared common module which contains code used in both the api-service and sdk modules.
 The `mcp-server` module is a separate HTTP service exposing tools to the chatbot.
 
-The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The api service is built
-via a Docker image and hosted 24/7 because it powers my portfolio site on GitHub Pages. It is now deployed on AWS using ECS.
+The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The API service is built as a Docker image and hosted 24/7 because it powers my portfolio site on GitHub Pages. Buildkite publishes the image and can optionally deploy it to DigitalOcean.
 The hosted URL is currently hardcoded into both the SDK and the frontend query, so if I ever change where it's hosted I will
 need to update those two places.
 
@@ -113,8 +112,30 @@ Runtime knobs (all optional):
 - `API_JAVA_OPTS`: extra API JVM options (default none). `JAVA_TOOL_OPTIONS` applies to both JVMs.
 - `MCP_STARTUP_TIMEOUT_SECONDS`: how long to wait for the MCP server before failing (default `120`).
 
-Two JVMs run in the container, so give the ECS task at least 1 GB of memory (2 GB is comfortable).
-The Express Mode default of 512 MiB is not enough.
+Two JVMs run in the container, so give the Droplet at least 1 GB of memory (2 GB is comfortable).
+
+### Optional DigitalOcean deployment
+
+The main-branch Buildkite pipeline has an approval gate before it deploys the published Docker Hub image to a Droplet. The Droplet needs Docker installed, and the SSH user must be allowed to run Docker. Configure these Buildkite secrets:
+
+- `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (also used by the image-publish step).
+- `DO_DROPLET_HOST` (the Droplet IP address or hostname).
+- `DO_SSH_PRIVATE_KEY` (private key whose public key is authorized for the SSH user).
+- `DO_SSH_KNOWN_HOSTS` (the verified SSH host-key line for the Droplet; pin the fingerprint before adding it).
+
+Optional Buildkite environment variables are `DO_SSH_USER` (default `root`), `DO_DEPLOY_PATH` (default `/opt/parkinglotapi`), `DO_CONTAINER_NAME` (default `parkinglotapi-app`), and `DO_HOST_PORT` (default `80`). Create `${DO_DEPLOY_PATH}/.env` on the Droplet before deployment; the SSH user must be able to read it. The file is kept on the host and is not uploaded by Buildkite. For example:
+
+```dotenv
+SPRING_PROFILES_ACTIVE=prod
+PROD_DATASOURCE_URL=jdbc:postgresql://DB_HOST:DB_PORT/DB_NAME?sslmode=require
+PROD_DATASOURCE_USERNAME=DB_USERNAME
+PROD_DATASOURCE_PASSWORD=DB_PASSWORD
+SPRING_DATASOURCE_URL=jdbc:postgresql://DB_HOST:DB_PORT/DB_NAME?sslmode=require
+SPRING_DATASOURCE_USERNAME=DB_USERNAME
+SPRING_DATASOURCE_PASSWORD=DB_PASSWORD
+```
+
+The production API and bundled MCP server use different datasource variable names, so set both sets to the same database. Set any other runtime secrets required by the application in that file. Restrict its permissions on the Droplet (`chmod 600`). Allow the configured host port in the Droplet firewall. After approval, Buildkite logs in to Docker Hub on the Droplet, pulls the published image, and recreates the container on host port 80 (mapped to container port 8080).
 
 ## Database and Principle of Least Privilege
 
