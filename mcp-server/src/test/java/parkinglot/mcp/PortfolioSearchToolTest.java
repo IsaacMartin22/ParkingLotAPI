@@ -43,11 +43,12 @@ class PortfolioSearchToolTest {
         PortfolioSearchTool tool = tool();
         MongoCollection<Document> collection = mock(MongoCollection.class);
         when(mongoTemplate.getCollection("portfolio_documents")).thenReturn(collection);
-        when(collection.aggregate(anyList())).thenReturn(results(List.of(
+        AggregateIterable<Document> vectorResults = results(List.of(
                 new Document("_id", "chunk-1").append("text", "Isaac builds Java APIs.")
                         .append("metadata", Map.of("citation", "https://example.com/resume"))
                         .append("score", 0.9)
-        )));
+        ));
+        when(collection.aggregate(anyList())).thenReturn(vectorResults);
 
         McpSchema.CallToolResult result = tool.call(Map.of("query", " Isaac's experience "));
 
@@ -74,9 +75,9 @@ class PortfolioSearchToolTest {
         PortfolioSearchTool tool = tool();
         MongoCollection<Document> collection = mock(MongoCollection.class);
         when(mongoTemplate.getCollection("portfolio_documents")).thenReturn(collection);
-        when(collection.aggregate(anyList()))
-                .thenReturn(results(List.of()))
-                .thenReturn(results(List.of(new Document("text", "C++ experience"))));
+        AggregateIterable<Document> emptyResults = results(List.of());
+        AggregateIterable<Document> textResults = results(List.of(new Document("text", "C++ experience")));
+        when(collection.aggregate(anyList())).thenReturn(emptyResults).thenReturn(textResults);
 
         McpSchema.CallToolResult result = tool.call(Map.of("query", "C++"));
 
