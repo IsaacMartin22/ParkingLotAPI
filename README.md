@@ -8,7 +8,7 @@ There is the api-service module which is the main application, there is an sdk m
 and a shared common module which contains code used in both the api-service and sdk modules.
 The `mcp-server` module is a separate HTTP service exposing tools to the chatbot.
 
-The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The API service is built as a Docker image and hosted 24/7 because it powers my portfolio site on GitHub Pages. Buildkite publishes the image and can optionally deploy it to DigitalOcean.
+The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The API service is built as a Docker image and hosted 24/7 because it powers my portfolio site on GitHub Pages. Buildkite publishes the image and automatically deploys it to DigitalOcean on `main` after publication succeeds.
 The hosted URL is currently hardcoded into both the SDK and the frontend query, so if I ever change where it's hosted I will
 need to update those two places.
 
@@ -121,7 +121,7 @@ Runtime knobs (all optional):
 
 Two JVMs run in the container, so give the Droplet at least 1 GB of memory (2 GB is comfortable).
 
-### Optional DigitalOcean deployment
+### Automatic DigitalOcean deployment
 
 The main-branch Buildkite pipeline has an approval gate before it deploys the published Docker Hub image to a Droplet. The Droplet needs Docker installed, and the SSH user must be allowed to run Docker. Configure these Buildkite secrets:
 
@@ -148,7 +148,7 @@ Before the first HTTPS deployment:
 
 - In GoDaddy, point the `api` A record at the Droplet's public IPv4 address (currently `159.203.113.71`). Leave the frontend's DNS records unchanged. Remove any stale AAAA record unless IPv6 also routes to this Droplet.
 - Allow inbound TCP ports **80 and 443** in both the DigitalOcean cloud firewall and the host firewall. Caddy needs port 80 for certificate issuance/renewal and HTTP-to-HTTPS redirects. Ensure no other host service occupies these ports.
-- Merge these deployment changes into `main`, run Buildkite and approve the DigitalOcean deployment gate.
+- Merge these deployment changes into `main` and run Buildkite; DigitalOcean deployment starts automatically after Docker image publication succeeds.
 
 Buildkite pulls the API image and `caddy:2-alpine`, creates a shared Docker network, and recreates the API without a published host port. A separate `<DO_CONTAINER_NAME>-caddy` container proxies requests to the API on port 8080 and automatically obtains and renews a publicly trusted certificate. Certificate state persists in named Docker volumes across deployments; do not delete the Caddy data volume during routine cleanup. Spring uses Caddy's forwarded headers to recognize the original HTTPS request, and streaming responses are not buffered.
 

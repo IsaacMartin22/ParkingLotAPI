@@ -99,16 +99,11 @@ steps:
   #     - "chmod +x .buildkite/scripts/deploy-docker-image-to-ec2.sh"
   #     - "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app} sh .buildkite/scripts/deploy-docker-image-to-ec2.sh"
 
-  - input: ":rocket: Optional Deploy to DigitalOcean"
-    key: "optional-deploy-to-digitalocean"
-    if: build.branch == "main"
-
   - label: ":droplet: Deploy Docker image to DigitalOcean"
     key: "deploy-docker-image-to-digitalocean"
     timeout_in_minutes: 5
     depends_on:
       - "publish-docker-image"
-      - "optional-deploy-to-digitalocean"
     if: build.branch == "main"
     secrets:
       - "DOCKERHUB_USERNAME"
@@ -142,6 +137,7 @@ steps:
       - docker#v5.12.0:
           image: "curlimages/curl:8.12.1"
           entrypoint: ""
+          shell: ["/bin/sh", "-e", "-c"]
     command:
       - 'curl --fail --show-error --silent --retry 30 --retry-all-errors --retry-delay 5 --retry-max-time 180 --connect-timeout 5 --max-time 10 "https://api.isaaccmart.in/api"'
 
