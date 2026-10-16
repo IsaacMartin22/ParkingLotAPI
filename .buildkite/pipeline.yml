@@ -133,6 +133,19 @@ steps:
       - "chmod +x .buildkite/scripts/deploy-docker-image-to-digitalocean.sh"
       - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/deploy-docker-image-to-digitalocean.sh"
 
+  - label: ":white_check_mark: Verify DigitalOcean health"
+    key: "verify-digitalocean-health"
+    depends_on: "deploy-docker-image-to-digitalocean"
+    if: build.branch == "main"
+    plugins:
+      - docker#v5.12.0:
+          image: "curlimages/curl:8.12.1"
+          entrypoint: ""
+          environment:
+            - DO_API_DOMAIN
+    command:
+      - 'curl --fail --show-error --silent --retry 30 --retry-all-errors --retry-delay 5 --retry-max-time 180 --connect-timeout 5 --max-time 10 "https://$${DO_API_DOMAIN:-api.isaaccmart.in}/api"'
+
   - input: ":wastebasket: Optional MongoDB Wipe"
     key: "optional-mongodb-wipe"
     if: build.branch == "main"
@@ -154,19 +167,6 @@ steps:
     command:
       - "chmod +x .buildkite/scripts/wipe-portfolio-documents.sh"
       - "MONGODB_DATABASE=portfolio MONGODB_COLLECTION=portfolio_documents sh .buildkite/scripts/wipe-portfolio-documents.sh"
-
-  - label: ":white_check_mark: Verify DigitalOcean health"
-    key: "verify-digitalocean-health"
-    depends_on: "deploy-docker-image-to-digitalocean"
-    if: build.branch == "main"
-    plugins:
-      - docker#v5.12.0:
-          image: "curlimages/curl:8.12.1"
-          entrypoint: ""
-          environment:
-            - DO_API_DOMAIN
-    command:
-      - 'curl --fail --show-error --silent --retry 30 --retry-all-errors --retry-delay 5 --retry-max-time 180 --connect-timeout 5 --max-time 10 "https://$${DO_API_DOMAIN:-api.isaaccmart.in}/api"'
 
   - input: ":rocket: Optional Common Release"
     key: "optional-common-release"
