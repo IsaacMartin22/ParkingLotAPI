@@ -97,7 +97,9 @@ for id in ${port_owners}; do
     continue
   fi
   owner_image=$(docker inspect --format '{{.Config.Image}}' "${id}")
-  if [ "$(image_repository "${owner_image}")" != "$(image_repository "${image}")" ]; then
+  owner_repository=$(image_repository "${owner_image}")
+  if [[ "${owner_repository}" != "$(image_repository "${image}")" &&
+        ( "${name}" != "/parkinglot-api" || "${owner_repository}" != "parkinglot-api" ) ]]; then
     echo "Port 80 or 443 is occupied by unrelated container ${name#/} (${owner_image}); refusing to stop it." >&2
     exit 1
   fi
