@@ -25,14 +25,23 @@ If a new SDK is to be published use the Buildkite pipeline, make sure the versio
 ## MCP server
 
 The standalone `mcp-server` module uses Java 17 and the MCP Java SDK's HTTP/SSE transport
-without changing the existing Spring Boot version. It does not require MongoDB or an OpenAI key.
+without changing the existing Spring Boot version. Portfolio search uses MongoDB and an OpenAI key.
 Its tools are registered in `mcp-server\src\main\java\parkinglot\mcp\McpServerConfiguration.java`:
 
 - `get_site_analytics` (`SiteAnalyticsTool.java`) reads the API database's `analytics` table and returns
   aggregate statistics only: total events, unique sessions, first/last event times, and optional counts grouped by
   `eventType`, `currentUrl`, `browser`, `operatingSystem`, or `day`. Optional filters are `startTime`, `endTime`,
   `eventType`, and `urlContains`. IP addresses, session ids, and payloads are never returned.
-- `tool_two` is still a placeholder that returns an MCP error result until its contract is supplied.
+- `search_portfolio_documents` (`PortfolioSearchTool.java`) accepts a `query`, embeds it, and searches
+  the portfolio's MongoDB vector index. It preserves the existing candidate count, chunk limit, and literal
+  case-insensitive text fallback when vector search returns no matches. Results include text, metadata,
+  citations, and relevance scores; embeddings are not returned to the model.
+
+The search tool shares `MONGODB_URI`, `OPENAI_API_KEY`, `OPENAI_EMBEDDING_MODEL` (default
+`text-embedding-3-large`), and `PORTFOLIO_CHAT_MAX_CONTEXT_CHUNKS` (default `5`) with the API.
+When running the MCP server separately, supply these variables to that process too. The
+`app.chat.vector-index` setting now belongs to the MCP server; keep `app.chat.collection` aligned
+between the API's seeder and the MCP server if overriding the collection name.
 
 The analytics tool uses the same PostgreSQL database and profile-specific connection variables as the API service.
 Both processes inherit `SPRING_PROFILES_ACTIVE`: `prod` uses `PROD_DATASOURCE_URL`,
@@ -66,7 +75,12 @@ The API's MCP integration is always on. The API connects to `CHAT_MCP_BASE_URL` 
 at startup and fails startup if the MCP server is unavailable, so when running locally start the MCP server first.
 `ChatServiceImpl` discovers the tools and lets the model select them using `tool_choice=auto`,
 then sends their results back for the final answer, with at most four tool-calling rounds.
-The existing portfolio retrieval remains in place; empty retrieval can proceed to tools.
+Portfolio retrieval is model-selected rather than performed before every answer. The system prompt directs
+the model to search for facts about Isaac, while greetings and analytics questions need not search MongoDB.
+Citation selection still uses the retrieved documents. Question embeddings remain in the API for interaction
+records; the search tool independently embeds its query when called. Retrieval duration now includes the
+whole MCP search call (including embedding and transport), summed across search calls; document counts
+and citations reflect successful search results. With no search, duration/count are zero and citation is absent.
 Tool failures include a safe `errorCode` and generated `errorId` in the API warning and MCP tool response.
 Database failures also include `sqlState` (or `unknown` when the driver supplies none).
 The API warning translates SQLSTATE into an actionable hint for connection/authentication failures,
@@ -77,8 +91,8 @@ Search the MCP server's console logs for that `errorId` to find the exception an
 The OpenAI `callId` belongs to the API and is not the MCP protocol request ID; use `errorId` to correlate
 the two processes. Tool arguments and result payloads are not logged; exception traces remain server-side
 and should be treated as operationally sensitive.
-Chat answers are neither stored nor reused (the `chat_interactions` table is no longer written), so tool-backed
-answers such as analytics are never stale.
+Chat interactions and tool usage are recorded, but answers are not reused, so tool-backed answers such as
+analytics are never stale.
 Tool or transport failures follow the chatbot's existing logged error-response path.
 
 ### OpenAI model compatibility checks

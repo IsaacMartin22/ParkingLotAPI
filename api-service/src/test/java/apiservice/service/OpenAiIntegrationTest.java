@@ -103,7 +103,7 @@ class OpenAiIntegrationTest {
     }
 
     private ChatServiceImpl service(McpSyncClient mcpClient) {
-        ChatServiceImpl service = new ChatServiceImpl(null, OBJECT_MAPPER, mcpClient, null);
+        ChatServiceImpl service = new ChatServiceImpl(OBJECT_MAPPER, mcpClient, null);
         ReflectionTestUtils.setField(service, "openAiApiKey", apiKey);
         ReflectionTestUtils.setField(service, "systemPrompt",
                 "You are a synthetic API compatibility test assistant. Follow the user's instructions.");

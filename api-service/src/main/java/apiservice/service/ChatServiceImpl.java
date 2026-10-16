@@ -10,11 +10,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
-import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -37,13 +35,13 @@ public class ChatServiceImpl implements ChatService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatServiceImpl.class);
 
-    private final MongoTemplate mongoTemplate;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private final McpSyncClient mcpClient;
     private final ChatInteractionRepository chatInteractionRepository;
 
     private static final int MAX_TOOL_ROUNDS = 4;
+    private static final String PORTFOLIO_SEARCH_TOOL = "search_portfolio_documents";
     private static final Pattern MCP_ERROR_DIAGNOSTIC = Pattern.compile(
             "\\[MCP errorCode=(INVALID_ARGUMENTS|DATABASE_ERROR|SERIALIZATION_ERROR|INTERNAL_ERROR)"
                     + "(?: sqlState=([0-9A-Z]{5}|unknown))?"
@@ -58,25 +56,14 @@ public class ChatServiceImpl implements ChatService {
     @Value("${app.chat.openai-chat-model:gpt-6.1-sol}")
     private String defaultChatModel;
 
-    @Value("${app.chat.collection:portfolio_documents}")
-    private String collectionName;
-
-    @Value("${app.chat.vector-index:portfolio_documents_vector_index}")
-    private String vectorIndex;
-
-    @Value("${app.chat.max-context-chunks:5}")
-    private int maxContextChunks;
-
     @Value("${app.chat.system-prompt:You are IsaacGPT, Isaac Martin's portfolio assistant. Answer recruiter and hiring manager about Isaac on his behalf using only the context he provided about himself. Respond in plain text only and do not use Markdown, bullet lists, numbered lists, code fences, or headings. If the answer is not in the context, say that Isaac did not supply the context to answer that question.}")
     private String systemPrompt;
 
     public ChatServiceImpl(
-            MongoTemplate mongoTemplate,
             ObjectMapper objectMapper,
             McpSyncClient mcpClient,
             ChatInteractionRepository chatInteractionRepository
     ) {
-        this.mongoTemplate = mongoTemplate;
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newHttpClient();
         this.mcpClient = mcpClient;
@@ -119,20 +106,13 @@ public class ChatServiceImpl implements ChatService {
             long embeddingStartedAt = System.nanoTime();
             float[] queryVector = embedText(trimmedQuestion);
             long embeddingLatencyMs = (System.nanoTime() - embeddingStartedAt) / 1_000_000;
-            logger.info("Searching MongoDB vector index for relevant documents for question='{}'", trimmedQuestion);
-            long searchStartedAt = System.nanoTime();
-            List<PortfolioDocument> relevantDocuments = findRelevantDocuments(queryVector, trimmedQuestion);
-            long vectorSearchDurationMs = (System.nanoTime() - searchStartedAt) / 1_000_000;
-            logger.info("Retrieved {} candidate documents from MongoDB for question='{}'",
-                    relevantDocuments.size(), trimmedQuestion);
-
-            // Empty context still proceeds: the model may answer from MCP tools (e.g. site analytics).
-            String context = buildContext(relevantDocuments);
-
-            logger.info("Calling OpenAI chat completion for question='{}' with model={} and contextLength={} chars",
-                    trimmedQuestion, selectedModel, context.length());
+            List<PortfolioDocument> relevantDocuments = new ArrayList<>();
             List<ChatToolUsage> toolUsages = new ArrayList<>();
-            String answer = chatCompletion(trimmedQuestion, context, selectedModel, toolUsages);
+            String answer = chatCompletion(trimmedQuestion, "", selectedModel, toolUsages, relevantDocuments);
+            long vectorSearchDurationMs = toolUsages.stream()
+                    .filter(usage -> PORTFOLIO_SEARCH_TOOL.equals(usage.getToolName()))
+                    .mapToLong(ChatToolUsage::getDurationMs)
+                    .sum();
             saveInteraction(trimmedQuestion, answer, queryVector, selectedModel, embeddingLatencyMs,
                     vectorSearchDurationMs, relevantDocuments.size(), toolUsages);
             return new ChatAnswer(answer, findCitation(relevantDocuments));
@@ -143,92 +123,6 @@ public class ChatServiceImpl implements ChatService {
                     null
             );
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<PortfolioDocument> findRelevantDocuments(float[] queryVector, String queryText) {
-        List<Double> vector = new ArrayList<>();
-        for (float value : queryVector) {
-            vector.add((double) value);
-        }
-
-        List<Document> pipeline = List.of(
-                new Document("$vectorSearch", new Document("index", vectorIndex)
-                        .append("path", "embedding")
-                        .append("queryVector", vector)
-                        .append("numCandidates", Math.max(maxContextChunks * 10, 20))
-                        .append("limit", maxContextChunks)),
-                new Document("$project", new Document("_id", 1)
-                        .append("text", 1)
-                        .append("metadata", 1)
-                        .append("score", new Document("$meta", "vectorSearchScore")))
-        );
-
-        List<PortfolioDocument> results = new ArrayList<>();
-        for (Document document : mongoTemplate.getCollection(collectionName).aggregate(pipeline)) {
-            PortfolioDocument chunk = new PortfolioDocument();
-            Object idValue = document.get("_id");
-            chunk.setId(idValue == null ? null : idValue.toString());
-            chunk.setText(document.getString("text"));
-            chunk.setScore(document.get("score", Number.class) == null ? 0.0 : document.get("score", Number.class).doubleValue());
-            chunk.setMetadata((Map<String, Object>) (Map<?, ?>) document.get("metadata", Map.class));
-            results.add(chunk);
-        }
-
-        logger.info("Vector search result count={}", results.size());
-        if (!results.isEmpty()) {
-            return results;
-        }
-
-        logger.warn("No vector matches found for query='{}'; falling back to text search with normalized query terms.", queryText);
-        return findRelevantDocumentsByText(queryText);
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<PortfolioDocument> findRelevantDocumentsByText(String queryText) {
-        String regex = Pattern.quote(queryText);
-        logger.info("findRelevantDocumentsByText() regex='{}'", regex);
-
-        List<Document> pipeline = List.of(
-                new Document("$match", new Document("text", new Document("$regex", regex).append("$options", "i"))),
-                new Document("$limit", maxContextChunks),
-                new Document("$project", new Document("_id", 1)
-                        .append("text", 1)
-                        .append("metadata", 1))
-        );
-
-        List<PortfolioDocument> results = new ArrayList<>();
-        for (Document document : mongoTemplate.getCollection(collectionName).aggregate(pipeline)) {
-            PortfolioDocument chunk = new PortfolioDocument();
-            Object idValue = document.get("_id");
-            chunk.setId(idValue == null ? null : idValue.toString());
-            chunk.setText(document.getString("text"));
-            chunk.setMetadata((Map<String, Object>) (Map<?, ?>) document.get("metadata", Map.class));
-            results.add(chunk);
-        }
-
-        logger.info("Text fallback result count={}", results.size());
-        return results;
-    }
-
-    private String buildContext(List<PortfolioDocument> documents) {
-        if (documents == null || documents.isEmpty()) {
-            logger.warn("buildContext() received null/empty documents list");
-            return "";
-        }
-
-        StringBuilder context = new StringBuilder();
-        for (PortfolioDocument document : documents) {
-            if (document == null || document.getText() == null || document.getText().isBlank()) {
-                logger.warn("Skipping empty/null portfolio document in buildContext");
-                continue;
-            }
-            context.append(document.getText()).append(System.lineSeparator()).append(System.lineSeparator());
-        }
-
-        String result = context.toString().trim();
-        logger.info("buildContext() produced {} chars from {} docs", result.length(), documents.size());
-        return result;
     }
 
     private String findCitation(List<PortfolioDocument> documents) {
@@ -389,12 +283,22 @@ public class ChatServiceImpl implements ChatService {
 
     private String chatCompletion(String question, String context, String selectedModel, List<ChatToolUsage> toolUsages)
             throws IOException, InterruptedException {
+        return chatCompletion(question, context, selectedModel, toolUsages, new ArrayList<>());
+    }
+
+    private String chatCompletion(
+            String question, String context, String selectedModel, List<ChatToolUsage> toolUsages,
+            List<PortfolioDocument> relevantDocuments
+    ) throws IOException, InterruptedException {
         String userContent = "Question: " + question + System.lineSeparator() + System.lineSeparator() +
                 "Relevant context:" + System.lineSeparator() + context;
 
         List<Map<String, Object>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", systemPrompt +
-                " You may also use available tools as factual context when needed, including answering questions " +
+                " Use search_portfolio_documents to retrieve factual context when answering questions about Isaac's " +
+                "background, experience, skills, projects, or other portfolio information. Do not invent facts about Isaac. " +
+                "Retrieval is not needed for greetings or questions answered by another tool. " +
+                "You may also use available tools as factual context when needed, including answering questions " +
                 "about the portfolio website's visitor analytics with the site analytics tool. " +
                 "The current UTC time is " + Instant.now().truncatedTo(ChronoUnit.SECONDS) +
                 "; use it to resolve relative dates such as 'last week'. " +
@@ -476,6 +380,18 @@ public class ChatServiceImpl implements ChatService {
                     logger.info("MCP tool call completed. tool={}, callId={}, durationMs={}",
                             name, callId, durationMs);
                     toolUsages.add(toolUsage(name, callId, round + 1, durationMs, false, null));
+                    if (PORTFOLIO_SEARCH_TOOL.equals(name)) {
+                        for (McpSchema.Content content : result.content()) {
+                            if (content instanceof McpSchema.TextContent text) {
+                                JsonNode documents = objectMapper.readTree(text.text()).path("documents");
+                                if (!documents.isArray()) {
+                                    throw new IllegalStateException("Portfolio search returned invalid documents");
+                                }
+                                relevantDocuments.addAll(objectMapper.convertValue(
+                                        documents, new TypeReference<List<PortfolioDocument>>() {}));
+                            }
+                        }
+                    }
                 }
                 messages.add(Map.of(
                         "type", "function_call_output",

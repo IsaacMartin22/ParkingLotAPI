@@ -15,6 +15,8 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.time.Duration;
 import java.util.List;
@@ -38,6 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 )
 @ExtendWith(OutputCaptureExtension.class)
 class McpServerTest {
+
+    @MockBean
+    private MongoTemplate mongoTemplate;
 
     @LocalServerPort
     private int port;
@@ -74,16 +79,16 @@ class McpServerTest {
     }
 
     @Test
-    void discoversToolsAndKeepsPlaceholderErrorOverHttp() {
+    void discoversToolsAndValidatesPortfolioSearchOverHttp() {
         try (McpSyncClient client = client()) {
             assertEquals("parking-lot-mcp-server", client.initialize().serverInfo().name());
             List<McpSchema.Tool> tools = client.listTools().tools();
-            assertEquals(List.of(SiteAnalyticsTool.NAME, "tool_two"),
+            assertEquals(List.of(SiteAnalyticsTool.NAME, PortfolioSearchTool.NAME),
                     tools.stream().map(McpSchema.Tool::name).sorted().toList());
 
-            McpSchema.CallToolResult result = client.callTool(new McpSchema.CallToolRequest("tool_two", Map.of()));
+            McpSchema.CallToolResult result = client.callTool(new McpSchema.CallToolRequest(PortfolioSearchTool.NAME, Map.of()));
             assertTrue(Boolean.TRUE.equals(result.isError()));
-            assertTrue(text(result).contains("not implemented"));
+            assertTrue(text(result).contains("errorCode=INVALID_ARGUMENTS"));
         }
     }
 

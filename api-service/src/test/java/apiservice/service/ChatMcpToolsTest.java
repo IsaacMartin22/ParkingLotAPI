@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -51,6 +52,80 @@ class ChatMcpToolsTest {
     private final HttpClient httpClient = mock(HttpClient.class);
     private final McpSyncClient mcpClient = mock(McpSyncClient.class);
     private final ChatInteractionRepository chatInteractionRepository = mock(ChatInteractionRepository.class);
+
+    @Test
+    void answersWithoutRetrievalWhenModelDoesNotSelectSearch() throws Exception {
+        ChatServiceImpl service = service();
+        advertisePortfolioSearch();
+        respondWith(assistantMessage("Hello!"));
+        respondToEmbedding();
+
+        ChatAnswer answer = service.askWithCitation("Hello");
+
+        assertEquals("Hello!", answer.answer());
+        assertEquals(null, answer.citation());
+        verify(mcpClient, times(0)).callTool(any());
+        var saved = ArgumentCaptor.forClass(ChatInteraction.class);
+        verify(chatInteractionRepository).save(saved.capture());
+        assertEquals(0, saved.getValue().getVectorSearchDocumentCount());
+        assertEquals(0L, saved.getValue().getVectorSearchDurationMs());
+        var requests = ArgumentCaptor.forClass(HttpRequest.class);
+        verify(httpClient, times(2)).send(requests.capture(), any(HttpResponse.BodyHandler.class));
+        JsonNode payload = body(requests.getAllValues().get(1));
+        assertEquals("auto", payload.path("tool_choice").asText());
+        assertEquals("search_portfolio_documents", payload.path("tools").path(0).path("name").asText());
+    }
+
+    @Test
+    void usesSearchResultsForAnswerCitationAndInteractionMetrics() throws Exception {
+        ChatServiceImpl service = service();
+        advertisePortfolioSearch();
+        when(mcpClient.callTool(any())).thenReturn(new McpSchema.CallToolResult("""
+                {"documents":[
+                  {"id":"1","text":"Java experience","metadata":{"citation":"https://example.com/resume"},"score":0.9},
+                  {"id":"2","text":"API projects","metadata":{"citation":"https://example.com/resume"},"score":0.8}
+                ]}
+                """, false));
+        respondWith(toolCall("search_portfolio_documents").replace(
+                        "\"arguments\":\"{}\"", "\"arguments\":\"{\\\"query\\\":\\\"Isaac's experience\\\"}\""),
+                assistantMessage("Isaac builds Java APIs."));
+        respondToEmbedding();
+
+        ChatAnswer answer = service.askWithCitation("What is Isaac's experience?");
+
+        assertEquals("Isaac builds Java APIs.", answer.answer());
+        assertEquals("https://example.com/resume", answer.citation());
+        verify(mcpClient).callTool(new McpSchema.CallToolRequest(
+                "search_portfolio_documents", Map.of("query", "Isaac's experience")));
+        var saved = ArgumentCaptor.forClass(ChatInteraction.class);
+        verify(chatInteractionRepository).save(saved.capture());
+        assertEquals(2, saved.getValue().getVectorSearchDocumentCount());
+        assertEquals(1, saved.getValue().getToolUsages().size());
+        assertEquals(saved.getValue().getToolUsages().get(0).getDurationMs(),
+                saved.getValue().getVectorSearchDurationMs());
+        var requests = ArgumentCaptor.forClass(HttpRequest.class);
+        verify(httpClient, times(3)).send(requests.capture(), any(HttpResponse.BodyHandler.class));
+        JsonNode output = body(requests.getAllValues().get(2)).path("input").path(4);
+        assertTrue(output.path("output").asText().contains("Java experience"));
+    }
+
+    @Test
+    void failedSearchDoesNotProduceCitationOrDocumentCount() throws Exception {
+        ChatServiceImpl service = service();
+        advertisePortfolioSearch();
+        when(mcpClient.callTool(any())).thenReturn(new McpSchema.CallToolResult("Search unavailable", true));
+        respondWith(toolCall("search_portfolio_documents"), assistantMessage("Search is unavailable."));
+        respondToEmbedding();
+
+        ChatAnswer answer = service.askWithCitation("What is Isaac's experience?");
+
+        assertEquals("Search is unavailable.", answer.answer());
+        assertEquals(null, answer.citation());
+        var saved = ArgumentCaptor.forClass(ChatInteraction.class);
+        verify(chatInteractionRepository).save(saved.capture());
+        assertEquals(0, saved.getValue().getVectorSearchDocumentCount());
+        assertTrue(saved.getValue().getToolUsages().get(0).getError());
+    }
 
     @Test
     void recordsEachToolUsageWithoutToolPayloads() throws Exception {
@@ -364,9 +439,10 @@ class ChatMcpToolsTest {
     }
 
     private ChatServiceImpl service() {
-        ChatServiceImpl service = new ChatServiceImpl(null, objectMapper, mcpClient, chatInteractionRepository);
+        ChatServiceImpl service = new ChatServiceImpl(objectMapper, mcpClient, chatInteractionRepository);
         ReflectionTestUtils.setField(service, "httpClient", httpClient);
         ReflectionTestUtils.setField(service, "openAiApiKey", "test-key");
+        ReflectionTestUtils.setField(service, "embeddingModel", "text-embedding-3-large");
         ReflectionTestUtils.setField(service, "systemPrompt", "Use portfolio context.");
         return service;
     }
@@ -374,6 +450,22 @@ class ChatMcpToolsTest {
     private void advertiseTool() {
         McpSchema.Tool tool = new McpSchema.Tool("tool_one", "Test tool", "{\"type\":\"object\",\"properties\":{}}");
         when(mcpClient.listTools()).thenReturn(new McpSchema.ListToolsResult(List.of(tool), null));
+    }
+
+    private void advertisePortfolioSearch() {
+        McpSchema.Tool tool = new McpSchema.Tool(
+                "search_portfolio_documents", "Search portfolio", "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}}}");
+        when(mcpClient.listTools()).thenReturn(new McpSchema.ListToolsResult(List.of(tool), null));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void respondToEmbedding() throws Exception {
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("{\"data\":[{\"embedding\":[0.5,-1.0]}]}");
+        when(httpClient.send(argThat((HttpRequest request) ->
+                request != null && request.uri().getPath().equals("/v1/embeddings")),
+                any(HttpResponse.BodyHandler.class))).thenReturn(response);
     }
 
     private String complete(ChatServiceImpl service) {
