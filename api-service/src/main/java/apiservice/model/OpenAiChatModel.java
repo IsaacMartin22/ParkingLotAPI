@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 public enum OpenAiChatModel {
     GPT_5_6("gpt-5.6"),
-    GPT_5_6_CYBER("gpt-5.6-cyber"),
     GPT_6("gpt-6"),
     GPT_6_1("gpt-6.1"),
     GPT_6_1_SOL("gpt-6.1-sol"),
