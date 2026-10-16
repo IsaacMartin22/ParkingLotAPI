@@ -72,8 +72,9 @@ Tool or transport failures follow the chatbot's existing logged error-response p
 
 `OpenAiChatModel` is the application's supported-model list, not a live OpenAI catalog.
 Both the offline request tests and the default-enabled live tests iterate over every enum value,
-so adding a model automatically adds coverage. Chat Completions requests omit
-`reasoning_effort` for every model, with or without tools, to retain each model's supported default.
+so adding a model automatically adds coverage. Chat requests use the Responses API and retain
+each model's default reasoning settings. Responses are not stored; encrypted reasoning output
+is passed back with tool results so reasoning models can continue across tool-calling rounds.
 
 Live OpenAI checks run by default during `test` and require `OPENAI_API_KEY` in the process
 environment. To explicitly run offline checks only from the repository root (no credentials
@@ -91,12 +92,12 @@ To run just the live OpenAI checks:
 
 Live checks incur API charges and send only synthetic prompts and tool results to OpenAI.
 They check each configured model's availability with `GET /v1/models/{id}`, then exercise
-the production Chat Completions code for a plain answer and a full tool-call/result/answer
+the production Responses API code for a plain answer and a full tool-call/result/answer
 round trip. MCP is mocked; PostgreSQL, MongoDB, and the MCP server are not required.
 Missing credentials, unavailable models, unsupported request parameters, and tool-flow
 failures fail the default test run rather than being silently skipped. Only explicitly setting
 `-Dopenai.integration=false` skips the live tests. Run them before deploying model-list changes;
-a successful model lookup alone does not establish Chat Completions or tool compatibility.
+a successful model lookup alone does not establish Responses API or tool compatibility.
 
 ### Docker and deployment
 

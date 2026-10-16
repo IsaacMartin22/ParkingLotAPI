@@ -329,66 +329,75 @@ public class ChatServiceImpl implements ChatService {
         List<Map<String, Object>> toolDefinitions = tools.stream()
                 .map(tool -> Map.<String, Object>of(
                         "type", "function",
-                        "function", Map.of(
-                                "name", tool.name(),
-                                "description", tool.description() == null ? "" : tool.description(),
-                                "parameters", tool.inputSchema()
-                        )
+                        "name", tool.name(),
+                        "description", tool.description() == null ? "" : tool.description(),
+                        "parameters", tool.inputSchema(),
+                        "strict", false
                 ))
                 .toList();
 
         for (int round = 0; round <= MAX_TOOL_ROUNDS; round++) {
             Map<String, Object> payload = new HashMap<>();
             payload.put("model", selectedModel);
-            payload.put("messages", messages);
+            payload.put("input", messages);
+            payload.put("store", false);
+            payload.put("include", List.of("reasoning.encrypted_content"));
             if (!toolDefinitions.isEmpty()) {
                 payload.put("tools", toolDefinitions);
                 payload.put("tool_choice", round == MAX_TOOL_ROUNDS ? "none" : "auto");
                 payload.put("parallel_tool_calls", false);
-                if (OpenAiChatModel.GPT_5_6.getValue().equals(selectedModel)) {
-                    payload.put("reasoning_effort", "none");
+            }
+            JsonNode response = sendResponse(payload, selectedModel, question, context.length());
+            List<JsonNode> toolCalls = new ArrayList<>();
+            StringBuilder answer = new StringBuilder();
+            for (JsonNode item : response.path("output")) {
+                // Replay reasoning items as well as tool calls for stateless reasoning continuity.
+                messages.add(objectMapper.convertValue(item, new TypeReference<>() {}));
+                if ("function_call".equals(item.path("type").asText())) {
+                    toolCalls.add(item);
+                } else if ("message".equals(item.path("type").asText())) {
+                    for (JsonNode content : item.path("content")) {
+                        if ("output_text".equals(content.path("type").asText())) {
+                            answer.append(content.path("text").asText());
+                        }
+                    }
                 }
             }
-            JsonNode message = sendChatCompletion(payload, selectedModel, question, context.length());
-            JsonNode toolCalls = message.path("tool_calls");
-            if (!toolCalls.isArray() || toolCalls.isEmpty()) {
-                JsonNode content = message.path("content");
-                if (!content.isTextual() || content.asText().isBlank()) {
+            if (toolCalls.isEmpty()) {
+                if (answer.toString().isBlank()) {
                     throw new IllegalStateException("OpenAI returned no answer");
                 }
-                return content.asText();
+                return answer.toString();
             }
             if (round == MAX_TOOL_ROUNDS || toolCalls.size() > 2) {
                 throw new IllegalStateException("Unexpected or excessive OpenAI tool calls");
             }
-            // Preserve the full assistant message so tool_call_id links survive the next round.
-            messages.add(objectMapper.convertValue(message, new TypeReference<>() {}));
             for (JsonNode toolCall : toolCalls) {
-                String name = toolCall.path("function").path("name").asText();
+                String name = toolCall.path("name").asText();
                 if (tools.stream().noneMatch(tool -> tool.name().equals(name))) {
                     throw new IllegalStateException("OpenAI requested an unadvertised MCP tool: " + name);
                 }
-                String arguments = toolCall.path("function").path("arguments").asText();
+                String arguments = toolCall.path("arguments").asText();
                 McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(name, arguments));
                 messages.add(Map.of(
-                        "role", "tool",
-                        "tool_call_id", toolCall.path("id").asText(),
-                        "content", objectMapper.writeValueAsString(result)
+                        "type", "function_call_output",
+                        "call_id", toolCall.path("call_id").asText(),
+                        "output", objectMapper.writeValueAsString(result)
                 ));
             }
         }
         throw new IllegalStateException("OpenAI tool round limit exceeded");
     }
 
-    private JsonNode sendChatCompletion(
+    private JsonNode sendResponse(
             Map<String, Object> payload, String selectedModel, String question, int contextLength
     ) throws IOException, InterruptedException {
         String body = objectMapper.writeValueAsString(payload);
 
-        logger.info("Sending chat completion request. model={}, question='{}', contextLength={}",
+        logger.info("Sending OpenAI Responses request. model={}, question='{}', contextLength={}",
                 selectedModel, question, contextLength);
 
-        HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.openai.com/v1/chat/completions"))
+        HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.openai.com/v1/responses"))
                 .header("Authorization", "Bearer " + openAiApiKey)
                 .header("Content-Type", "application/json")
                 .timeout(Duration.ofSeconds(60))
@@ -403,11 +412,10 @@ public class ChatServiceImpl implements ChatService {
         }
 
         JsonNode json = objectMapper.readTree(response.body());
-        JsonNode message = json.path("choices").path(0).path("message");
-        if (!message.isObject()) {
-            throw new IllegalStateException("OpenAI returned no assistant message");
+        if (!"completed".equals(json.path("status").asText()) || !json.path("output").isArray()) {
+            throw new IllegalStateException("OpenAI returned an incomplete or invalid response: " + response.body());
         }
-        return message;
+        return json;
     }
 
     private String resolveChatModel(String requestedModel) {

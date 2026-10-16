@@ -45,7 +45,7 @@ class ChatMcpToolsTest {
         advertiseTool();
         when(mcpClient.callTool(new McpSchema.CallToolRequest("tool_one", Map.of())))
                 .thenReturn(new McpSchema.CallToolResult("Not implemented", true));
-        respondWith(toolCall("tool_one"), "{\"role\":\"assistant\",\"content\":\"Tool is unavailable\"}");
+        respondWith(toolCall("tool_one"), assistantMessage("Tool is unavailable"));
 
         assertEquals("Tool is unavailable", ReflectionTestUtils.invokeMethod(
                 service, "chatCompletion", "Question", "Context", model.getValue()));
@@ -53,27 +53,24 @@ class ChatMcpToolsTest {
         var requests = ArgumentCaptor.forClass(HttpRequest.class);
         verify(httpClient, times(2)).send(requests.capture(), any(HttpResponse.BodyHandler.class));
         JsonNode first = body(requests.getAllValues().get(0));
+        assertEquals("https://api.openai.com/v1/responses", requests.getAllValues().get(0).uri().toString());
         assertEquals(model.getValue(), first.path("model").asText());
-        if (model == OpenAiChatModel.GPT_5_6) {
-            assertEquals("none", first.path("reasoning_effort").asText());
-        } else {
-            assertFalse(first.has("reasoning_effort"));
-        }
+        assertFalse(first.has("reasoning_effort"));
+        assertFalse(first.path("store").asBoolean());
+        assertEquals("reasoning.encrypted_content", first.path("include").path(0).asText());
         assertEquals("auto", first.path("tool_choice").asText());
-        assertEquals("tool_one", first.path("tools").path(0).path("function").path("name").asText());
-        assertEquals("object", first.path("tools").path(0).path("function").path("parameters").path("type").asText());
+        assertEquals("tool_one", first.path("tools").path(0).path("name").asText());
+        assertEquals("object", first.path("tools").path(0).path("parameters").path("type").asText());
+        assertFalse(first.path("tools").path(0).path("strict").asBoolean());
         JsonNode second = body(requests.getAllValues().get(1));
         assertEquals(model.getValue(), second.path("model").asText());
-        if (model == OpenAiChatModel.GPT_5_6) {
-            assertEquals("none", second.path("reasoning_effort").asText());
-        } else {
-            assertFalse(second.has("reasoning_effort"));
-        }
-        assertEquals("call_1", second.path("messages").path(2).path("tool_calls").path(0).path("id").asText());
-        JsonNode result = second.path("messages").path(3);
-        assertEquals("tool", result.path("role").asText());
-        assertEquals("call_1", result.path("tool_call_id").asText());
-        assertEquals(true, objectMapper.readTree(result.path("content").asText()).path("isError").asBoolean());
+        assertFalse(second.has("reasoning_effort"));
+        assertEquals("encrypted-reasoning", second.path("input").path(2).path("encrypted_content").asText());
+        assertEquals("call_1", second.path("input").path(3).path("call_id").asText());
+        JsonNode result = second.path("input").path(4);
+        assertEquals("function_call_output", result.path("type").asText());
+        assertEquals("call_1", result.path("call_id").asText());
+        assertEquals(true, objectMapper.readTree(result.path("output").asText()).path("isError").asBoolean());
         verify(mcpClient).callTool(new McpSchema.CallToolRequest("tool_one", Map.of()));
     }
 
@@ -82,7 +79,7 @@ class ChatMcpToolsTest {
     void leavesReasoningDefaultWhenNoToolsAreAdvertised(OpenAiChatModel model) throws Exception {
         ChatServiceImpl service = service();
         when(mcpClient.listTools()).thenReturn(new McpSchema.ListToolsResult(List.of(), null));
-        respondWith("{\"role\":\"assistant\",\"content\":\"Answer\"}");
+        respondWith(assistantMessage("Answer"));
 
         assertEquals("Answer", ReflectionTestUtils.invokeMethod(
                 service, "chatCompletion", "Question", "Context", model.getValue()));
@@ -120,13 +117,36 @@ class ChatMcpToolsTest {
         verify(httpClient, times(5)).send(requests.capture(), any(HttpResponse.BodyHandler.class));
         assertEquals("none", body(requests.getAllValues().get(4)).path("tool_choice").asText());
         for (HttpRequest request : requests.getAllValues()) {
-            if (model == OpenAiChatModel.GPT_5_6) {
-                assertEquals("none", body(request).path("reasoning_effort").asText());
-            } else {
-                assertFalse(body(request).has("reasoning_effort"));
-            }
+            assertFalse(body(request).has("reasoning_effort"));
         }
         verify(mcpClient, times(4)).callTool(any());
+    }
+
+    @Test
+    void rejectsResponseWithoutAnswer() throws Exception {
+        ChatServiceImpl service = service();
+        when(mcpClient.listTools()).thenReturn(new McpSchema.ListToolsResult(List.of(), null));
+        respondWith("");
+
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> complete(service));
+
+        assertEquals("OpenAI returned no answer", error.getMessage());
+        verify(mcpClient, times(0)).callTool(any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void rejectsIncompleteResponseBeforeExecutingTools() throws Exception {
+        ChatServiceImpl service = service();
+        advertiseTool();
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("{\"status\":\"incomplete\",\"output\":[" + toolCall("tool_one") + "]}");
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
+
+        assertThrows(IllegalStateException.class, () -> complete(service));
+
+        verify(mcpClient, times(0)).callTool(any());
     }
 
     @Test
@@ -162,7 +182,7 @@ class ChatMcpToolsTest {
         for (String message : messages) {
             HttpResponse<String> response = mock(HttpResponse.class);
             when(response.statusCode()).thenReturn(200);
-            when(response.body()).thenReturn("{\"choices\":[{\"message\":" + message + "}]}");
+            when(response.body()).thenReturn("{\"status\":\"completed\",\"output\":[" + message + "]}");
             responses.add(response);
         }
         var stubbing = when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)));
@@ -173,10 +193,15 @@ class ChatMcpToolsTest {
 
     private String toolCall(String name) {
         return """
-                {"role":"assistant","content":null,"tool_calls":[
-                  {"id":"call_1","type":"function","function":{"name":"%s","arguments":"{}"}}
-                ]}
+                {"id":"rs_1","type":"reasoning","summary":[],"encrypted_content":"encrypted-reasoning"},
+                {"id":"fc_1","call_id":"call_1","type":"function_call","name":"%s","arguments":"{}"}
                 """.formatted(name);
+    }
+
+    private String assistantMessage(String text) {
+        return """
+                {"type":"message","role":"assistant","content":[{"type":"output_text","text":"%s"}]}
+                """.formatted(text);
     }
 
     private JsonNode body(HttpRequest request) throws Exception {
