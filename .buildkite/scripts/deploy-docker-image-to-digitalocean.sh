@@ -59,8 +59,6 @@ fi
 
 echo "--- :whale: Pulling API image ${image} on the Droplet"
 docker pull "${image}"
-echo "--- :whale: Pulling HTTPS proxy image caddy:2-alpine on the Droplet"
-docker pull caddy:2-alpine
 if ! docker network inspect "${network_name}" >/dev/null 2>&1; then
   docker network create "${network_name}"
 fi
@@ -74,7 +72,7 @@ cat > "${deploy_path}/Caddyfile" <<'CADDY'
 }
 CADDY
 
-docker run --rm \
+docker run --rm --pull=never \
   --env "API_DOMAIN=${api_domain}" \
   --mount "type=bind,source=${deploy_path}/Caddyfile,target=/etc/caddy/Caddyfile,readonly" \
   caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
@@ -122,11 +120,34 @@ docker run -d \
   --env SERVER_FORWARD_HEADERS_STRATEGY=framework \
   "${image}"
 
+echo "--- :hourglass: Waiting for API readiness on the proxy network"
+api_ready=false
+for attempt in $(seq 1 60); do
+  if docker run --rm --pull=never \
+    --network "${network_name}" \
+    --entrypoint /bin/sh \
+    caddy:2-alpine -c 'wget -q -T 2 -O /dev/null http://api:8080/api/diagnostics/ping'; then
+    api_ready=true
+    break
+  fi
+  sleep 2
+done
+if [ "${api_ready}" != "true" ]; then
+  echo "API did not become ready at http://api:8080/api/diagnostics/ping; refusing to replace Caddy." >&2
+  docker inspect --format '{{json .State}}' "${container_name}" >&2
+  docker logs --tail 100 "${container_name}" >&2
+  if docker container inspect "${proxy_name}" >/dev/null 2>&1; then
+    docker logs --tail 50 "${proxy_name}" >&2
+  fi
+  exit 1
+fi
+
 if docker container inspect "${proxy_name}" >/dev/null 2>&1; then
   docker rm -f "${proxy_name}"
 fi
 docker run -d \
   --name "${proxy_name}" \
+  --pull=never \
   --restart unless-stopped \
   --network "${network_name}" \
   --env "API_DOMAIN=${api_domain}" \
