@@ -378,10 +378,30 @@ public class ChatServiceImpl implements ChatService {
                     throw new IllegalStateException("OpenAI requested an unadvertised MCP tool: " + name);
                 }
                 String arguments = toolCall.path("arguments").asText();
-                McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(name, arguments));
+                String callId = toolCall.path("call_id").asText();
+                logger.info("MCP tool call started. tool={}, callId={}, model={}, round={}",
+                        name, callId, selectedModel, round + 1);
+                long startedAt = System.nanoTime();
+                McpSchema.CallToolResult result;
+                try {
+                    result = mcpClient.callTool(new McpSchema.CallToolRequest(name, arguments));
+                } catch (RuntimeException ex) {
+                    logger.error("MCP tool call failed. tool={}, callId={}, durationMs={}, exceptionType={}",
+                            name, callId, (System.nanoTime() - startedAt) / 1_000_000,
+                            ex.getClass().getSimpleName());
+                    throw ex;
+                }
+                long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
+                if (Boolean.TRUE.equals(result.isError())) {
+                    logger.warn("MCP tool call returned an error. tool={}, callId={}, durationMs={}",
+                            name, callId, durationMs);
+                } else {
+                    logger.info("MCP tool call completed. tool={}, callId={}, durationMs={}",
+                            name, callId, durationMs);
+                }
                 messages.add(Map.of(
                         "type", "function_call_output",
-                        "call_id", toolCall.path("call_id").asText(),
+                        "call_id", callId,
                         "output", objectMapper.writeValueAsString(result)
                 ));
             }

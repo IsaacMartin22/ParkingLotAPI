@@ -1,6 +1,10 @@
 package apiservice.service;
 
 import apiservice.model.OpenAiChatModel;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -8,7 +12,9 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -24,7 +30,9 @@ import java.util.concurrent.Flow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -37,6 +45,71 @@ class ChatMcpToolsTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = mock(HttpClient.class);
     private final McpSyncClient mcpClient = mock(McpSyncClient.class);
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void logsToolStartAndOutcomeWithoutToolPayloads(boolean isError) throws Exception {
+        ChatServiceImpl service = service();
+        advertiseTool();
+        when(mcpClient.callTool(any()))
+                .thenReturn(new McpSchema.CallToolResult("private-tool-result", isError));
+        respondWith(toolCall("tool_one").replace("\"arguments\":\"{}\"",
+                        "\"arguments\":\"{\\\"secret\\\":\\\"private-tool-argument\\\"}\""),
+                assistantMessage("Answer"));
+        Logger logger = (Logger) LoggerFactory.getLogger(ChatServiceImpl.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            assertEquals("Answer", complete(service));
+
+            assertThat(appender.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.INFO);
+                assertThat(event.getFormattedMessage()).contains("MCP tool call started",
+                        "tool=tool_one", "callId=call_1", "model=gpt-6.1-sol", "round=1");
+            });
+            assertThat(appender.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(isError ? Level.WARN : Level.INFO);
+                assertThat(event.getFormattedMessage()).contains(
+                        isError ? "MCP tool call returned an error" : "MCP tool call completed",
+                        "tool=tool_one", "callId=call_1", "durationMs=");
+            });
+            assertThat(appender.list).allSatisfy(event ->
+                    assertThat(event.getFormattedMessage())
+                            .doesNotContain("private-tool-result", "private-tool-argument"));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+    }
+
+    @Test
+    void logsToolExceptionAndPropagatesIt() throws Exception {
+        ChatServiceImpl service = service();
+        advertiseTool();
+        IllegalStateException failure = new IllegalStateException("private-error-details");
+        when(mcpClient.callTool(any())).thenThrow(failure);
+        respondWith(toolCall("tool_one"));
+        Logger logger = (Logger) LoggerFactory.getLogger(ChatServiceImpl.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            assertSame(failure, assertThrows(IllegalStateException.class, () -> complete(service)));
+
+            assertThat(appender.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(event.getFormattedMessage()).contains("MCP tool call failed",
+                        "tool=tool_one", "callId=call_1", "durationMs=", "exceptionType=IllegalStateException");
+                assertThat(event.getFormattedMessage()).doesNotContain("private-error-details");
+            });
+            assertThat(appender.list).noneSatisfy(event ->
+                    assertThat(event.getFormattedMessage()).contains("MCP tool call completed"));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+    }
 
     @ParameterizedTest
     @EnumSource(OpenAiChatModel.class)
