@@ -431,22 +431,22 @@ public class ChatServiceImpl implements ChatService {
 
     private static String databaseFailureHint(String sqlState) {
         if (sqlState == null || "unknown".equals(sqlState)) {
-            return "Check the MCP server stack trace using errorId; verify its SPRING_DATASOURCE_* settings "
-                    + "point to the API database (the production API uses PROD_DATASOURCE_*).";
+            return "Check the MCP server stack trace using errorId; verify the active profile's datasource variables "
+                    + "(prod: PROD_DATASOURCE_*, staging: STAGING_DATASOURCE_*, local: SPRING_DATASOURCE_*).";
         }
         return switch (sqlState) {
             case "42P01" -> "Analytics table not found; check the MCP database/schema and API Flyway migrations.";
             case "42703" -> "Analytics column not found; check API Flyway migrations and MCP schema compatibility.";
             case "42501" -> "Database permission denied; check MCP role schema USAGE and analytics SELECT grants.";
-            case "3D000" -> "Database not found; check the database name in MCP SPRING_DATASOURCE_URL.";
+            case "3D000" -> "Database not found; check the active profile's datasource URL database name.";
             case "3F000" -> "Schema not found; check the MCP connection search_path.";
             case "57014" -> "Database query canceled or timed out; check query performance and statement timeouts.";
             default -> {
                 if (sqlState.startsWith("08")) {
-                    yield "Database connection failed; check MCP SPRING_DATASOURCE_URL, network access, and TLS.";
+                    yield "Database connection failed; check the active profile's datasource URL, network access, and TLS.";
                 }
                 if (sqlState.startsWith("28")) {
-                    yield "Database authentication failed; check MCP SPRING_DATASOURCE_USERNAME/PASSWORD and PostgreSQL authentication rules.";
+                    yield "Database authentication failed; check the active profile's datasource username/password and PostgreSQL authentication rules.";
                 }
                 yield "Check the MCP server stack trace using errorId for the underlying database exception.";
             }

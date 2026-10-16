@@ -122,7 +122,7 @@ class ChatMcpToolsTest {
             "08001, Database connection failed",
             "28P01, Database authentication failed",
             "XX000, Check the MCP server stack trace",
-            "unknown, verify its SPRING_DATASOURCE_* settings"
+            "unknown, verify the active profile's datasource variables"
     })
     void logsDatabaseSqlStateAndActionableHint(String sqlState, String hint) throws Exception {
         ChatServiceImpl service = service();

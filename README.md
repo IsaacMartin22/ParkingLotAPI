@@ -34,11 +34,14 @@ Its tools are registered in `mcp-server\src\main\java\parkinglot\mcp\McpServerCo
   `eventType`, and `urlContains`. IP addresses, session ids, and payloads are never returned.
 - `tool_two` is still a placeholder that returns an MCP error result until its contract is supplied.
 
-The analytics tool uses the same PostgreSQL database as the API service, configured by the same
-`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` variables with the same
-local defaults. Connections are opened read-only
+The analytics tool uses the same PostgreSQL database and profile-specific connection variables as the API service.
+Both processes inherit `SPRING_PROFILES_ACTIVE`: `prod` uses `PROD_DATASOURCE_URL`,
+`PROD_DATASOURCE_USERNAME`, and `PROD_DATASOURCE_PASSWORD`; `staging` uses the corresponding
+`STAGING_DATASOURCE_*` variables. Without either profile, both use `SPRING_DATASOURCE_URL`,
+`SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` with the same local defaults.
+TLS options are shared through the JDBC URL. Connections are opened read-only
 (Hikari `read-only` plus pgjdbc `readOnlyMode=always`) and the tool only issues `SELECT` statements. In deployed
-environments, you can additionally point the MCP server's `SPRING_DATASOURCE_USERNAME`/`PASSWORD` at a role limited
+environments, you can additionally configure a separately launched MCP server's active-profile datasource credentials for a role limited
 to `SELECT` on `analytics`, for example:
 
 ```sql
@@ -121,7 +124,7 @@ The root `Dockerfile` builds a single image that contains both the API service a
 API with `CHAT_MCP_BASE_URL=http://127.0.0.1:8081`. Only port 8080 is exposed, so the
 MCP server is never reachable from outside the container. If either process exits, the entrypoint stops the other
 and the container exits, so ECS (or Docker's restart policy) replaces it. Both processes share the container's
-`SPRING_DATASOURCE_*` settings, so no new environment variables are required.
+profile-specific datasource settings, so no duplicate database environment variables are required.
 
 Runtime knobs (all optional):
 
@@ -147,12 +150,11 @@ SPRING_PROFILES_ACTIVE=prod
 PROD_DATASOURCE_URL=jdbc:postgresql://DB_HOST:DB_PORT/DB_NAME?sslmode=require
 PROD_DATASOURCE_USERNAME=DB_USERNAME
 PROD_DATASOURCE_PASSWORD=DB_PASSWORD
-SPRING_DATASOURCE_URL=jdbc:postgresql://DB_HOST:DB_PORT/DB_NAME?sslmode=require
-SPRING_DATASOURCE_USERNAME=DB_USERNAME
-SPRING_DATASOURCE_PASSWORD=DB_PASSWORD
 ```
 
-The production API and bundled MCP server use different datasource variable names, so set both sets to the same database. Set any other runtime secrets required by the application in that file. Restrict its permissions on the Droplet (`chmod 600`).
+The production API and bundled MCP server both use the `PROD_DATASOURCE_*` variables above; a duplicate
+`SPRING_DATASOURCE_*` set is not needed. Set any other runtime secrets required by the application in that file.
+Restrict its permissions on the Droplet (`chmod 600`).
 
 Before the first HTTPS deployment:
 
