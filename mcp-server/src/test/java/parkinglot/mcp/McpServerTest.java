@@ -15,8 +15,6 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.time.Duration;
 import java.util.List;
@@ -40,9 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 )
 @ExtendWith(OutputCaptureExtension.class)
 class McpServerTest {
-
-    @MockBean
-    private MongoTemplate mongoTemplate;
 
     @LocalServerPort
     private int port;
