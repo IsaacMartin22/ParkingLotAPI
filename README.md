@@ -12,7 +12,7 @@ The common and SDK modules are published to Maven to be added as dependencies in
 The hosted URL is currently hardcoded into both the SDK and the frontend query, so if I ever change where it's hosted I will
 need to update those two places.
 
-The repository's container workflow is centered on the root `Dockerfile`, which bundles the API service and the MCP server into one image. There is no separate Docker Compose setup to maintain.
+The repository's container workflow is centered on the root `Dockerfile`, which bundles the API service and the MCP server into one image. DigitalOcean deployment also runs a separate Caddy container for HTTPS. There is no separate Docker Compose setup to maintain.
 
 API documentation is available at the hosted URL, which should be listed on the GitHub repository page in the upper right corner.
 It lists the endpoints available and payload shapes for those endpoints.
@@ -125,7 +125,7 @@ The main-branch Buildkite pipeline has an approval gate before it deploys the pu
 - `DO_SSH_PRIVATE_KEY` (private key whose public key is authorized for the SSH user).
 - `DO_SSH_KNOWN_HOSTS` (the verified SSH host-key line for the Droplet; pin the fingerprint before adding it).
 
-Optional Buildkite environment variables are `DO_SSH_USER` (default `root`), `DO_DEPLOY_PATH` (default `/opt/parkinglotapi`), `DO_CONTAINER_NAME` (default `parkinglotapi-app`), and `DO_HOST_PORT` (default `80`). Create `${DO_DEPLOY_PATH}/.env` on the Droplet before deployment; the SSH user must be able to read it. The file is kept on the host and is not uploaded by Buildkite. For example:
+Optional Buildkite environment variables are `DO_SSH_USER` (default `root`), `DO_DEPLOY_PATH` (default `/opt/parkinglotapi`), `DO_CONTAINER_NAME` (default `parkinglotapi-app`), and `DO_API_DOMAIN` (default `api.isaaccmart.in`, hostname only). Set overrides at the pipeline level so deployment and the HTTPS health step use the same domain. `DO_HOST_PORT` is no longer used: Caddy owns public ports 80 and 443, and the API is reachable only on its Docker network. Create `${DO_DEPLOY_PATH}/.env` on the Droplet before deployment; the SSH user must be able to read it. The file is kept on the host and is not uploaded by Buildkite. For example:
 
 ```dotenv
 SPRING_PROFILES_ACTIVE=prod
@@ -137,7 +137,19 @@ SPRING_DATASOURCE_USERNAME=DB_USERNAME
 SPRING_DATASOURCE_PASSWORD=DB_PASSWORD
 ```
 
-The production API and bundled MCP server use different datasource variable names, so set both sets to the same database. Set any other runtime secrets required by the application in that file. Restrict its permissions on the Droplet (`chmod 600`). Allow the configured host port in the Droplet firewall. After approval, Buildkite logs in to Docker Hub on the Droplet, pulls the published image, and recreates the container on host port 80 (mapped to container port 8080).
+The production API and bundled MCP server use different datasource variable names, so set both sets to the same database. Set any other runtime secrets required by the application in that file. Restrict its permissions on the Droplet (`chmod 600`).
+
+Before the first HTTPS deployment:
+
+- In GoDaddy, point the `api` A record at the Droplet's public IPv4 address (currently `159.203.113.71`). Leave the frontend's DNS records unchanged. Remove any stale AAAA record unless IPv6 also routes to this Droplet.
+- Allow inbound TCP ports **80 and 443** in both the DigitalOcean cloud firewall and the host firewall. Caddy needs port 80 for certificate issuance/renewal and HTTP-to-HTTPS redirects. Ensure no other host service occupies these ports.
+- Merge these deployment changes into `main`, run Buildkite and approve the DigitalOcean deployment gate.
+
+Buildkite pulls the API image and `caddy:2-alpine`, creates a shared Docker network, and recreates the API without a published host port. A separate `<DO_CONTAINER_NAME>-caddy` container proxies requests to the API on port 8080 and automatically obtains and renews a publicly trusted certificate. Certificate state persists in named Docker volumes across deployments; do not delete the Caddy data volume during routine cleanup. Spring uses Caddy's forwarded headers to recognize the original HTTPS request, and streaming responses are not buffered.
+
+The health step requests `https://api.isaaccmart.in/api` (or the `DO_API_DOMAIN` override) with normal certificate verification and retries while the application starts and Caddy obtains its certificate. If it fails, inspect both containers' logs on the Droplet, especially Caddy's certificate/DNS errors. The API image itself still serves HTTP internally; no Dockerfile or Java keystore changes are needed.
+
+Update the frontend's API base URL to `https://api.isaaccmart.in` and redeploy the frontend. All browser API requests, including SSE connections, must use HTTPS explicitly; an HTTP-to-HTTPS redirect cannot rescue a request the browser blocks as mixed content.
 
 ## Database and Principle of Least Privilege
 
