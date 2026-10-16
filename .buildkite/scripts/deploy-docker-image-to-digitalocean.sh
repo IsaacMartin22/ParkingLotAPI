@@ -34,7 +34,6 @@ ssh \
   -i "${SSH_KEY_PATH}" \
   -o IdentitiesOnly=yes \
   -o BatchMode=yes \
-  -o ConnectTimeout=15 \
   -o ServerAliveInterval=15 \
   -o ServerAliveCountMax=3 \
   -o StrictHostKeyChecking=yes \
