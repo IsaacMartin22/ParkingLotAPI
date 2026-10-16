@@ -4,8 +4,6 @@
 
 set -eu
 
-: "${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}"
-: "${DOCKERHUB_TOKEN:?DOCKERHUB_TOKEN is required}"
 : "${DO_DROPLET_HOST:?DO_DROPLET_HOST is required}"
 : "${DO_SSH_PRIVATE_KEY:?DO_SSH_PRIVATE_KEY is required}"
 : "${DO_SSH_KNOWN_HOSTS:?DO_SSH_KNOWN_HOSTS is required}"
@@ -29,15 +27,6 @@ SSH_TARGET="${DO_SSH_USER}@${DO_DROPLET_HOST}"
 shell_quote() {
   printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
 }
-
-echo "--- :lock: Logging in to Docker Hub on the Droplet"
-LOGIN_COMMAND="docker login --username $(shell_quote "${DOCKERHUB_USERNAME}") --password-stdin"
-printf '%s' "${DOCKERHUB_TOKEN}" | ssh \
-  -i "${SSH_KEY_PATH}" \
-  -o IdentitiesOnly=yes \
-  -o StrictHostKeyChecking=yes \
-  -o "UserKnownHostsFile=${KNOWN_HOSTS_PATH}" \
-  "${SSH_TARGET}" "${LOGIN_COMMAND}"
 
 echo "--- :droplet: Deploying ${DOCKER_IMAGE_TAG} to ${SSH_TARGET}"
 REMOTE_COMMAND="bash -s -- $(shell_quote "${DO_DEPLOY_PATH}") $(shell_quote "${DO_CONTAINER_NAME}") $(shell_quote "${DO_API_DOMAIN}") $(shell_quote "${DOCKER_IMAGE_TAG}")"
