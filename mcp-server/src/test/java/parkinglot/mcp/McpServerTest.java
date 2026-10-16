@@ -8,14 +8,18 @@ import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
                 "spring.datasource.hikari.data-source-properties.readOnlyMode="
         }
 )
+@ExtendWith(OutputCaptureExtension.class)
 class McpServerTest {
 
     @LocalServerPort
@@ -120,7 +125,7 @@ class McpServerTest {
     }
 
     @Test
-    void rejectsInvalidArgumentsAsToolErrors() {
+    void rejectsInvalidArgumentsAsToolErrors(CapturedOutput output) {
         try (McpSyncClient client = client()) {
             client.initialize();
             McpSchema.CallToolResult result = client.callTool(new McpSchema.CallToolRequest(
@@ -129,7 +134,36 @@ class McpServerTest {
 
             assertTrue(Boolean.TRUE.equals(result.isError()));
             assertTrue(text(result).startsWith("Invalid arguments"));
+            assertTrue(text(result).contains("errorCode=INVALID_ARGUMENTS"));
+            assertTrue(output.getAll().contains(errorId(result)));
+            assertTrue(output.getAll().contains("MCP tool call rejected"));
         }
+    }
+
+    @Test
+    void logsDatabaseFailureWithCorrelatedErrorAndNoArgumentValues(CapturedOutput output) {
+        jdbcTemplate.execute("DROP TABLE analytics");
+        try (McpSyncClient client = client()) {
+            client.initialize();
+            McpSchema.CallToolResult result = client.callTool(new McpSchema.CallToolRequest(
+                    SiteAnalyticsTool.NAME, Map.of("urlContains", "private-filter-value")
+            ));
+
+            assertTrue(Boolean.TRUE.equals(result.isError()));
+            assertTrue(text(result).contains("errorCode=DATABASE_ERROR"));
+            assertFalse(text(result).contains("SELECT"));
+            assertFalse(text(result).contains("BadSqlGrammarException"));
+            assertTrue(output.getAll().contains(errorId(result)));
+            assertTrue(output.getAll().contains("exceptionType=BadSqlGrammarException"));
+            assertTrue(output.getAll().contains("Caused by:"));
+            assertFalse(output.getAll().contains("private-filter-value"));
+        }
+    }
+
+    private static String errorId(McpSchema.CallToolResult result) {
+        var matcher = Pattern.compile("errorId=([0-9a-f-]{36})\\]$").matcher(text(result));
+        assertTrue(matcher.find(), text(result));
+        return matcher.group(1);
     }
 
     private McpSyncClient client() {

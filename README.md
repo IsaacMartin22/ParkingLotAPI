@@ -64,6 +64,12 @@ at startup and fails startup if the MCP server is unavailable, so when running l
 `ChatServiceImpl` discovers the tools and lets the model select them using `tool_choice=auto`,
 then sends their results back for the final answer, with at most four tool-calling rounds.
 The existing portfolio retrieval remains in place; empty retrieval can proceed to tools.
+Tool failures include a safe `errorCode` and generated `errorId` in the API warning and MCP tool response.
+Search the MCP server's console logs for that `errorId` to find the exception and full cause/stack trace
+(for database failures), or a validation-rejection warning (`INVALID_ARGUMENTS`).
+The OpenAI `callId` belongs to the API and is not the MCP protocol request ID; use `errorId` to correlate
+the two processes. Tool arguments and result payloads are not logged; exception traces remain server-side
+and should be treated as operationally sensitive.
 Chat answers are neither stored nor reused (the `chat_interactions` table is no longer written), so tool-backed
 answers such as analytics are never stale.
 Tool or transport failures follow the chatbot's existing logged error-response path.

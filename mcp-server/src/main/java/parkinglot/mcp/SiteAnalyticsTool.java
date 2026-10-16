@@ -6,6 +6,7 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Read-only, aggregate-only view of the analytics table. Raw rows, IP addresses, session ids and
@@ -107,14 +109,31 @@ public class SiteAnalyticsTool {
 
     McpSchema.CallToolResult call(Map<String, Object> arguments) {
         Map<String, Object> args = arguments == null ? Map.of() : arguments;
+        String errorId = UUID.randomUUID().toString();
+        long startedAt = System.nanoTime();
         try {
-            return new McpSchema.CallToolResult(objectMapper.writeValueAsString(query(args)), false);
+            McpSchema.CallToolResult result =
+                    new McpSchema.CallToolResult(objectMapper.writeValueAsString(query(args)), false);
+            logger.info("MCP tool call completed. tool={}, durationMs={}",
+                    NAME, (System.nanoTime() - startedAt) / 1_000_000);
+            return result;
         } catch (IllegalArgumentException ex) {
-            return new McpSchema.CallToolResult("Invalid arguments: " + ex.getMessage(), true);
+            logger.warn("MCP tool call rejected. tool={}, errorCode=INVALID_ARGUMENTS, errorId={}, durationMs={}",
+                    NAME, errorId, (System.nanoTime() - startedAt) / 1_000_000);
+            return error("Invalid arguments: " + ex.getMessage(), "INVALID_ARGUMENTS", errorId);
         } catch (JsonProcessingException | RuntimeException ex) {
-            logger.error("{} failed for arguments={}", NAME, args, ex);
-            return new McpSchema.CallToolResult("Site analytics are unavailable right now.", true);
+            String errorCode = ex instanceof DataAccessException ? "DATABASE_ERROR"
+                    : ex instanceof JsonProcessingException ? "SERIALIZATION_ERROR" : "INTERNAL_ERROR";
+            logger.error("MCP tool call failed. tool={}, errorCode={}, errorId={}, durationMs={}, exceptionType={}",
+                    NAME, errorCode, errorId, (System.nanoTime() - startedAt) / 1_000_000,
+                    ex.getClass().getSimpleName(), ex);
+            return error("Site analytics are unavailable right now.", errorCode, errorId);
         }
+    }
+
+    private static McpSchema.CallToolResult error(String message, String errorCode, String errorId) {
+        return new McpSchema.CallToolResult(
+                message + " [MCP errorCode=" + errorCode + " errorId=" + errorId + "]", true);
     }
 
     private Map<String, Object> query(Map<String, Object> args) {

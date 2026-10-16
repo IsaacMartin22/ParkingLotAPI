@@ -84,6 +84,33 @@ class ChatMcpToolsTest {
     }
 
     @Test
+    void logsServerDiagnosticWithoutLoggingErrorPayload() throws Exception {
+        ChatServiceImpl service = service();
+        advertiseTool();
+        String diagnostic = "[MCP errorCode=DATABASE_ERROR errorId=577daf18-8abc-4932-9981-66f9382cd133]";
+        when(mcpClient.callTool(any()))
+                .thenReturn(new McpSchema.CallToolResult("private-tool-result " + diagnostic, true));
+        respondWith(toolCall("tool_one"), assistantMessage("Tool unavailable"));
+        Logger logger = (Logger) LoggerFactory.getLogger(ChatServiceImpl.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            assertEquals("Tool unavailable", complete(service));
+
+            assertThat(appender.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                assertThat(event.getFormattedMessage()).contains("callId=call_1", diagnostic);
+            });
+            assertThat(appender.list).allSatisfy(event ->
+                    assertThat(event.getFormattedMessage()).doesNotContain("private-tool-result"));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+    }
+
+    @Test
     void logsToolExceptionAndPropagatesIt() throws Exception {
         ChatServiceImpl service = service();
         advertiseTool();
@@ -102,6 +129,7 @@ class ChatMcpToolsTest {
                 assertThat(event.getFormattedMessage()).contains("MCP tool call failed",
                         "tool=tool_one", "callId=call_1", "durationMs=", "exceptionType=IllegalStateException");
                 assertThat(event.getFormattedMessage()).doesNotContain("private-error-details");
+                assertThat(event.getThrowableProxy().getClassName()).isEqualTo(IllegalStateException.class.getName());
             });
             assertThat(appender.list).noneSatisfy(event ->
                     assertThat(event.getFormattedMessage()).contains("MCP tool call completed"));

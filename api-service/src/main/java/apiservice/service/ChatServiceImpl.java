@@ -40,6 +40,9 @@ public class ChatServiceImpl implements ChatService {
     private final McpSyncClient mcpClient;
 
     private static final int MAX_TOOL_ROUNDS = 4;
+    private static final Pattern MCP_ERROR_DIAGNOSTIC = Pattern.compile(
+            "\\[MCP errorCode=(INVALID_ARGUMENTS|DATABASE_ERROR|SERIALIZATION_ERROR|INTERNAL_ERROR)"
+                    + " errorId=[0-9a-f-]{36}\\]$");
 
     @Value("${app.chat.openai-api-key:}")
     private String openAiApiKey;
@@ -388,13 +391,13 @@ public class ChatServiceImpl implements ChatService {
                 } catch (RuntimeException ex) {
                     logger.error("MCP tool call failed. tool={}, callId={}, durationMs={}, exceptionType={}",
                             name, callId, (System.nanoTime() - startedAt) / 1_000_000,
-                            ex.getClass().getSimpleName());
+                            ex.getClass().getSimpleName(), ex);
                     throw ex;
                 }
                 long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
                 if (Boolean.TRUE.equals(result.isError())) {
-                    logger.warn("MCP tool call returned an error. tool={}, callId={}, durationMs={}",
-                            name, callId, durationMs);
+                    logger.warn("MCP tool call returned an error. tool={}, callId={}, durationMs={}, diagnostic={}",
+                            name, callId, durationMs, toolErrorDiagnostic(result));
                 } else {
                     logger.info("MCP tool call completed. tool={}, callId={}, durationMs={}",
                             name, callId, durationMs);
@@ -407,6 +410,19 @@ public class ChatServiceImpl implements ChatService {
             }
         }
         throw new IllegalStateException("OpenAI tool round limit exceeded");
+    }
+
+    private static String toolErrorDiagnostic(McpSchema.CallToolResult result) {
+        // Only log our diagnostic tag, never arbitrary tool output or arguments.
+        for (McpSchema.Content content : result.content()) {
+            if (content instanceof McpSchema.TextContent text) {
+                var matcher = MCP_ERROR_DIAGNOSTIC.matcher(text.text());
+                if (matcher.find()) {
+                    return matcher.group();
+                }
+            }
+        }
+        return "unavailable (tool returned no diagnostic tag)";
     }
 
     private JsonNode sendResponse(
