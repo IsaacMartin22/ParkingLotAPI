@@ -1,9 +1,13 @@
 steps:
   - label: ":pipeline: Run Unit Tests"
     key: "run-unit-tests"
+    secrets:
+      - "OPENAI_API_KEY"
     plugins:
       - docker#v5.12.0:
           image: "public.ecr.aws/docker/library/eclipse-temurin:17"
+          environment:
+            - OPENAI_API_KEY
     command:
       - "chmod +x ./mvnw"
       - "java -version"
