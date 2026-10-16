@@ -70,6 +70,11 @@ Tool or transport failures follow the chatbot's existing logged error-response p
 
 ### OpenAI model compatibility checks
 
+Buildkite runs unit tests and integration tests in parallel. Classes named `*IntegrationTest`
+run only in the integration step, which receives `OPENAI_API_KEY`; all other tests run in
+the unit step without that secret. Docker image publishing waits for both steps to succeed.
+Modules without matching tests are allowed in each Maven reactor invocation.
+
 `OpenAiChatModel` is the application's supported-model list, not a live OpenAI catalog.
 Both the offline request tests and the default-enabled live tests iterate over every enum value,
 so adding a model automatically adds coverage. Chat requests use the Responses API and retain
@@ -146,6 +151,8 @@ Before the first HTTPS deployment:
 - Merge these deployment changes into `main`, run Buildkite and approve the DigitalOcean deployment gate.
 
 Buildkite pulls the API image and `caddy:2-alpine`, creates a shared Docker network, and recreates the API without a published host port. A separate `<DO_CONTAINER_NAME>-caddy` container proxies requests to the API on port 8080 and automatically obtains and renews a publicly trusted certificate. Certificate state persists in named Docker volumes across deployments; do not delete the Caddy data volume during routine cleanup. Spring uses Caddy's forwarded headers to recognize the original HTTPS request, and streaming responses are not buffered.
+
+Before replacing containers, deployment checks Docker containers publishing ports 80 or 443. Older API containers using the same image repository (including older tags) are stopped automatically, even if their names differ. The configured API and Caddy containers are removed and recreated as usual. Unrelated containers are not stopped: deployment fails with their name and image so port conflicts can be resolved deliberately. Host services such as Nginx must still be handled separately.
 
 The health step requests `https://api.isaaccmart.in/api` (or the `DO_API_DOMAIN` override) with normal certificate verification and retries while the application starts and Caddy obtains its certificate. If it fails, inspect both containers' logs on the Droplet, especially Caddy's certificate/DNS errors. The API image itself still serves HTTP internally; no Dockerfile or Java keystore changes are needed.
 

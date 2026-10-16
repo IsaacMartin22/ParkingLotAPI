@@ -1,6 +1,16 @@
 steps:
   - label: ":pipeline: Run Unit Tests"
     key: "run-unit-tests"
+    plugins:
+      - docker#v5.12.0:
+          image: "public.ecr.aws/docker/library/eclipse-temurin:17"
+    command:
+      - "chmod +x ./mvnw"
+      - "java -version"
+      - './mvnw -B -ntp "-Dtest=!*IntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" test'
+
+  - label: ":pipeline: Run Integration Tests"
+    key: "run-integration-tests"
     secrets:
       - "OPENAI_API_KEY"
     plugins:
@@ -11,10 +21,13 @@ steps:
     command:
       - "chmod +x ./mvnw"
       - "java -version"
-      - "./mvnw -B -ntp test"
+      - './mvnw -B -ntp "-Dtest=*IntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" test'
 
   - label: ":whale: Publish Docker image"
     key: "publish-docker-image"
+    depends_on:
+      - "run-unit-tests"
+      - "run-integration-tests"
     if: build.branch == "main"
     secrets:
       - "DOCKERHUB_USERNAME"

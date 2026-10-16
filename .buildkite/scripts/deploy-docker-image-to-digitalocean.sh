@@ -85,6 +85,35 @@ docker run --rm \
   --mount "type=bind,source=${deploy_path}/Caddyfile,target=/etc/caddy/Caddyfile,readonly" \
   caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
+image_repository() {
+  local reference="${1%%@*}"
+  if [[ "${reference##*/}" == *:* ]]; then
+    reference="${reference%:*}"
+  fi
+  printf '%s\n' "${reference}"
+}
+
+echo "--- :stop_sign: Checking containers publishing ports 80 and 443"
+port_owners=$(docker ps --filter publish=80 --filter publish=443 --quiet)
+legacy_containers=()
+for id in ${port_owners}; do
+  name=$(docker inspect --format '{{.Name}}' "${id}")
+  if [ "${name}" = "/${container_name}" ] || [ "${name}" = "/${proxy_name}" ]; then
+    continue
+  fi
+  owner_image=$(docker inspect --format '{{.Config.Image}}' "${id}")
+  if [ "$(image_repository "${owner_image}")" != "$(image_repository "${image}")" ]; then
+    echo "Port 80 or 443 is occupied by unrelated container ${name#/} (${owner_image}); refusing to stop it." >&2
+    exit 1
+  fi
+  legacy_containers+=("${id}")
+done
+
+for id in "${legacy_containers[@]}"; do
+  echo "Stopping previous API container ${id} to free HTTPS proxy ports"
+  docker stop "${id}"
+done
+
 if docker container inspect "${container_name}" >/dev/null 2>&1; then
   docker rm -f "${container_name}"
 fi
