@@ -33,6 +33,10 @@ REMOTE_COMMAND="bash -s -- $(shell_quote "${DO_DEPLOY_PATH}") $(shell_quote "${D
 ssh \
   -i "${SSH_KEY_PATH}" \
   -o IdentitiesOnly=yes \
+  -o BatchMode=yes \
+  -o ConnectTimeout=15 \
+  -o ServerAliveInterval=15 \
+  -o ServerAliveCountMax=3 \
   -o StrictHostKeyChecking=yes \
   -o "UserKnownHostsFile=${KNOWN_HOSTS_PATH}" \
   "${SSH_TARGET}" "${REMOTE_COMMAND}" <<'REMOTE'
@@ -54,7 +58,9 @@ if [[ ! "${api_domain}" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-z
   exit 1
 fi
 
+echo "--- :whale: Pulling API image ${image} on the Droplet"
 docker pull "${image}"
+echo "--- :whale: Pulling HTTPS proxy image caddy:2-alpine on the Droplet"
 docker pull caddy:2-alpine
 if ! docker network inspect "${network_name}" >/dev/null 2>&1; then
   docker network create "${network_name}"
