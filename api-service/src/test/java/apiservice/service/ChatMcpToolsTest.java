@@ -74,7 +74,8 @@ class ChatMcpToolsTest {
         assertEquals(null, usages.get(0).getErrorDiagnostic());
         assertEquals(2, usages.get(1).getToolRound());
         assertTrue(usages.get(1).getError());
-        assertEquals(diagnostic, usages.get(1).getErrorDiagnostic());
+        assertThat(usages.get(1).getErrorDiagnostic()).startsWith(diagnostic + " hint=")
+                .doesNotContain("private-tool-result");
     }
 
     @Test
