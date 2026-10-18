@@ -13,6 +13,18 @@ COPY sdk/pom.xml sdk/pom.xml
 COPY parking-lot-common/pom.xml parking-lot-common/pom.xml
 COPY mcp-server/pom.xml mcp-server/pom.xml
 
+# Install yt-dlp and its runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL \
+    https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
+    -o /usr/local/bin/yt-dlp \
+    && chmod 755 /usr/local/bin/yt-dlp
+
 COPY mvnw .
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 RUN ./mvnw -B -ntp dependency:go-offline
