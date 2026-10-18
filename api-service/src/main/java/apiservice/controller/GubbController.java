@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+// curl -v -G "https://api.isaaccmart.in/api/gubb" --data-urlencode "url=https://www.tiktok.com/@hunainn/video/7696938907090439444"
+
 @RestController
 @RequestMapping("/api/gubb")
 public class GubbController {
@@ -28,14 +30,12 @@ public class GubbController {
         validateTikTokUrl(videoUrl);
 
         Process process = new ProcessBuilder(
-                "yt-dlp",
+                "/usr/local/bin/yt-dlp",
                 "--no-playlist",
                 "--format", "best[ext=mp4]/best",
                 "--get-url",
                 videoUrl
-        )
-                .redirectErrorStream(true)
-                .start();
+        ).redirectErrorStream(true).start();
 
         try {
             if (!process.waitFor(60, TimeUnit.SECONDS)) {
