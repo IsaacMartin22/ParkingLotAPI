@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     ffmpeg \
+    python3 \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL \
     https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
