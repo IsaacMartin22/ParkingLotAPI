@@ -27,18 +27,29 @@ class GubbVideoServiceTest {
     Path directory;
     private GubbVideoService videos;
     private Process process;
+    private Process transcode;
 
     @BeforeEach
     void setUp() throws Exception {
         videos = spy(new GubbVideoService(directory.toString()));
         process = mock(Process.class);
+        transcode = mock(Process.class);
         when(process.waitFor(5, TimeUnit.MINUTES)).thenReturn(true);
+        when(transcode.waitFor(5, TimeUnit.MINUTES)).thenReturn(true);
         doAnswer(invocation -> {
             Path workspace = invocation.getArgument(0);
-            Files.write(workspace.resolve("video.mp4"), new byte[]{1, 2, 3});
+            Files.write(workspace.resolve("download.mp4"), new byte[]{4, 5, 6});
             Files.writeString(workspace.resolve("yt-dlp.log"), "download output");
             return process;
         }).when(videos).startDownload(any(Path.class), eq(VIDEO_URL));
+        doAnswer(invocation -> {
+            Path workspace = invocation.getArgument(0);
+            if (Files.exists(workspace.resolve("download.mp4"))) {
+                Files.write(workspace.resolve("video.mp4"), new byte[]{1, 2, 3});
+            }
+            Files.writeString(workspace.resolve("ffmpeg.log"), "transcode output");
+            return transcode;
+        }).when(videos).startTranscode(any(Path.class));
     }
 
     @Test
@@ -67,6 +78,29 @@ class GubbVideoServiceTest {
         doAnswer(invocation -> process).when(videos).startDownload(any(Path.class), eq(VIDEO_URL));
 
         assertThrows(IOException.class, () -> videos.download(VIDEO_URL));
+        assertStorageEmpty();
+    }
+
+    @Test
+    void failedTranscodeIsNotPublishedAndIncludesProcessOutput() throws Exception {
+        when(transcode.exitValue()).thenReturn(1);
+
+        IOException failure = assertThrows(IOException.class, () -> videos.download(VIDEO_URL));
+
+        assertTrue(failure.getMessage().contains("transcode output"));
+        assertStorageEmpty();
+    }
+
+    @Test
+    void transcodeTimeoutStopsProcessAndRemovesWorkspace() throws Exception {
+        when(transcode.waitFor(5, TimeUnit.MINUTES)).thenReturn(false);
+        when(transcode.isAlive()).thenReturn(true);
+        when(transcode.descendants()).thenReturn(Stream.empty());
+
+        assertThrows(IOException.class, () -> videos.download(VIDEO_URL));
+
+        verify(transcode).destroyForcibly();
+        verify(transcode).waitFor();
         assertStorageEmpty();
     }
 

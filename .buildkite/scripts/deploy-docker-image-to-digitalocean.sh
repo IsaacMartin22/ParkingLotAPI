@@ -63,7 +63,8 @@ if ! docker network inspect "${network_name}" >/dev/null 2>&1; then
   docker network create "${network_name}"
 fi
 
-cat > "${deploy_path}/Caddyfile" <<'CADDY'
+if ! docker container inspect "${proxy_name}" >/dev/null 2>&1; then
+  cat > "${deploy_path}/Caddyfile" <<'CADDY'
 {$API_DOMAIN} {
   reverse_proxy api:8080 {
     # Send SSE events immediately rather than buffering them.
@@ -72,10 +73,11 @@ cat > "${deploy_path}/Caddyfile" <<'CADDY'
 }
 CADDY
 
-docker run --rm --pull=never \
-  --env "API_DOMAIN=${api_domain}" \
-  --mount "type=bind,source=${deploy_path}/Caddyfile,target=/etc/caddy/Caddyfile,readonly" \
-  caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+  docker run --rm --pull=never \
+    --env "API_DOMAIN=${api_domain}" \
+    --mount "type=bind,source=${deploy_path}/Caddyfile,target=/etc/caddy/Caddyfile,readonly" \
+    caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+fi
 
 image_repository() {
   local reference="${1%%@*}"
@@ -123,19 +125,23 @@ docker run -d \
   "${image}"
 
 echo "--- :hourglass: Waiting for API readiness on the proxy network"
-api_ready=false
-for attempt in $(seq 1 60); do
-  if docker run --rm --pull=never \
-    --network "${network_name}" \
-    --entrypoint /bin/sh \
-    caddy:2-alpine -c 'wget -q -T 2 -O /dev/null http://api:8080/api/diagnostics/ping'; then
-    api_ready=true
-    break
-  fi
-  sleep 2
-done
-if [ "${api_ready}" != "true" ]; then
-  echo "API did not become ready at http://api:8080/api/diagnostics/ping; refusing to replace Caddy." >&2
+if ! docker run --rm --pull=never \
+  --network "${network_name}" \
+  --entrypoint /bin/sh \
+  caddy:2-alpine -c '
+    attempt=1
+    while [ "${attempt}" -le 60 ]; do
+      if wget -q -T 2 -O /dev/null http://api:8080/api/diagnostics/ping; then
+        exit 0
+      fi
+      if [ "${attempt}" -lt 60 ]; then
+        sleep 2
+      fi
+      attempt=$((attempt + 1))
+    done
+    exit 1
+  '; then
+  echo "API did not become ready at http://api:8080/api/diagnostics/ping; leaving Caddy unchanged." >&2
   docker inspect --format '{{json .State}}' "${container_name}" >&2
   docker logs --tail 100 "${container_name}" >&2
   if docker container inspect "${proxy_name}" >/dev/null 2>&1; then
@@ -145,20 +151,25 @@ if [ "${api_ready}" != "true" ]; then
 fi
 
 if docker container inspect "${proxy_name}" >/dev/null 2>&1; then
-  docker rm -f "${proxy_name}"
+  if [ "$(docker inspect --format '{{.State.Running}}' "${proxy_name}")" != "true" ]; then
+    docker start "${proxy_name}"
+  else
+    echo "Caddy is already running; keeping existing container and configuration"
+  fi
+else
+  docker run -d \
+    --name "${proxy_name}" \
+    --pull=never \
+    --restart unless-stopped \
+    --network "${network_name}" \
+    --env "API_DOMAIN=${api_domain}" \
+    --mount "type=bind,source=${deploy_path}/Caddyfile,target=/etc/caddy/Caddyfile,readonly" \
+    --mount "type=volume,source=${proxy_name}-data,target=/data" \
+    --mount "type=volume,source=${proxy_name}-config,target=/config" \
+    -p 80:80 \
+    -p 443:443 \
+    caddy:2-alpine
 fi
-docker run -d \
-  --name "${proxy_name}" \
-  --pull=never \
-  --restart unless-stopped \
-  --network "${network_name}" \
-  --env "API_DOMAIN=${api_domain}" \
-  --mount "type=bind,source=${deploy_path}/Caddyfile,target=/etc/caddy/Caddyfile,readonly" \
-  --mount "type=volume,source=${proxy_name}-data,target=/data" \
-  --mount "type=volume,source=${proxy_name}-config,target=/config" \
-  -p 80:80 \
-  -p 443:443 \
-  caddy:2-alpine
 REMOTE
 
 echo "+++ :white_check_mark: DigitalOcean deployment completed"

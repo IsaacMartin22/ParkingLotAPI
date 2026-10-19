@@ -37,23 +37,13 @@ public class GubbVideoService {
         Process process = null;
         try {
             process = startDownload(workspace, videoUrl);
-            if (!process.waitFor(5, TimeUnit.MINUTES)) {
-                throw new IOException("TikTok download timed out");
-            }
-            if (process.exitValue() != 0) {
-                String output;
-                try (var log = Files.newBufferedReader(workspace.resolve("yt-dlp.log"),
-                        StandardCharsets.UTF_8)) {
-                    char[] buffer = new char[4096];
-                    int length = log.read(buffer);
-                    output = length < 0 ? "" : new String(buffer, 0, length);
-                }
-                throw new IOException("Failed to download TikTok video: " + output);
-            }
+            waitForSuccess(process, workspace.resolve("yt-dlp.log"), "TikTok download");
+            process = startTranscode(workspace);
+            waitForSuccess(process, workspace.resolve("ffmpeg.log"), "Video transcode");
 
             Path video = workspace.resolve("video.mp4");
             if (!Files.isRegularFile(video) || Files.size(video) == 0) {
-                throw new IOException("yt-dlp did not produce an MP4 video");
+                throw new IOException("FFmpeg did not produce an MP4 video");
             }
             Files.setLastModifiedTime(video, FileTime.from(Instant.now()));
             Files.move(video, storageDirectory.resolve(id + ".mp4"));
@@ -76,12 +66,47 @@ public class GubbVideoService {
                 "--no-progress",
                 "--format", "best[ext=mp4]/best",
                 "--recode-video", "mp4",
-                "--output", "video.%(ext)s",
+                "--output", "download.%(ext)s",
                 "--", videoUrl
         ).directory(workspace.toFile())
                 .redirectErrorStream(true)
                 .redirectOutput(workspace.resolve("yt-dlp.log").toFile())
                 .start();
+    }
+
+    Process startTranscode(Path workspace) throws IOException {
+        return new ProcessBuilder(
+                "ffmpeg",
+                "-nostdin",
+                "-y",
+                "-i", "download.mp4",
+                "-map", "0:v:0",
+                "-map", "0:a:0",
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-movflags", "+faststart",
+                "video.mp4"
+        ).directory(workspace.toFile())
+                .redirectErrorStream(true)
+                .redirectOutput(workspace.resolve("ffmpeg.log").toFile())
+                .start();
+    }
+
+    private static void waitForSuccess(Process process, Path logPath, String operation)
+            throws IOException, InterruptedException {
+        if (!process.waitFor(5, TimeUnit.MINUTES)) {
+            throw new IOException(operation + " timed out");
+        }
+        if (process.exitValue() != 0) {
+            String output;
+            try (var log = Files.newBufferedReader(logPath, StandardCharsets.UTF_8)) {
+                char[] buffer = new char[4096];
+                int length = log.read(buffer);
+                output = length < 0 ? "" : new String(buffer, 0, length);
+            }
+            throw new IOException(operation + " failed: " + output);
+        }
     }
 
     public Resource getVideo(String id) throws IOException {
