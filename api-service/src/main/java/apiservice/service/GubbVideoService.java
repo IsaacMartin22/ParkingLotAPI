@@ -1,5 +1,8 @@
 package apiservice.service;
 
+import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -17,13 +20,25 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 @Service
 public class GubbVideoService {
+    private static final Logger log = LoggerFactory.getLogger(GubbVideoService.class);
     private static final Duration RETENTION = Duration.ofDays(7);
     private final Path storageDirectory;
+    private final ConcurrentMap<String, DownloadJob> jobs = new ConcurrentHashMap<>();
+    private final ThreadPoolExecutor downloads = new ThreadPoolExecutor(
+            2, 2, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(20));
+
+    public record DownloadJob(String id, String status, String error, Instant updatedAt) {
+    }
 
     public GubbVideoService(@Value("${app.gubb.storage-directory}") String storageDirectory)
             throws IOException {
@@ -32,12 +47,59 @@ public class GubbVideoService {
     }
 
     public String download(String videoUrl) throws IOException, InterruptedException {
+        return download(UUID.randomUUID().toString(), videoUrl);
+    }
+
+    public DownloadJob startJob(String videoUrl) {
         String id = UUID.randomUUID().toString();
+        DownloadJob job = new DownloadJob(id, "queued", null, Instant.now());
+        jobs.put(id, job);
+        try {
+            downloads.execute(() -> {
+                jobs.put(id, new DownloadJob(id, "processing", null, Instant.now()));
+                try {
+                    download(id, videoUrl);
+                    jobs.put(id, new DownloadJob(id, "completed", null, Instant.now()));
+                } catch (IOException | InterruptedException | RuntimeException ex) {
+                    if (ex instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                    log.error("Gubb job failed jobId={}", id, ex);
+                    jobs.put(id, new DownloadJob(id, "failed",
+                            "Video download failed. Please try again.", Instant.now()));
+                }
+            });
+        } catch (RejectedExecutionException ex) {
+            jobs.remove(id);
+            log.warn("Gubb download queue is full or shutting down jobId={}", id);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Download queue is full. Please try again later.", ex);
+        }
+        return job;
+    }
+
+    public DownloadJob getJob(String id) {
+        DownloadJob job = jobs.get(id);
+        if (job == null || isExpiredJob(job, Instant.now())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Download job not found or expired");
+        }
+        return job;
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        downloads.shutdownNow();
+    }
+
+    private String download(String id, String videoUrl) throws IOException, InterruptedException {
+        long started = System.nanoTime();
+        log.info("Gubb download started jobId={}", id);
         Path workspace = Files.createTempDirectory(storageDirectory, ".download-");
         Process process = null;
         try {
             process = startDownload(workspace, videoUrl);
             waitForSuccess(process, workspace.resolve("yt-dlp.log"), "TikTok download");
+            log.info("Gubb download finished; starting transcode jobId={}", id);
             process = startTranscode(workspace);
             waitForSuccess(process, workspace.resolve("ffmpeg.log"), "Video transcode");
 
@@ -47,6 +109,8 @@ public class GubbVideoService {
             }
             Files.setLastModifiedTime(video, FileTime.from(Instant.now()));
             Files.move(video, storageDirectory.resolve(id + ".mp4"));
+            log.info("Gubb video ready jobId={} durationMs={}",
+                    id, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
             return id;
         } finally {
             if (process != null && process.isAlive()) {
@@ -123,6 +187,7 @@ public class GubbVideoService {
     @Scheduled(fixedDelay = 24 * 3_600_000)
     public void deleteExpiredVideos() throws IOException {
         Instant now = Instant.now();
+        jobs.values().removeIf(job -> isExpiredJob(job, now));
         try (Stream<Path> files = Files.list(storageDirectory)) {
             for (Path file : files.toList()) {
                 String name = file.getFileName().toString();
@@ -139,6 +204,11 @@ public class GubbVideoService {
 
     private boolean isExpired(Path file, Instant now) throws IOException {
         return !Files.getLastModifiedTime(file).toInstant().plus(RETENTION).isAfter(now);
+    }
+
+    private static boolean isExpiredJob(DownloadJob job, Instant now) {
+        return ("completed".equals(job.status()) || "failed".equals(job.status()))
+                && !job.updatedAt().plus(RETENTION).isAfter(now);
     }
 
     private static boolean isVideoId(String id) {

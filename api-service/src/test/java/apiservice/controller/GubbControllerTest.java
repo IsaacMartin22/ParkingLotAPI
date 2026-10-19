@@ -1,6 +1,7 @@
 package apiservice.controller;
 
 import apiservice.service.GubbVideoService;
+import apiservice.service.GubbVideoService.DownloadJob;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -35,8 +37,9 @@ class GubbControllerTest {
     }
 
     @Test
-    void returnsBackendUrlAfterDownload() throws Exception {
-        when(videos.download(TIKTOK_URL)).thenReturn("video-id");
+    void returnsJobImmediatelyWithoutWaitingForDownload() throws Exception {
+        when(videos.startJob(TIKTOK_URL)).thenReturn(
+                new DownloadJob("video-id", "queued", null, Instant.now()));
 
         mvc.perform(get("https://api.example.com/api/gubb").secure(true)
                         .with(request -> {
@@ -44,9 +47,65 @@ class GubbControllerTest {
                             request.setServerPort(443);
                             return request;
                         }).param("url", TIKTOK_URL))
+                .andExpect(status().isAccepted())
+                .andExpect(header().string(HttpHeaders.LOCATION, "https://api.example.com/api/gubb/jobs/video-id"))
+                .andExpect(header().string(HttpHeaders.RETRY_AFTER, "2"))
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.status").value("queued"))
+                .andExpect(jsonPath("$.jobId").value("video-id"))
+                .andExpect(jsonPath("$.statusUrl").value("https://api.example.com/api/gubb/jobs/video-id"))
+                .andExpect(jsonPath("$.url").doesNotExist());
+        verify(videos).startJob(TIKTOK_URL);
+        verifyNoMoreInteractions(videos);
+    }
+
+    @Test
+    void pollsUntilVideoIsReady() throws Exception {
+        when(videos.getJob("video-id")).thenReturn(
+                new DownloadJob("video-id", "processing", null, Instant.now()),
+                new DownloadJob("video-id", "completed", null, Instant.now()));
+
+        mvc.perform(get("/api/gubb/jobs/video-id"))
+                .andExpect(status().isAccepted())
+                .andExpect(header().string(HttpHeaders.RETRY_AFTER, "2"))
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.status").value("processing"))
+                .andExpect(jsonPath("$.url").doesNotExist());
+
+        mvc.perform(get("/api/gubb/jobs/video-id"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.url").value("https://api.example.com/api/gubb/videos/video-id"));
-        verify(videos).download(TIKTOK_URL);
+                .andExpect(header().doesNotExist(HttpHeaders.RETRY_AFTER))
+                .andExpect(jsonPath("$.status").value("completed"))
+                .andExpect(jsonPath("$.url").value("http://localhost/api/gubb/videos/video-id"));
+    }
+
+    @Test
+    void reportsFailedJobSoClientCanStopPolling() throws Exception {
+        when(videos.getJob("video-id")).thenReturn(
+                new DownloadJob("video-id", "failed", "Video download failed. Please try again.", Instant.now()));
+
+        mvc.perform(get("/api/gubb/jobs/video-id"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("failed"))
+                .andExpect(jsonPath("$.error").value("Video download failed. Please try again."))
+                .andExpect(jsonPath("$.url").doesNotExist());
+    }
+
+    @Test
+    void returnsNotFoundForUnknownJob() throws Exception {
+        when(videos.getJob("missing")).thenThrow(
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Download job not found or expired"));
+
+        mvc.perform(get("/api/gubb/jobs/missing")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void returnsServiceUnavailableWhenQueueIsFull() throws Exception {
+        when(videos.startJob(TIKTOK_URL)).thenThrow(
+                new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Download queue is full"));
+
+        mvc.perform(get("/api/gubb").param("url", TIKTOK_URL))
+                .andExpect(status().isServiceUnavailable());
     }
 
     @Test

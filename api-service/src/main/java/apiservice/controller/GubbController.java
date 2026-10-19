@@ -2,6 +2,7 @@ package apiservice.controller;
 
 
 import apiservice.service.GubbVideoService;
+import apiservice.service.GubbVideoService.DownloadJob;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -37,8 +38,7 @@ public class GubbController {
     );
 
     @GetMapping
-    public GubbResponse getDownloadUrl(@RequestParam("url") String videoUrl)
-            throws IOException, InterruptedException {
+    public ResponseEntity<GubbResponse> getDownloadUrl(@RequestParam("url") String videoUrl) {
 
         try {
             validateTikTokUrl(videoUrl);
@@ -46,11 +46,35 @@ public class GubbController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid TikTok URL", ex);
         }
 
-        String id = videos.download(videoUrl);
-        return new GubbResponse(ServletUriComponentsBuilder.fromCurrentRequestUri()
-                .path("/videos/{id}")
-                .buildAndExpand(id)
-                .toUriString());
+        DownloadJob job = videos.startJob(videoUrl);
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+        GubbResponse response = jobResponse(job, baseUrl);
+        return ResponseEntity.accepted()
+                .location(URI.create(response.getStatusUrl()))
+                .header("Retry-After", "2")
+                .cacheControl(CacheControl.noStore())
+                .body(response);
+    }
+
+    @GetMapping("/jobs/{id}")
+    public ResponseEntity<GubbResponse> getDownloadStatus(@PathVariable String id) {
+        DownloadJob job = videos.getJob(id);
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/gubb").toUriString();
+        boolean pending = "queued".equals(job.status()) || "processing".equals(job.status());
+        ResponseEntity.BodyBuilder response = ResponseEntity
+                .status(pending ? HttpStatus.ACCEPTED : HttpStatus.OK)
+                .cacheControl(CacheControl.noStore());
+        if (pending) {
+            response.header("Retry-After", "2");
+        }
+        return response.body(jobResponse(job, baseUrl));
+    }
+
+    private static GubbResponse jobResponse(DownloadJob job, String baseUrl) {
+        return new GubbResponse(
+                "completed".equals(job.status()) ? baseUrl + "/videos/" + job.id() : null,
+                job.id(), job.status(), baseUrl + "/jobs/" + job.id(), job.error());
     }
 
     @GetMapping("/videos/{id}")

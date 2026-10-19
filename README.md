@@ -19,10 +19,53 @@ It lists the endpoints available and payload shapes for those endpoints.
 
 ## TikTok video downloads
 
-`GET /api/gubb?url=<URL-encoded HTTPS TikTok URL>` downloads the video before returning
-`{"url":"https://<API host>/api/gubb/videos/<id>"}`. The returned URL streams the stored
-MP4 from this backend, including HTTP Range support for browser playback and seeking.
-Downloads have a five-minute timeout; clients and proxies must allow the request to finish.
+`GET /api/gubb?url=<URL-encoded HTTPS TikTok URL>` queues a background download and
+returns HTTP 202 immediately, rather than keeping the request open during processing:
+
+```json
+{
+  "jobId": "<id>",
+  "status": "queued",
+  "statusUrl": "https://<API host>/api/gubb/jobs/<id>",
+  "url": null,
+  "error": null
+}
+```
+
+Poll `statusUrl` every two seconds. Both endpoints use `Cache-Control: no-store`.
+The initial response also sets `Location` to `statusUrl`.
+`GET /api/gubb/jobs/<id>` returns HTTP 202 with `Retry-After: 2` while the status is
+`queued` or `processing`. It returns HTTP 200 with `status: "completed"` and
+`url: "https://<API host>/api/gubb/videos/<id>"` once the video is ready.
+A failed job returns HTTP 200 with `status: "failed"` and an `error` message;
+stop polling on either terminal status. Unknown or expired jobs return HTTP 404.
+Existing clients must switch from reading `url` immediately to polling `statusUrl`.
+For example, frontend code can use:
+
+```javascript
+async function getTikTokVideoUrl(apiBase, videoUrl) {
+  let response = await fetch(
+    `${apiBase}/api/gubb?url=${encodeURIComponent(videoUrl)}`
+  );
+  while (true) {
+    if (!response.ok) {
+      throw new Error(`Video request failed (${response.status})`);
+    }
+    const job = await response.json();
+    if (job.status === "completed") return job.url;
+    if (job.status === "failed") throw new Error(job.error);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    response = await fetch(job.statusUrl, { cache: "no-store" });
+  }
+}
+```
+
+The returned video URL streams the stored MP4, including HTTP Range support for
+browser playback and seeking. Download and transcode each have a five-minute timeout.
+Two jobs run concurrently; up to twenty more wait in the queue. A full queue returns
+HTTP 503. Job status is held in memory for seven days after completion or failure;
+restarting the API loses job status, but already published videos remain available.
+Logs include job IDs, download/transcode stages, elapsed processing time, and failures.
 Videos are publicly accessible to anyone with the URL, with no authentication.
 
 Videos expire seven days after download and return 404 thereafter. An hourly task deletes

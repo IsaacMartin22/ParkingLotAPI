@@ -1,6 +1,7 @@
 package apiservice.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.HttpStatus;
@@ -13,10 +14,12 @@ import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -50,6 +53,59 @@ class GubbVideoServiceTest {
             Files.writeString(workspace.resolve("ffmpeg.log"), "transcode output");
             return transcode;
         }).when(videos).startTranscode(any(Path.class));
+    }
+
+    @AfterEach
+    void tearDown() {
+        videos.shutdown();
+    }
+
+    @Test
+    void jobReturnsWhileDownloadIsStillRunningAndEventuallyPublishesVideo() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        when(process.waitFor(5, TimeUnit.MINUTES)).thenAnswer(invocation -> {
+            started.countDown();
+            return release.await(5, TimeUnit.SECONDS);
+        });
+
+        GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
+        try {
+            assertTrue(started.await(5, TimeUnit.SECONDS));
+            assertEquals("processing", videos.getJob(job.id()).status());
+            assertThrows(ResponseStatusException.class, () -> videos.getVideo(job.id()));
+        } finally {
+            release.countDown();
+        }
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(
+                () -> assertEquals("completed", videos.getJob(job.id()).status()));
+        assertArrayEquals(new byte[]{1, 2, 3}, Files.readAllBytes(videos.getVideo(job.id()).getFile().toPath()));
+    }
+
+    @Test
+    void failedJobReportsSafeErrorAndDoesNotPublishVideo() {
+        when(process.exitValue()).thenReturn(1);
+
+        GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(
+                () -> assertEquals("failed", videos.getJob(job.id()).status()));
+        assertEquals("Video download failed. Please try again.", videos.getJob(job.id()).error());
+        assertThrows(ResponseStatusException.class, () -> videos.getVideo(job.id()));
+    }
+
+    @Test
+    void rejectsUnknownJobsAndNewJobsAfterShutdown() {
+        ResponseStatusException missing = assertThrows(ResponseStatusException.class,
+                () -> videos.getJob(UUID.randomUUID().toString()));
+        assertEquals(HttpStatus.NOT_FOUND, missing.getStatusCode());
+
+        videos.shutdown();
+
+        ResponseStatusException unavailable = assertThrows(ResponseStatusException.class,
+                () -> videos.startJob(VIDEO_URL));
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, unavailable.getStatusCode());
     }
 
     @Test
