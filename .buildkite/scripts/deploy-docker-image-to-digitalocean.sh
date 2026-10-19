@@ -118,6 +118,8 @@ docker run -d \
   --network-alias api \
   --env-file "${deploy_path}/.env" \
   --env SERVER_FORWARD_HEADERS_STRATEGY=framework \
+  --env GUBB_STORAGE_DIRECTORY=/app/data/gubb \
+  --mount "type=volume,source=${container_name}-gubb-videos,target=/app/data/gubb" \
   "${image}"
 
 echo "--- :hourglass: Waiting for API readiness on the proxy network"

@@ -17,6 +17,22 @@ The repository's container workflow is centered on the root `Dockerfile`, which 
 API documentation is available at the hosted URL, which should be listed on the GitHub repository page in the upper right corner.
 It lists the endpoints available and payload shapes for those endpoints.
 
+## TikTok video downloads
+
+`GET /api/gubb?url=<URL-encoded HTTPS TikTok URL>` downloads the video before returning
+`{"url":"https://<API host>/api/gubb/videos/<id>"}`. The returned URL streams the stored
+MP4 from this backend, including HTTP Range support for browser playback and seeking.
+Downloads have a five-minute timeout; clients and proxies must allow the request to finish.
+Videos are publicly accessible to anyone with the URL, with no authentication.
+
+Videos expire seven days after download and return 404 thereafter. An hourly task deletes
+expired files (also on startup), so disk cleanup may lag expiration by up to an hour.
+Set `GUBB_STORAGE_DIRECTORY` to a writable directory (default `./data/gubb`).
+For Docker, mount persistent storage at that path; the DigitalOcean deploy script automatically
+uses the named volume `<container-name>-gubb-videos` at `/app/data/gubb`, preserving videos
+across container replacements on the same host. Other deployments must mount their own storage.
+The runtime needs `yt-dlp`, Python 3, and FFmpeg, already installed by the root `Dockerfile`.
+
 ## Java SDK
 
 A standalone SDK module is available in `sdk/` with an API client and request/response DTOs for easier integration from other Java projects. See `sdk/README.md` for usage.

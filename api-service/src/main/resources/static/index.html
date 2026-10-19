@@ -144,6 +144,17 @@
     </header>
 
     <section class="section">
+      <h2>TikTok Video Downloads</h2>
+      <p class="section-note">
+        <code>GET /api/gubb?url=&lt;URL-encoded HTTPS TikTok URL&gt;</code> downloads an MP4
+        onto the server and returns <code>{"url":"https://&lt;API host&gt;/api/gubb/videos/&lt;id&gt;"}</code>.
+        The returned URL supports streaming and seeking through HTTP Range requests.
+        Videos are publicly accessible by URL for seven days, then return 404.
+        Downloads may take up to five minutes; expired files are deleted hourly.
+      </p>
+    </section>
+
+    <section class="section">
       <h2>Parking Lots</h2>
       <p class="section-note">Top-level parking lot lookup and nested floor details.</p>
       <div class="table-wrap">
