@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -31,32 +32,21 @@ class GubbVideoServiceTest {
     Path directory;
     private GubbVideoService videos;
     private Process process;
-    private Process transcode;
     private final AtomicLong nanoTime = new AtomicLong();
 
     @BeforeEach
     void setUp() throws Exception {
         videos = spy(new GubbVideoService(directory.toString(), nanoTime::get));
         process = mock(Process.class);
-        transcode = mock(Process.class);
         when(process.waitFor(5, TimeUnit.MINUTES)).thenReturn(true);
-        when(transcode.waitFor(5, TimeUnit.MINUTES)).thenReturn(true);
         when(process.waitFor(5, TimeUnit.SECONDS)).thenReturn(true);
-        when(transcode.waitFor(5, TimeUnit.SECONDS)).thenReturn(true);
         doAnswer(invocation -> {
             Path workspace = invocation.getArgument(0);
-            Files.write(workspace.resolve("download.mp4"), new byte[]{4, 5, 6});
+            String fileName = invocation.getArgument(1);
+            Files.write(workspace.resolve(fileName), new byte[]{1, 2, 3});
             Files.writeString(workspace.resolve("yt-dlp.log"), "download output");
             return process;
-        }).when(videos).startDownload(any(Path.class), eq(VIDEO_URL));
-        doAnswer(invocation -> {
-            Path workspace = invocation.getArgument(0);
-            if (Files.exists(workspace.resolve("download.mp4"))) {
-                Files.write(workspace.resolve("video.mp4"), new byte[]{1, 2, 3});
-            }
-            Files.writeString(workspace.resolve("ffmpeg.log"), "transcode output");
-            return transcode;
-        }).when(videos).startTranscode(any(Path.class));
+        }).when(videos).startDownload(any(Path.class), anyString(), eq(VIDEO_URL));
     }
 
     @AfterEach
@@ -97,7 +87,6 @@ class GubbVideoServiceTest {
                 () -> assertEquals("failed", videos.getJob(job.id()).status()));
         assertEquals("Video download failed. Please try again.", videos.getJob(job.id()).error());
         assertThrows(ResponseStatusException.class, () -> videos.getVideo(job.id()));
-        verify(videos, never()).startTranscode(any(Path.class));
     }
 
     @Test
@@ -114,7 +103,7 @@ class GubbVideoServiceTest {
     }
 
     @Test
-    void cancelsRunningDownloadAndStopsItsChildrenWithoutTranscoding() throws Exception {
+    void cancelsRunningDownloadAndStopsItsChildren() throws Exception {
         CountDownLatch started = blockDownload();
         ProcessHandle child = mock(ProcessHandle.class);
         when(process.isAlive()).thenReturn(true);
@@ -129,35 +118,13 @@ class GubbVideoServiceTest {
             verify(process).destroyForcibly();
             assertStorageEmpty();
         });
-        verify(videos, never()).startTranscode(any(Path.class));
         assertEquals("cancelled", videos.getJob(job.id()).status());
         assertEquals("cancelled", videos.cancelJob(job.id()).status());
         assertThrows(ResponseStatusException.class, () -> videos.getVideo(job.id()));
     }
 
     @Test
-    void cancelsTranscodeWithoutPublishingVideo() throws Exception {
-        CountDownLatch started = new CountDownLatch(1);
-        when(transcode.waitFor(5, TimeUnit.MINUTES)).thenAnswer(invocation -> {
-            started.countDown();
-            return new CountDownLatch(1).await(5, TimeUnit.SECONDS);
-        });
-        when(transcode.isAlive()).thenReturn(true);
-        GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
-        assertTrue(started.await(5, TimeUnit.SECONDS));
-
-        videos.cancelJob(job.id());
-
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-            verify(transcode).destroyForcibly();
-            assertStorageEmpty();
-        });
-        assertEquals("cancelled", videos.getJob(job.id()).status());
-        assertThrows(ResponseStatusException.class, () -> videos.getVideo(job.id()));
-    }
-
-    @Test
-    void interruptionAtDownloadCompletionCannotStartTranscode() throws Exception {
+    void interruptionAtDownloadCompletionDoesNotPublishVideo() throws Exception {
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         when(process.waitFor(5, TimeUnit.MINUTES)).thenAnswer(invocation -> {
@@ -173,7 +140,6 @@ class GubbVideoServiceTest {
             release.countDown();
             await().atMost(Duration.ofSeconds(5)).untilAsserted(
                     () -> assertEquals("failed", videos.getJob(job.id()).status()));
-            verify(videos, never()).startTranscode(any(Path.class));
             assertStorageEmpty();
         } finally {
             release.countDown();
@@ -192,8 +158,7 @@ class GubbVideoServiceTest {
         videos.cancelJob(running.id());
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
-        verify(videos, times(1)).startDownload(any(Path.class), eq(VIDEO_URL));
-        verify(videos, never()).startTranscode(any(Path.class));
+        verify(videos, times(1)).startDownload(any(Path.class), anyString(), eq(VIDEO_URL));
         assertEquals("cancelled", videos.getJob(queued.id()).status());
     }
 
@@ -211,7 +176,7 @@ class GubbVideoServiceTest {
                 () -> videos.startJob(VIDEO_URL)).getStatusCode());
         videos.cancelJob(queued.id());
         assertEquals("queued", videos.startJob(VIDEO_URL).status());
-        verify(videos, times(1)).startDownload(any(Path.class), eq(VIDEO_URL));
+        verify(videos, times(1)).startDownload(any(Path.class), anyString(), eq(VIDEO_URL));
 
         videos.shutdown();
         await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
@@ -230,8 +195,7 @@ class GubbVideoServiceTest {
         assertEquals("cancelled", videos.getJob(running.id()).status());
         assertEquals("cancelled", videos.getJob(queued.id()).status());
         await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
-        verify(videos, never()).startTranscode(any(Path.class));
-        verify(videos, times(1)).startDownload(any(Path.class), eq(VIDEO_URL));
+        verify(videos, times(1)).startDownload(any(Path.class), anyString(), eq(VIDEO_URL));
     }
 
     @Test
@@ -248,7 +212,6 @@ class GubbVideoServiceTest {
 
         assertEquals("cancelled", videos.getJob(job.id()).status());
         await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
-        verify(videos, never()).startTranscode(any(Path.class));
     }
 
     @Test
@@ -263,7 +226,6 @@ class GubbVideoServiceTest {
         assertEquals("cancelled", videos.getJob(running.id()).status());
         assertEquals("cancelled", videos.getJob(queued.id()).status());
         await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
-        verify(videos, never()).startTranscode(any(Path.class));
     }
 
     @Test
@@ -287,15 +249,14 @@ class GubbVideoServiceTest {
     }
 
     @Test
-    void downloadStartupFailureDoesNotStartTranscode() throws Exception {
+    void downloadStartupFailureMarksJobFailed() throws Exception {
         doThrow(new IOException("Cannot start downloader"))
-                .when(videos).startDownload(any(Path.class), eq(VIDEO_URL));
+                .when(videos).startDownload(any(Path.class), anyString(), eq(VIDEO_URL));
 
         GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted(
                 () -> assertEquals("failed", videos.getJob(job.id()).status()));
-        verify(videos, never()).startTranscode(any(Path.class));
         assertStorageEmpty();
     }
 
@@ -306,8 +267,21 @@ class GubbVideoServiceTest {
         assertEquals(id, UUID.fromString(id).toString());
         assertArrayEquals(new byte[]{1, 2, 3}, Files.readAllBytes(videos.getVideo(id).getFile().toPath()));
         try (Stream<Path> files = Files.list(directory)) {
-            assertEquals(1, files.count());
+            assertEquals(List.of(directory.resolve(id + ".mp4")), files.toList());
         }
+    }
+
+    @Test
+    void multipleDownloadsAreStoredUnderUniqueNames() throws Exception {
+        String first = videos.download(VIDEO_URL);
+        String second = videos.download(VIDEO_URL);
+
+        assertNotEquals(first, second);
+        assertTrue(Files.isRegularFile(directory.resolve(first + ".mp4")));
+        assertTrue(Files.isRegularFile(directory.resolve(second + ".mp4")));
+        assertEquals(2, videos.listVideos().size());
+        verify(videos).startDownload(any(Path.class), eq(first + ".mp4"), eq(VIDEO_URL));
+        verify(videos).startDownload(any(Path.class), eq(second + ".mp4"), eq(VIDEO_URL));
     }
 
     @Test
@@ -322,32 +296,9 @@ class GubbVideoServiceTest {
 
     @Test
     void rejectsSuccessfulProcessWithoutVideo() throws Exception {
-        doAnswer(invocation -> process).when(videos).startDownload(any(Path.class), eq(VIDEO_URL));
+        doAnswer(invocation -> process).when(videos).startDownload(any(Path.class), anyString(), eq(VIDEO_URL));
 
         assertThrows(IOException.class, () -> videos.download(VIDEO_URL));
-        assertStorageEmpty();
-    }
-
-    @Test
-    void failedTranscodeIsNotPublishedAndIncludesProcessOutput() throws Exception {
-        when(transcode.exitValue()).thenReturn(1);
-
-        IOException failure = assertThrows(IOException.class, () -> videos.download(VIDEO_URL));
-
-        assertTrue(failure.getMessage().contains("transcode output"));
-        assertStorageEmpty();
-    }
-
-    @Test
-    void transcodeTimeoutStopsProcessAndRemovesWorkspace() throws Exception {
-        when(transcode.waitFor(5, TimeUnit.MINUTES)).thenReturn(false);
-        when(transcode.isAlive()).thenReturn(true);
-        when(transcode.descendants()).thenReturn(Stream.empty());
-
-        assertThrows(IOException.class, () -> videos.download(VIDEO_URL));
-
-        verify(transcode).destroyForcibly();
-        verify(transcode).waitFor(5, TimeUnit.SECONDS);
         assertStorageEmpty();
     }
 
@@ -409,6 +360,45 @@ class GubbVideoServiceTest {
         assertTrue(Files.exists(current));
         assertTrue(Files.exists(unrelated));
         assertTrue(Files.exists(active));
+    }
+
+    @Test
+    void listsOnlyStoredVideosSortedByExpiry() throws Exception {
+        String currentId = UUID.randomUUID().toString();
+        Files.write(directory.resolve(currentId + ".mp4"), new byte[]{1, 2, 3});
+        String oldId = UUID.randomUUID().toString();
+        Path old = Files.writeString(directory.resolve(oldId + ".mp4"), "old");
+        Files.setLastModifiedTime(old, FileTime.from(Instant.now().minus(Duration.ofDays(3))));
+        Files.writeString(directory.resolve("notes.txt"), "ignore");
+        Files.createTempDirectory(directory, ".download-");
+
+        var listed = videos.listVideos();
+
+        assertEquals(2, listed.size());
+        GubbVideoService.StoredVideo first = listed.get(0);
+        assertEquals(oldId, first.id());
+        assertTrue(first.expired());
+        assertNull(first.jobStatus());
+        assertEquals(first.storedAt().plus(Duration.ofDays(2)), first.expiresAt());
+        GubbVideoService.StoredVideo second = listed.get(1);
+        assertEquals(currentId, second.id());
+        assertFalse(second.expired());
+        assertEquals(3, second.sizeBytes());
+    }
+
+    @Test
+    void deletesVideoEarly() throws Exception {
+        String id = UUID.randomUUID().toString();
+        Files.writeString(directory.resolve(id + ".mp4"), "video");
+
+        videos.deleteVideo(id);
+
+        assertStorageEmpty();
+        for (String missing : new String[]{id, "../secret"}) {
+            ResponseStatusException failure = assertThrows(ResponseStatusException.class,
+                    () -> videos.deleteVideo(missing));
+            assertEquals(HttpStatus.NOT_FOUND, failure.getStatusCode());
+        }
     }
 
     private void assertStorageEmpty() throws IOException {

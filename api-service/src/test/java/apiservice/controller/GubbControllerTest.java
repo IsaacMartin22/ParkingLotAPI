@@ -2,6 +2,7 @@ package apiservice.controller;
 
 import apiservice.service.GubbVideoService;
 import apiservice.service.GubbVideoService.DownloadJob;
+import apiservice.service.GubbVideoService.StoredVideo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -14,7 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -170,6 +173,48 @@ class GubbControllerTest {
         when(videos.getVideo("missing")).thenThrow(
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found or expired"));
         mvc.perform(get("/api/gubb/videos/missing")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void listsStoredVideosWithExpiryForAdminDashboard() throws Exception {
+        Instant stored = Instant.parse("2026-10-19T12:00:00Z");
+        when(videos.listVideos()).thenReturn(List.of(
+                new StoredVideo("video-id", "/data/video-id.mp4", 6, stored,
+                        stored.plus(Duration.ofDays(2)), false, "completed", stored),
+                new StoredVideo("orphan-id", "/data/orphan-id.mp4", 3, stored,
+                        stored.plus(Duration.ofDays(2)), true, null, null)));
+
+        mvc.perform(get("/api/gubb/admin/videos"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].jobId").value("video-id"))
+                .andExpect(jsonPath("$[0].url").value("http://localhost/api/gubb/videos/video-id"))
+                .andExpect(jsonPath("$[0].statusUrl").value("http://localhost/api/gubb/jobs/video-id"))
+                .andExpect(jsonPath("$[0].path").value("/data/video-id.mp4"))
+                .andExpect(jsonPath("$[0].sizeBytes").value(6))
+                .andExpect(jsonPath("$[0].storedAt").exists())
+                .andExpect(jsonPath("$[0].expiresAt").exists())
+                .andExpect(jsonPath("$[0].expired").value(false))
+                .andExpect(jsonPath("$[0].jobStatus").value("completed"))
+                .andExpect(jsonPath("$[1].expired").value(true))
+                .andExpect(jsonPath("$[1].statusUrl").doesNotExist())
+                .andExpect(jsonPath("$[1].jobStatus").doesNotExist());
+    }
+
+    @Test
+    void deletesStoredVideoEarly() throws Exception {
+        mvc.perform(delete("/api/gubb/admin/videos/video-id"))
+                .andExpect(status().isNoContent());
+        verify(videos).deleteVideo("video-id");
+    }
+
+    @Test
+    void deletingUnknownVideoReturnsNotFound() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found"))
+                .when(videos).deleteVideo("missing");
+
+        mvc.perform(delete("/api/gubb/admin/videos/missing")).andExpect(status().isNotFound());
     }
 
     @Test

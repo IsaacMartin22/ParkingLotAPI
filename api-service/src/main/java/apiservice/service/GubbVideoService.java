@@ -15,11 +15,15 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CancellationException;
@@ -35,7 +39,7 @@ import java.util.stream.Stream;
 @Service
 public class GubbVideoService {
     private static final Logger log = LoggerFactory.getLogger(GubbVideoService.class);
-    private static final Duration RETENTION = Duration.ofDays(7);
+    private static final Duration RETENTION = Duration.ofDays(2);
     private static final long POLL_TIMEOUT_NANOS = Duration.ofSeconds(30).toNanos();
     private final Path storageDirectory;
     private final LongSupplier nanoTime;
@@ -48,6 +52,12 @@ public class GubbVideoService {
             });
 
     public record DownloadJob(String id, String status, String error, Instant updatedAt) {
+    }
+
+    // jobStatus/jobUpdatedAt are null when the in-memory job is gone (e.g. after a restart).
+    public record StoredVideo(String id, String path, long sizeBytes, Instant storedAt,
+                              Instant expiresAt, boolean expired, String jobStatus,
+                              Instant jobUpdatedAt) {
     }
 
     private final class JobState {
@@ -212,30 +222,26 @@ public class GubbVideoService {
         long started = System.nanoTime();
         log.info("Gubb download started jobId={}", id);
         Path workspace = Files.createTempDirectory(storageDirectory, ".download-");
+        // Job IDs are UUIDs, so each published file gets a unique name in the shared storage directory.
+        String fileName = id + ".mp4";
         Process process = null;
         try {
             synchronized (job == null ? workspace : job) {
                 checkActive(job);
-                process = startDownload(workspace, videoUrl);
+                process = startDownload(workspace, fileName, videoUrl);
             }
             waitForSuccess(process, workspace.resolve("yt-dlp.log"), "TikTok download");
-            synchronized (job == null ? workspace : job) {
-                checkActive(job);
-                log.info("Gubb download finished; starting transcode jobId={}", id);
-                process = startTranscode(workspace);
-            }
-            waitForSuccess(process, workspace.resolve("ffmpeg.log"), "Video transcode");
             checkActive(job);
 
-            Path video = workspace.resolve("video.mp4");
+            Path video = workspace.resolve(fileName);
             if (!Files.isRegularFile(video) || Files.size(video) == 0) {
-                throw new IOException("FFmpeg did not produce an MP4 video");
+                throw new IOException("yt-dlp did not produce an MP4 video");
             }
             // Serialize publication with cancellation so cancelled jobs cannot publish a video.
             synchronized (job == null ? workspace : job) {
                 checkActive(job);
                 Files.setLastModifiedTime(video, FileTime.from(Instant.now()));
-                Files.move(video, storageDirectory.resolve(id + ".mp4"));
+                Files.move(video, storageDirectory.resolve(fileName));
                 if (job != null) {
                     job.snapshot = new DownloadJob(id, "completed", null, Instant.now());
                 }
@@ -273,7 +279,7 @@ public class GubbVideoService {
         }
     }
 
-    Process startDownload(Path workspace, String videoUrl) throws IOException {
+    Process startDownload(Path workspace, String fileName, String videoUrl) throws IOException {
         return new ProcessBuilder(
                 "nice", "-n", "19", "ionice", "-c", "3",
                 "/usr/local/bin/yt-dlp",
@@ -285,35 +291,11 @@ public class GubbVideoService {
                 "--limit-rate", "2M",
                 "--socket-timeout", "15",
                 "--retries", "2",
-                "--output", "download.mp4",
+                "--output", fileName,
                 "--", videoUrl
         ).directory(workspace.toFile())
                 .redirectErrorStream(true)
                 .redirectOutput(workspace.resolve("yt-dlp.log").toFile())
-                .start();
-    }
-
-    Process startTranscode(Path workspace) throws IOException {
-        return new ProcessBuilder(
-                "nice", "-n", "19", "ionice", "-c", "3",
-                "ffmpeg",
-                "-nostdin",
-                "-y",
-                "-threads", "1",
-                "-filter_threads", "1",
-                "-filter_complex_threads", "1",
-                "-i", "download.mp4",
-                "-map", "0:v:0",
-                "-map", "0:a:0",
-                "-c:v", "libx264",
-                "-threads", "1",
-                "-pix_fmt", "yuv420p",
-                "-c:a", "aac",
-                "-movflags", "+faststart",
-                "video.mp4"
-        ).directory(workspace.toFile())
-                .redirectErrorStream(true)
-                .redirectOutput(workspace.resolve("ffmpeg.log").toFile())
                 .start();
     }
 
@@ -342,6 +324,57 @@ public class GubbVideoService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found or expired");
         }
         return new FileSystemResource(video);
+    }
+
+    public List<StoredVideo> listVideos() throws IOException {
+        Instant now = Instant.now();
+        List<StoredVideo> result = new ArrayList<>();
+        try (Stream<Path> files = Files.list(storageDirectory)) {
+            for (Path file : files.toList()) {
+                String name = file.getFileName().toString();
+                String id = name.endsWith(".mp4") ? name.substring(0, name.length() - 4) : "";
+                if (!isVideoId(id)) {
+                    continue;
+                }
+                BasicFileAttributes attributes;
+                try {
+                    attributes = Files.readAttributes(file, BasicFileAttributes.class);
+                } catch (NoSuchFileException ex) {
+                    continue;
+                }
+                if (!attributes.isRegularFile()) {
+                    continue;
+                }
+                Instant storedAt = attributes.lastModifiedTime().toInstant();
+                Instant expiresAt = storedAt.plus(RETENTION);
+                DownloadJob job = peekJob(id);
+                result.add(new StoredVideo(id, file.toString(), attributes.size(), storedAt,
+                        expiresAt, !expiresAt.isAfter(now),
+                        job == null ? null : job.status(), job == null ? null : job.updatedAt()));
+            }
+        }
+        result.sort(Comparator.comparing(StoredVideo::expiresAt));
+        return result;
+    }
+
+    public void deleteVideo(String id) throws IOException {
+        if (!isVideoId(id) || !Files.deleteIfExists(storageDirectory.resolve(id + ".mp4"))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found");
+        }
+        // Drop the job too so its status endpoint stops advertising a video URL that no longer exists.
+        jobs.remove(id);
+        log.info("Gubb video deleted manually jobId={}", id);
+    }
+
+    // Read-only lookup: unlike getJob, this does not count as a client poll.
+    private DownloadJob peekJob(String id) {
+        JobState job = jobs.get(id);
+        if (job == null) {
+            return null;
+        }
+        synchronized (job) {
+            return job.snapshot;
+        }
     }
 
     @Scheduled(fixedDelay = 24 * 3_600_000)

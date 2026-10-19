@@ -15,6 +15,8 @@ import parkinglot.common.response.GubbResponse;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -94,6 +96,31 @@ public class GubbController {
                 .contentType(MediaType.valueOf("video/mp4"))
                 .cacheControl(CacheControl.noStore())
                 .body(videos.getVideo(id));
+    }
+
+    // Admin dashboard endpoints. No auth here: /api/gubb/admin must be restricted at the reverse proxy.
+    public record AdminVideo(String jobId, String url, String statusUrl, String path, long sizeBytes,
+                             Instant storedAt, Instant expiresAt, boolean expired,
+                             String jobStatus, Instant jobUpdatedAt) {
+    }
+
+    @GetMapping("/admin/videos")
+    public ResponseEntity<List<AdminVideo>> listVideos() throws IOException {
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/gubb").toUriString();
+        List<AdminVideo> body = videos.listVideos().stream()
+                .map(v -> new AdminVideo(v.id(), baseUrl + "/videos/" + v.id(),
+                        v.jobStatus() == null ? null : baseUrl + "/jobs/" + v.id(),
+                        v.path(), v.sizeBytes(), v.storedAt(), v.expiresAt(), v.expired(),
+                        v.jobStatus(), v.jobUpdatedAt()))
+                .toList();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
+    }
+
+    @DeleteMapping("/admin/videos/{id}")
+    public ResponseEntity<Void> deleteVideo(@PathVariable String id) throws IOException {
+        videos.deleteVideo(id);
+        return ResponseEntity.noContent().build();
     }
 
     static void validateTikTokUrl(String videoUrl) {
