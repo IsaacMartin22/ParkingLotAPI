@@ -30,9 +30,11 @@ WORKDIR /app
 # Install yt-dlp and its runtime dependencies in the final image.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    coreutils \
     curl \
     ffmpeg \
     python3 \
+    util-linux \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL \
     https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \

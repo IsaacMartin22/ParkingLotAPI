@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,14 +32,17 @@ class GubbVideoServiceTest {
     private GubbVideoService videos;
     private Process process;
     private Process transcode;
+    private final AtomicLong nanoTime = new AtomicLong();
 
     @BeforeEach
     void setUp() throws Exception {
-        videos = spy(new GubbVideoService(directory.toString()));
+        videos = spy(new GubbVideoService(directory.toString(), nanoTime::get));
         process = mock(Process.class);
         transcode = mock(Process.class);
         when(process.waitFor(5, TimeUnit.MINUTES)).thenReturn(true);
         when(transcode.waitFor(5, TimeUnit.MINUTES)).thenReturn(true);
+        when(process.waitFor(5, TimeUnit.SECONDS)).thenReturn(true);
+        when(transcode.waitFor(5, TimeUnit.SECONDS)).thenReturn(true);
         doAnswer(invocation -> {
             Path workspace = invocation.getArgument(0);
             Files.write(workspace.resolve("download.mp4"), new byte[]{4, 5, 6});
@@ -84,7 +88,7 @@ class GubbVideoServiceTest {
     }
 
     @Test
-    void failedJobReportsSafeErrorAndDoesNotPublishVideo() {
+    void failedJobReportsSafeErrorAndDoesNotPublishVideo() throws Exception {
         when(process.exitValue()).thenReturn(1);
 
         GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
@@ -93,6 +97,7 @@ class GubbVideoServiceTest {
                 () -> assertEquals("failed", videos.getJob(job.id()).status()));
         assertEquals("Video download failed. Please try again.", videos.getJob(job.id()).error());
         assertThrows(ResponseStatusException.class, () -> videos.getVideo(job.id()));
+        verify(videos, never()).startTranscode(any(Path.class));
     }
 
     @Test
@@ -106,6 +111,192 @@ class GubbVideoServiceTest {
         ResponseStatusException unavailable = assertThrows(ResponseStatusException.class,
                 () -> videos.startJob(VIDEO_URL));
         assertEquals(HttpStatus.SERVICE_UNAVAILABLE, unavailable.getStatusCode());
+    }
+
+    @Test
+    void cancelsRunningDownloadAndStopsItsChildrenWithoutTranscoding() throws Exception {
+        CountDownLatch started = blockDownload();
+        ProcessHandle child = mock(ProcessHandle.class);
+        when(process.isAlive()).thenReturn(true);
+        when(process.descendants()).thenAnswer(invocation -> Stream.of(child));
+        GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+
+        assertEquals("cancelled", videos.cancelJob(job.id()).status());
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            verify(child).destroyForcibly();
+            verify(process).destroyForcibly();
+            assertStorageEmpty();
+        });
+        verify(videos, never()).startTranscode(any(Path.class));
+        assertEquals("cancelled", videos.getJob(job.id()).status());
+        assertEquals("cancelled", videos.cancelJob(job.id()).status());
+        assertThrows(ResponseStatusException.class, () -> videos.getVideo(job.id()));
+    }
+
+    @Test
+    void cancelsTranscodeWithoutPublishingVideo() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        when(transcode.waitFor(5, TimeUnit.MINUTES)).thenAnswer(invocation -> {
+            started.countDown();
+            return new CountDownLatch(1).await(5, TimeUnit.SECONDS);
+        });
+        when(transcode.isAlive()).thenReturn(true);
+        GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+
+        videos.cancelJob(job.id());
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            verify(transcode).destroyForcibly();
+            assertStorageEmpty();
+        });
+        assertEquals("cancelled", videos.getJob(job.id()).status());
+        assertThrows(ResponseStatusException.class, () -> videos.getVideo(job.id()));
+    }
+
+    @Test
+    void interruptionAtDownloadCompletionCannotStartTranscode() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        when(process.waitFor(5, TimeUnit.MINUTES)).thenAnswer(invocation -> {
+            started.countDown();
+            release.await(5, TimeUnit.SECONDS);
+            // Simulate a process finishing just as an interrupt arrives.
+            Thread.currentThread().interrupt();
+            return true;
+        });
+        GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
+        try {
+            assertTrue(started.await(5, TimeUnit.SECONDS));
+            release.countDown();
+            await().atMost(Duration.ofSeconds(5)).untilAsserted(
+                    () -> assertEquals("failed", videos.getJob(job.id()).status()));
+            verify(videos, never()).startTranscode(any(Path.class));
+            assertStorageEmpty();
+        } finally {
+            release.countDown();
+        }
+    }
+
+    @Test
+    void cancelledQueuedJobNeverStartsAndOnlyOneJobRuns() throws Exception {
+        CountDownLatch started = blockDownload();
+        GubbVideoService.DownloadJob running = videos.startJob(VIDEO_URL);
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+        GubbVideoService.DownloadJob queued = videos.startJob(VIDEO_URL);
+        assertEquals("queued", videos.getJob(queued.id()).status());
+
+        videos.cancelJob(queued.id());
+        videos.cancelJob(running.id());
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
+        verify(videos, times(1)).startDownload(any(Path.class), eq(VIDEO_URL));
+        verify(videos, never()).startTranscode(any(Path.class));
+        assertEquals("cancelled", videos.getJob(queued.id()).status());
+    }
+
+    @Test
+    void fullQueueRejectsNewWorkAndCancellationFreesQueuedSlot() throws Exception {
+        CountDownLatch started = blockDownload();
+        videos.startJob(VIDEO_URL);
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+        GubbVideoService.DownloadJob queued = videos.startJob(VIDEO_URL);
+        for (int i = 1; i < 20; i++) {
+            videos.startJob(VIDEO_URL);
+        }
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, assertThrows(ResponseStatusException.class,
+                () -> videos.startJob(VIDEO_URL)).getStatusCode());
+        videos.cancelJob(queued.id());
+        assertEquals("queued", videos.startJob(VIDEO_URL).status());
+        verify(videos, times(1)).startDownload(any(Path.class), eq(VIDEO_URL));
+
+        videos.shutdown();
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
+    }
+
+    @Test
+    void pollingFailureExpiresRunningAndQueuedJobs() throws Exception {
+        CountDownLatch started = blockDownload();
+        GubbVideoService.DownloadJob running = videos.startJob(VIDEO_URL);
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+        GubbVideoService.DownloadJob queued = videos.startJob(VIDEO_URL);
+
+        nanoTime.addAndGet(Duration.ofSeconds(30).toNanos());
+        videos.cancelUnpolledJobs();
+
+        assertEquals("cancelled", videos.getJob(running.id()).status());
+        assertEquals("cancelled", videos.getJob(queued.id()).status());
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
+        verify(videos, never()).startTranscode(any(Path.class));
+        verify(videos, times(1)).startDownload(any(Path.class), eq(VIDEO_URL));
+    }
+
+    @Test
+    void successfulPollRenewsLeaseButLatePollCannotReviveJob() throws Exception {
+        CountDownLatch started = blockDownload();
+        GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+
+        nanoTime.addAndGet(Duration.ofSeconds(20).toNanos());
+        assertEquals("processing", videos.getJob(job.id()).status());
+        nanoTime.addAndGet(Duration.ofSeconds(20).toNanos());
+        videos.cancelUnpolledJobs();
+        nanoTime.addAndGet(Duration.ofSeconds(10).toNanos());
+
+        assertEquals("cancelled", videos.getJob(job.id()).status());
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
+        verify(videos, never()).startTranscode(any(Path.class));
+    }
+
+    @Test
+    void shutdownCancelsRunningAndQueuedJobs() throws Exception {
+        CountDownLatch started = blockDownload();
+        GubbVideoService.DownloadJob running = videos.startJob(VIDEO_URL);
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+        GubbVideoService.DownloadJob queued = videos.startJob(VIDEO_URL);
+
+        videos.shutdown();
+
+        assertEquals("cancelled", videos.getJob(running.id()).status());
+        assertEquals("cancelled", videos.getJob(queued.id()).status());
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(this::assertStorageEmpty);
+        verify(videos, never()).startTranscode(any(Path.class));
+    }
+
+    @Test
+    void cancellationAndLeaseExpiryPreserveCompletedAndFailedJobs() throws Exception {
+        GubbVideoService.DownloadJob completed = videos.startJob(VIDEO_URL);
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(
+                () -> assertEquals("completed", videos.getJob(completed.id()).status()));
+        when(process.exitValue()).thenReturn(1);
+        GubbVideoService.DownloadJob failed = videos.startJob(VIDEO_URL);
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(
+                () -> assertEquals("failed", videos.getJob(failed.id()).status()));
+
+        nanoTime.addAndGet(Duration.ofMinutes(1).toNanos());
+        videos.cancelUnpolledJobs();
+
+        assertEquals("completed", videos.cancelJob(completed.id()).status());
+        assertEquals("failed", videos.cancelJob(failed.id()).status());
+        assertTrue(videos.getVideo(completed.id()).exists());
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class,
+                () -> videos.cancelJob("missing")).getStatusCode());
+    }
+
+    @Test
+    void downloadStartupFailureDoesNotStartTranscode() throws Exception {
+        doThrow(new IOException("Cannot start downloader"))
+                .when(videos).startDownload(any(Path.class), eq(VIDEO_URL));
+
+        GubbVideoService.DownloadJob job = videos.startJob(VIDEO_URL);
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(
+                () -> assertEquals("failed", videos.getJob(job.id()).status()));
+        verify(videos, never()).startTranscode(any(Path.class));
+        assertStorageEmpty();
     }
 
     @Test
@@ -156,7 +347,7 @@ class GubbVideoServiceTest {
         assertThrows(IOException.class, () -> videos.download(VIDEO_URL));
 
         verify(transcode).destroyForcibly();
-        verify(transcode).waitFor();
+        verify(transcode).waitFor(5, TimeUnit.SECONDS);
         assertStorageEmpty();
     }
 
@@ -169,7 +360,7 @@ class GubbVideoServiceTest {
         assertThrows(IOException.class, () -> videos.download(VIDEO_URL));
 
         verify(process).destroyForcibly();
-        verify(process).waitFor();
+        verify(process).waitFor(5, TimeUnit.SECONDS);
         assertStorageEmpty();
     }
 
@@ -224,5 +415,14 @@ class GubbVideoServiceTest {
         try (Stream<Path> files = Files.list(directory)) {
             assertEquals(0, files.count());
         }
+    }
+
+    private CountDownLatch blockDownload() throws InterruptedException {
+        CountDownLatch started = new CountDownLatch(1);
+        when(process.waitFor(5, TimeUnit.MINUTES)).thenAnswer(invocation -> {
+            started.countDown();
+            return new CountDownLatch(1).await(5, TimeUnit.SECONDS);
+        });
+        return started;
     }
 }

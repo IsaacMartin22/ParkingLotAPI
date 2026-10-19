@@ -37,33 +37,85 @@ The initial response also sets `Location` to `statusUrl`.
 `GET /api/gubb/jobs/<id>` returns HTTP 202 with `Retry-After: 2` while the status is
 `queued` or `processing`. It returns HTTP 200 with `status: "completed"` and
 `url: "https://<API host>/api/gubb/videos/<id>"` once the video is ready.
-A failed job returns HTTP 200 with `status: "failed"` and an `error` message;
-stop polling on either terminal status. Unknown or expired jobs return HTTP 404.
+A failed job returns HTTP 200 with `status: "failed"` and an `error` message.
+Cancelled jobs return HTTP 200 with `status: "cancelled"` and an `error` message.
+Stop polling on any terminal status. Never download a video unless the status is
+`completed` and `url` is present. Unknown or expired jobs return HTTP 404.
+`DELETE /api/gubb/jobs/<id>` cancels a queued or running job and returns its current
+status. Repeated cancellation is safe; completed and failed jobs remain unchanged.
+Cancellation interrupts the worker, kills its active subprocess and child processes,
+and removes partial files without starting the next stage.
+
+On an initial request or polling failure, stop the client flow and cancel the known
+job with `DELETE`. Use a fresh request signal for cancellation, not an already-aborted
+signal. If the initial response is lost or cancellation cannot reach the API, the
+server cancels pending jobs after 30 seconds without a successful status lookup.
+The lease starts when the job is created, including time spent queued, and each
+status lookup renews it. An expired lease cannot be revived by polling again.
+A lightweight sweep checks leases every second; stage boundaries also check them.
+The server cannot detect a lost polling response immediately.
 Existing clients must switch from reading `url` immediately to polling `statusUrl`.
 For example, frontend code can use:
 
 ```javascript
-async function getTikTokVideoUrl(apiBase, videoUrl) {
-  let response = await fetch(
-    `${apiBase}/api/gubb?url=${encodeURIComponent(videoUrl)}`
-  );
-  while (true) {
-    if (!response.ok) {
-      throw new Error(`Video request failed (${response.status})`);
+async function getTikTokVideoUrl(apiBase, videoUrl, signal) {
+  let statusUrl;
+  try {
+    let response = await fetch(
+      `${apiBase}/api/gubb?url=${encodeURIComponent(videoUrl)}`,
+      { cache: "no-store", signal }
+    );
+    while (true) {
+      if (!response.ok) {
+        throw new Error(`Video request failed (${response.status})`);
+      }
+      const job = await response.json();
+      if (typeof job.statusUrl === "string") statusUrl = job.statusUrl;
+      signal?.throwIfAborted();
+      if (job.status === "failed" || job.status === "cancelled") {
+        throw new Error(job.error || `Video job ${job.status}`);
+      }
+      if (job.status === "completed") {
+        if (!job.url) throw new Error("Completed job has no video URL");
+        return job.url;
+      }
+      if (!["queued", "processing"].includes(job.status) || !job.statusUrl) {
+        throw new Error("Invalid video job response");
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      signal?.throwIfAborted();
+      response = await fetch(statusUrl, { cache: "no-store", signal });
     }
-    const job = await response.json();
-    if (job.status === "completed") return job.url;
-    if (job.status === "failed") throw new Error(job.error);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    response = await fetch(job.statusUrl, { cache: "no-store" });
+  } catch (error) {
+    if (statusUrl) {
+      try {
+        const cancellation = await fetch(statusUrl, {
+          method: "DELETE",
+          keepalive: true,
+          signal: AbortSignal.timeout(5000)
+        });
+        if (!cancellation.ok) {
+          throw new Error(`Cancellation failed (${cancellation.status})`);
+        }
+      } catch (cancellationError) {
+        console.warn("Cancellation could not be confirmed; the job lease will expire.", cancellationError);
+      }
+    }
+    throw error;
   }
 }
 ```
 
 The returned video URL streams the stored MP4, including HTTP Range support for
 browser playback and seeking. Download and transcode each have a five-minute timeout.
-Two jobs run concurrently; up to twenty more wait in the queue. A full queue returns
-HTTP 503. Job status is held in memory for seven days after completion or failure;
+One job runs at a time on a dedicated minimum-priority worker; up to twenty more
+wait in the bounded queue. A full queue returns HTTP 503 instead of running work on
+an HTTP request thread. Downloads run with a 2 MiB/s
+rate limit. Both subprocesses use Linux `nice -n 19` and idle I/O scheduling
+(`ionice -c 3`) so normal API work takes precedence. FFmpeg uses one decoder thread,
+one encoder thread, and single-threaded filters. yt-dlp does not perform a separate
+hidden transcode. These limits reduce contention, not provide hard CPU or memory isolation.
+Job status is held in memory for seven days after completion, failure, or cancellation;
 restarting the API loses job status, but already published videos remain available.
 Logs include job IDs, download/transcode stages, elapsed processing time, and failures.
 Videos are publicly accessible to anyone with the URL, with no authentication.
@@ -74,7 +126,8 @@ Set `GUBB_STORAGE_DIRECTORY` to a writable directory (default `./data/gubb`).
 For Docker, mount persistent storage at that path; the DigitalOcean deploy script automatically
 uses the named volume `<container-name>-gubb-videos` at `/app/data/gubb`, preserving videos
 across container replacements on the same host. Other deployments must mount their own storage.
-The runtime needs `yt-dlp`, Python 3, and FFmpeg, already installed by the root `Dockerfile`.
+The runtime needs `yt-dlp`, Python 3, FFmpeg, `nice`, and `ionice`, already installed
+by the root `Dockerfile`.
 
 ## Java SDK
 

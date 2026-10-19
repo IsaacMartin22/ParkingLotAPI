@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class GubbControllerTest {
@@ -86,9 +87,45 @@ class GubbControllerTest {
 
         mvc.perform(get("/api/gubb/jobs/video-id"))
                 .andExpect(status().isOk())
+                .andExpect(header().doesNotExist(HttpHeaders.RETRY_AFTER))
                 .andExpect(jsonPath("$.status").value("failed"))
                 .andExpect(jsonPath("$.error").value("Video download failed. Please try again."))
                 .andExpect(jsonPath("$.url").doesNotExist());
+    }
+
+    @Test
+    void cancelsJobAndReturnsTerminalStatusWithoutVideoUrl() throws Exception {
+        when(videos.cancelJob("video-id")).thenReturn(
+                new DownloadJob("video-id", "cancelled", "Video download cancelled.", Instant.now()));
+
+        mvc.perform(delete("/api/gubb/jobs/video-id"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(header().doesNotExist(HttpHeaders.RETRY_AFTER))
+                .andExpect(jsonPath("$.status").value("cancelled"))
+                .andExpect(jsonPath("$.error").value("Video download cancelled."))
+                .andExpect(jsonPath("$.url").doesNotExist());
+        verify(videos).cancelJob("video-id");
+    }
+
+    @Test
+    void pollingCancelledJobDoesNotAskClientToRetry() throws Exception {
+        when(videos.getJob("video-id")).thenReturn(
+                new DownloadJob("video-id", "cancelled", "Polling stopped.", Instant.now()));
+
+        mvc.perform(get("/api/gubb/jobs/video-id"))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist(HttpHeaders.RETRY_AFTER))
+                .andExpect(jsonPath("$.status").value("cancelled"))
+                .andExpect(jsonPath("$.url").doesNotExist());
+    }
+
+    @Test
+    void cancellingUnknownJobReturnsNotFound() throws Exception {
+        when(videos.cancelJob("missing")).thenThrow(
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Download job not found or expired"));
+
+        mvc.perform(delete("/api/gubb/jobs/missing")).andExpect(status().isNotFound());
     }
 
     @Test

@@ -77,6 +77,16 @@ public class GubbController {
                 job.id(), job.status(), baseUrl + "/jobs/" + job.id(), job.error());
     }
 
+    @DeleteMapping("/jobs/{id}")
+    public ResponseEntity<GubbResponse> cancelDownload(@PathVariable String id) {
+        DownloadJob job = videos.cancelJob(id);
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/gubb").toUriString();
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(jobResponse(job, baseUrl));
+    }
+
     @GetMapping("/videos/{id}")
     public ResponseEntity<Resource> streamVideo(@PathVariable String id) throws IOException {
         // Spring MVC handles HTTP Range requests for file resources, including browser seeking.
