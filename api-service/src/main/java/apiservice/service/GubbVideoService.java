@@ -95,7 +95,7 @@ public class GubbVideoService {
         return new FileSystemResource(video);
     }
 
-    @Scheduled(fixedDelay = 3_600_000)
+    @Scheduled(fixedDelay = 24 * 3_600_000)
     public void deleteExpiredVideos() throws IOException {
         Instant now = Instant.now();
         try (Stream<Path> files = Files.list(storageDirectory)) {

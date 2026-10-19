@@ -38,7 +38,12 @@ class GubbControllerTest {
     void returnsBackendUrlAfterDownload() throws Exception {
         when(videos.download(TIKTOK_URL)).thenReturn("video-id");
 
-        mvc.perform(get("https://api.example.com/api/gubb").param("url", TIKTOK_URL))
+        mvc.perform(get("https://api.example.com/api/gubb").secure(true)
+                        .with(request -> {
+                            request.setServerName("api.example.com");
+                            request.setServerPort(443);
+                            return request;
+                        }).param("url", TIKTOK_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").value("https://api.example.com/api/gubb/videos/video-id"));
         verify(videos).download(TIKTOK_URL);
