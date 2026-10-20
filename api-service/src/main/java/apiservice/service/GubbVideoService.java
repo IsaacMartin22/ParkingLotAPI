@@ -279,6 +279,9 @@ public class GubbVideoService {
         }
     }
 
+    // yt-dlp --ignore-config --no-playlist --no-progress --fixup never --format best[vcodec^=avc1][ext=mp4]/best[vcodec^=h264][ext=mp4] --limit-rate 2M --socket-timeout 15 --retries 2 --output amogus.mp4 https://www.tiktok.com/@hunainn/video/7696938907090439444
+
+    // yt-dlp --ignore-config --no-playlist -F "https://www.tiktok.com/@hunainn/video/7696938907090439444"
     Process startDownload(Path workspace, String fileName, String videoUrl) throws IOException {
         return new ProcessBuilder(
                 "nice", "-n", "19", "ionice", "-c", "3",
@@ -287,7 +290,7 @@ public class GubbVideoService {
                 "--no-playlist",
                 "--no-progress",
                 "--fixup", "never",
-                "--format", "best[ext=mp4]/best",
+                "--format", "best[vcodec^=avc1][ext=mp4]/best[vcodec^=h264][ext=mp4]",
                 "--limit-rate", "2M",
                 "--socket-timeout", "15",
                 "--retries", "2",
