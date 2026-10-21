@@ -148,6 +148,37 @@ Its tools are registered in `mcp-server\src\main\java\parkinglot\mcp\McpServerCo
   the portfolio's MongoDB vector index. It preserves the existing candidate count, chunk limit, and literal
   case-insensitive text fallback when vector search returns no matches. Results include text, metadata,
   citations, and relevance scores; embeddings are not returned to the model.
+- `create_trello_card` (`TrelloCreateCardTool.java`) creates a card in an open column on one configured
+  Trello board. Required arguments are `listId` (the column's full 24-character hexadecimal ID) and
+  `name`; `description` is optional. Names must be non-blank; names and descriptions are limited to
+  16,384 characters. The tool verifies the column's board before creating a card and returns
+  the card's `id`, `url`, `name`, `listId`, and `boardId`.
+
+To enable Trello writes, supply `TRELLO_API_KEY`, `TRELLO_API_TOKEN` (a Trello user token with read/write
+access to the board), and `TRELLO_BOARD_ID` (the full 24-character board ID, not its short URL ID).
+An API key alone cannot authorize card creation. Keep both credentials in the environment, not tool
+arguments or source control. The tool remains discoverable without configuration but returns
+`CONFIGURATION_ERROR` without contacting Trello. Any open column on the configured board is allowed;
+other boards and archived columns are rejected.
+
+Example tool arguments:
+
+```json
+{
+  "listId": "0123456789abcdef01234567",
+  "name": "Follow up on parking lot feedback",
+  "description": "Review the feedback and record next steps."
+}
+```
+
+Set these variables on the MCP process, or in the Droplet's runtime `.env` file for the bundled Docker
+deployment. Obtain board and list IDs from Trello's board JSON export (`id` and each entry in `lists`).
+After a creation error, check the board before retrying: a lost response may still mean a card was
+created. The tool does not retry writes automatically.
+
+**Write-access warning:** the API automatically exposes discovered MCP tools to its chatbot.
+Configuring Trello therefore lets chatbot callers request card creation on this board. Use a dedicated
+board and a least-privilege token; add caller authorization before enabling writes for untrusted users.
 
 The search tool shares `MONGODB_URI`, `OPENAI_API_KEY`, `OPENAI_EMBEDDING_MODEL` (default
 `text-embedding-3-large`), and `PORTFOLIO_CHAT_MAX_CONTEXT_CHUNKS` (default `5`) with the API.
@@ -181,7 +212,7 @@ Start it separately from the repository root:
 It binds to `127.0.0.1:8081` by default (`MCP_SERVER_ADDRESS` / `MCP_SERVER_PORT` override this).
 Clients connect to `GET /mcp/sse`; protocol messages use `POST /mcp/messages`.
 There is no authentication in this scaffold: keep it local or on a trusted private network.
-Add authentication before exposing it publicly or implementing sensitive tools.
+Add authentication before exposing it publicly or enabling sensitive tools such as Trello writes.
 
 The API's MCP integration is always on. The API connects to `CHAT_MCP_BASE_URL` (default `http://localhost:8081`)
 at startup and fails startup if the MCP server is unavailable, so when running locally start the MCP server first.
