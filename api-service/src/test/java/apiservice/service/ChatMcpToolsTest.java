@@ -211,11 +211,12 @@ class ChatMcpToolsTest {
         }
     }
 
-    @Test
-    void logsServerDiagnosticWithoutLoggingErrorPayload() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"DATABASE_ERROR", "CONFIGURATION_ERROR", "TRELLO_ERROR"})
+    void logsServerDiagnosticWithoutLoggingErrorPayload(String errorCode) throws Exception {
         ChatServiceImpl service = service();
         advertiseTool();
-        String diagnostic = "[MCP errorCode=DATABASE_ERROR errorId=577daf18-8abc-4932-9981-66f9382cd133]";
+        String diagnostic = "[MCP errorCode=" + errorCode + " errorId=577daf18-8abc-4932-9981-66f9382cd133]";
         when(mcpClient.callTool(any()))
                 .thenReturn(new McpSchema.CallToolResult("private-tool-result " + diagnostic, true));
         respondWith(toolCall("tool_one"), assistantMessage("Tool unavailable"));

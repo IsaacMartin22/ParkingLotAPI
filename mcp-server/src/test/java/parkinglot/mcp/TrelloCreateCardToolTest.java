@@ -112,7 +112,7 @@ class TrelloCreateCardToolTest {
     }
 
     @Test
-    void missingCredentialsOrInvalidBoardProduceConfigurationError() {
+    void missingCredentialsOrInvalidBoardProduceConfigurationError(CapturedOutput output) {
         for (String field : List.of("apiKey", "apiToken", "boardId")) {
             Object original = ReflectionTestUtils.getField(tool, field);
             ReflectionTestUtils.setField(tool, field, "");
@@ -121,6 +121,11 @@ class TrelloCreateCardToolTest {
         }
         ReflectionTestUtils.setField(tool, "boardId", "short-url-id");
         assertTrue(text(tool.call(arguments())).contains("errorCode=CONFIGURATION_ERROR"));
+        assertTrue(output.getAll().contains("apiKeyPresent=false"));
+        assertTrue(output.getAll().contains("apiTokenPresent=false"));
+        assertTrue(output.getAll().contains("boardIdValid=false"));
+        assertFalse(output.getAll().contains("test-key"));
+        assertFalse(output.getAll().contains("test-token"));
         verifyNoInteractions(httpClient);
     }
 
@@ -150,6 +155,9 @@ class TrelloCreateCardToolTest {
         assertTrue(requests.getAllValues().stream().allMatch(request -> request.method().equals("GET")));
         assertFalse(output.getAll().contains("private-response"));
         assertFalse(output.getAll().contains("test-token"));
+        assertTrue(output.getAll().contains("stage=list_lookup"));
+        assertTrue(output.getAll().contains("httpStatus=401"));
+        assertTrue(output.getAll().contains("exceptionType=JsonParseException"));
     }
 
     @Test
@@ -161,6 +169,9 @@ class TrelloCreateCardToolTest {
         verify(httpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
         assertFalse(output.getAll().contains("private-response"));
         assertFalse(output.getAll().contains("test-token"));
+        String errorId = text(result).split("errorId=")[1].replace("]", "");
+        assertTrue(output.getAll().contains("errorId=" + errorId + ", stage=card_creation, httpStatus=429"));
+        assertTrue(output.getAll().contains("creationAttempted=true, exceptionType=IOException, durationMs="));
     }
 
     @Test
@@ -175,6 +186,8 @@ class TrelloCreateCardToolTest {
         assertTrue(text(tool.call(arguments())).contains("Check the board before retrying"));
         verify(httpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
         assertFalse(output.getAll().contains("private-card-content"));
+        assertTrue(output.getAll().contains("stage=card_creation"));
+        assertTrue(output.getAll().contains("creationAttempted=true, exceptionType=IOException"));
     }
 
     @Test

@@ -43,7 +43,7 @@ public class ChatServiceImpl implements ChatService {
     private static final int MAX_TOOL_ROUNDS = 4;
     private static final String PORTFOLIO_SEARCH_TOOL = "search_portfolio_documents";
     private static final Pattern MCP_ERROR_DIAGNOSTIC = Pattern.compile(
-            "\\[MCP errorCode=(INVALID_ARGUMENTS|DATABASE_ERROR|SERIALIZATION_ERROR|INTERNAL_ERROR)"
+            "\\[MCP errorCode=(INVALID_ARGUMENTS|DATABASE_ERROR|SERIALIZATION_ERROR|INTERNAL_ERROR|CONFIGURATION_ERROR|TRELLO_ERROR)"
                     + "(?: sqlState=([0-9A-Z]{5}|unknown))?"
                     + " errorId=[0-9a-f-]{36}\\]$");
 
@@ -411,6 +411,13 @@ public class ChatServiceImpl implements ChatService {
                 if (matcher.find()) {
                     if ("DATABASE_ERROR".equals(matcher.group(1))) {
                         return matcher.group() + " hint=" + databaseFailureHint(matcher.group(2));
+                    }
+                    if ("CONFIGURATION_ERROR".equals(matcher.group(1))) {
+                        return matcher.group() + " hint=Check MCP server configuration logs using errorId.";
+                    }
+                    if ("TRELLO_ERROR".equals(matcher.group(1))) {
+                        return matcher.group() + " hint=Check MCP server Trello logs using errorId; "
+                                + "check the board before retrying to avoid duplicate cards.";
                     }
                     return matcher.group();
                 }
