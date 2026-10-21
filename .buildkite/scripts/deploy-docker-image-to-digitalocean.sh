@@ -135,7 +135,7 @@ if ! docker run --rm --pull=never \
         exit 0
       fi
       if [ "${attempt}" -lt 60 ]; then
-        sleep 2
+        sleep 5
       fi
       attempt=$((attempt + 1))
     done

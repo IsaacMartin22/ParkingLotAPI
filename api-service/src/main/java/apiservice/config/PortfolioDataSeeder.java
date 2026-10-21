@@ -31,7 +31,7 @@ public class PortfolioDataSeeder {
     @Bean
     ApplicationRunner seedPortfolioData() {
         return args -> {
-            if (true) {
+            if (!seedData) {
                 logger.info("Startup portfolio seed skipped. enabled=false");
                 return;
             }
