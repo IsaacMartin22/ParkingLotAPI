@@ -26,7 +26,8 @@ public class TrelloCreateCardTool {
 
     static final String NAME = "create_trello_card";
     private static final Logger logger = LoggerFactory.getLogger(TrelloCreateCardTool.class);
-    private static final Set<String> ARGUMENTS = Set.of("listId", "name", "description");
+    private static final String TARGET_LIST_NAME = "Feature Requests";
+    private static final Set<String> ARGUMENTS = Set.of("name", "description");
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -49,18 +50,13 @@ public class TrelloCreateCardTool {
         return new McpServerFeatures.SyncToolSpecification(new McpSchema.Tool(
                 NAME,
                 "Create a new Trello card on the server's configured board. Use only when the user requests "
-                        + "card creation. Supply the target column's Trello list ID, a card name, and an optional "
-                        + "description. Only open columns belonging to the configured board are accepted. "
+                        + "card creation. The card always goes in the open column named Feature Requests. "
+                        + "Supply a card name and an optional description. "
                         + "This writes to Trello; do not retry automatically after an uncertain outcome.",
                 """
                 {
                   "type": "object",
                   "properties": {
-                    "listId": {
-                      "type": "string",
-                      "pattern": "^[0-9a-fA-F]{24}$",
-                      "description": "Trello list (column) ID on the configured board."
-                    },
                     "name": {
                       "type": "string",
                       "minLength": 1,
@@ -73,7 +69,7 @@ public class TrelloCreateCardTool {
                       "description": "Optional card description."
                     }
                   },
-                  "required": ["listId", "name"],
+                  "required": ["name"],
                   "additionalProperties": false
                 }
                 """
@@ -85,13 +81,11 @@ public class TrelloCreateCardTool {
         boolean creationAttempted = false;
         try {
             if (arguments == null || !ARGUMENTS.containsAll(arguments.keySet())
-                    || !(arguments.get("listId") instanceof String listId)
-                    || !listId.matches("[0-9a-fA-F]{24}")
                     || !(arguments.get("name") instanceof String name) || name.isBlank() || name.length() > 16384
                     || (arguments.containsKey("description")
                     && (!(arguments.get("description") instanceof String description) || description.length() > 16384))) {
                 throw new IllegalArgumentException(
-                        "Supply listId (24 hexadecimal characters), a non-blank name, and an optional string description; "
+                        "Supply a non-blank name and an optional string description; "
                                 + "name and description must not exceed 16384 characters. No other arguments are accepted.");
             }
             if (apiKey == null || apiKey.isBlank() || apiToken == null || apiToken.isBlank()
@@ -101,13 +95,7 @@ public class TrelloCreateCardTool {
                         "CONFIGURATION_ERROR", errorId);
             }
 
-            JsonNode list = send(request("/lists/" + listId + "?fields=idBoard,closed").GET().build());
-            if (!list.path("idBoard").isTextual() || !list.path("closed").isBoolean()) {
-                throw new IOException("Invalid Trello list response");
-            }
-            if (!boardId.equalsIgnoreCase(list.path("idBoard").asText()) || list.path("closed").asBoolean()) {
-                throw new IllegalArgumentException("listId must identify an open column on the configured board");
-            }
+            String listId = findFeatureRequestsListId();
 
             String body = objectMapper.writeValueAsString(Map.of(
                     "idList", listId, "name", name.trim(), "desc", arguments.getOrDefault("description", "")));
@@ -137,6 +125,23 @@ public class TrelloCreateCardTool {
         }
     }
 
+    private String findFeatureRequestsListId() throws IOException, InterruptedException {
+        JsonNode lists = send(request("/boards/" + boardId + "/lists?filter=open&fields=id,name,idBoard,closed")
+                .GET().build());
+        if (!lists.isArray()) {
+            throw new IOException("Invalid Trello lists response");
+        }
+        for (JsonNode list : lists) {
+            if (TARGET_LIST_NAME.equals(list.path("name").asText())
+                    && list.path("id").asText().matches("[0-9a-fA-F]{24}")
+                    && boardId.equalsIgnoreCase(list.path("idBoard").asText())
+                    && list.path("closed").isBoolean() && !list.path("closed").asBoolean()) {
+                return list.path("id").asText();
+            }
+        }
+        throw new IOException("Feature Requests column not found on configured board");
+    }
+
     private HttpRequest.Builder request(String path) {
         return HttpRequest.newBuilder(URI.create("https://api.trello.com/1" + path))
                 .timeout(Duration.ofSeconds(10))
@@ -152,7 +157,7 @@ public class TrelloCreateCardTool {
             throw new IOException("Trello request failed");
         }
         JsonNode json = objectMapper.readTree(response.body());
-        if (json == null || !json.isObject()) {
+        if (json == null || !(json.isObject() || json.isArray())) {
             throw new IOException("Invalid Trello response");
         }
         return json;

@@ -56,7 +56,7 @@ class TrelloCreateCardToolTest {
     void verifiesBoardThenCreatesCardAndReturnsUrl() throws Exception {
         respond(openList(), response(200, "{\"id\":\"card-id\",\"url\":\"https://trello.com/c/card\"}"));
 
-        var result = tool.call(Map.of("listId", LIST_ID, "name", " Follow up ",
+        var result = tool.call(Map.of("name", " Follow up ",
                 "description", "Quotes: \"hello\"\nUnicode: \u00e9"));
 
         assertFalse(Boolean.TRUE.equals(result.isError()), text(result));
@@ -64,11 +64,13 @@ class TrelloCreateCardToolTest {
         assertEquals("card-id", json.path("id").asText());
         assertEquals("https://trello.com/c/card", json.path("url").asText());
         assertEquals(BOARD_ID, json.path("boardId").asText());
+        assertEquals(LIST_ID, json.path("listId").asText());
         var requests = ArgumentCaptor.forClass(HttpRequest.class);
         verify(httpClient, times(2)).send(requests.capture(), any(HttpResponse.BodyHandler.class));
         var get = requests.getAllValues().get(0);
         assertEquals("GET", get.method());
-        assertEquals("https://api.trello.com/1/lists/" + LIST_ID + "?fields=idBoard,closed", get.uri().toString());
+        assertEquals("https://api.trello.com/1/boards/" + BOARD_ID
+                + "/lists?filter=open&fields=id,name,idBoard,closed", get.uri().toString());
         var post = requests.getAllValues().get(1);
         assertEquals("POST", post.method());
         assertEquals("https://api.trello.com/1/cards", post.uri().toString());
@@ -91,7 +93,8 @@ class TrelloCreateCardToolTest {
     @Test
     void rejectsInvalidArgumentsBeforeAnyRequest() {
         List<Map<String, Object>> invalid = List.of(
-                Map.of(), Map.of("listId", LIST_ID), Map.of("listId", 42, "name", "Card"),
+                Map.of(), Map.of("listId", LIST_ID), Map.of("listId", LIST_ID, "name", "Card"),
+                Map.of("listId", 42, "name", "Card"),
                 Map.of("listId", "../cards", "name", "Card"), Map.of("listId", LIST_ID, "name", "  "),
                 Map.of("listId", LIST_ID, "name", 42),
                 Map.of("listId", LIST_ID, "name", "x".repeat(16385)),
@@ -123,10 +126,10 @@ class TrelloCreateCardToolTest {
 
     @Test
     void rejectsOtherBoardsAndClosedColumnsWithoutWriting() throws Exception {
-        respond(response(200, "{\"idBoard\":\"cccccccccccccccccccccccc\",\"closed\":false}"),
-                response(200, "{\"idBoard\":\"" + BOARD_ID + "\",\"closed\":true}"));
-        assertTrue(text(tool.call(arguments())).contains("errorCode=INVALID_ARGUMENTS"));
-        assertTrue(text(tool.call(arguments())).contains("errorCode=INVALID_ARGUMENTS"));
+        respond(listOnBoard("cccccccccccccccccccccccc", false),
+                listOnBoard(BOARD_ID, true));
+        assertTrue(text(tool.call(arguments())).contains("errorCode=TRELLO_ERROR"));
+        assertTrue(text(tool.call(arguments())).contains("errorCode=TRELLO_ERROR"));
         var requests = ArgumentCaptor.forClass(HttpRequest.class);
         verify(httpClient, times(2)).send(requests.capture(), any(HttpResponse.BodyHandler.class));
         assertTrue(requests.getAllValues().stream().allMatch(request -> request.method().equals("GET")));
@@ -194,11 +197,16 @@ class TrelloCreateCardToolTest {
     }
 
     private Map<String, Object> arguments() {
-        return Map.of("listId", LIST_ID, "name", "Card");
+        return Map.of("name", "Card");
     }
 
     private HttpResponse<String> openList() {
-        return response(200, "{\"idBoard\":\"" + BOARD_ID + "\",\"closed\":false}");
+        return listOnBoard(BOARD_ID, false);
+    }
+
+    private HttpResponse<String> listOnBoard(String idBoard, boolean closed) {
+        return response(200, "[{\"id\":\"" + LIST_ID + "\",\"name\":\"Feature Requests\","
+                + "\"idBoard\":\"" + idBoard + "\",\"closed\":" + closed + "}]");
     }
 
     @SuppressWarnings("unchecked")
