@@ -143,7 +143,28 @@ if ! docker run --rm --pull=never \
   '; then
   echo "API did not become ready at http://api:8080/api/diagnostics/ping; leaving Caddy unchanged." >&2
   docker inspect --format '{{json .State}}' "${container_name}" >&2
-  docker logs --tail 100 "${container_name}" >&2
+  echo "--- Startup diagnostics: container CPU and memory" >&2
+  docker stats --no-stream --format 'name={{.Name}} cpu={{.CPUPerc}} memory={{.MemUsage}} memoryPercent={{.MemPerc}} pids={{.PIDs}}' "${container_name}" >&2 || echo "Could not collect container stats" >&2
+  echo "--- Startup diagnostics: cgroup limits, throttling, and memory pressure" >&2
+  docker exec "${container_name}" sh -c '
+    for file in /proc/loadavg /proc/pressure/cpu /proc/pressure/memory /sys/fs/cgroup/cpu.max /sys/fs/cgroup/cpu.stat /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.current /sys/fs/cgroup/memory.events; do
+      if [ -r "${file}" ]; then
+        echo "${file}"
+        cat "${file}"
+      fi
+    done
+  ' >&2 || echo "Could not collect resource pressure diagnostics" >&2
+  echo "--- Startup diagnostics: JVM main thread stacks (no arguments or environment)" >&2
+  docker exec "${container_name}" bash -o pipefail -c '
+    for process in /proc/[0-9]*; do
+      if [ "$(cat "${process}/comm" 2>/dev/null)" = java ]; then
+        pid=${process##*/}
+        echo "Java pid=${pid}"
+        timeout 15s jcmd "${pid}" Thread.print | sed -n "/^\"main\"/,/^$/p" || echo "Could not collect main thread for pid=${pid}"
+      fi
+    done
+  ' >&2 || echo "Could not collect JVM startup stacks" >&2
+  docker logs --timestamps --tail 250 "${container_name}" >&2
   if docker container inspect "${proxy_name}" >/dev/null 2>&1; then
     docker logs --tail 50 "${proxy_name}" >&2
   fi

@@ -3,6 +3,8 @@ package apiservice.service;
 import apiservice.model.PortfolioDocument;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ import java.util.Map;
 @Service
 public class PortfolioDocumentSeedService {
 
+    private static final Logger logger = LoggerFactory.getLogger(PortfolioDocumentSeedService.class);
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
@@ -44,13 +47,19 @@ public class PortfolioDocumentSeedService {
     }
 
     public int seedMissingDocuments(List<PortfolioDocument> documents) throws IOException, InterruptedException {
+        long startedAt = System.nanoTime();
+        logger.info("Portfolio seed MongoDB collection check started. documentCount={}", documents.size());
         ensureCollectionExists();
+        logger.info("Portfolio seed MongoDB collection check completed. durationMs={}",
+                (System.nanoTime() - startedAt) / 1_000_000);
 
         int insertedCount = 0;
         for (PortfolioDocument document : documents) {
             insertedCount += upsertDocument(document) ? 1 : 0;
         }
 
+        logger.info("Portfolio seed batch completed. documentCount={}, insertedCount={}, durationMs={}",
+                documents.size(), insertedCount, (System.nanoTime() - startedAt) / 1_000_000);
         return insertedCount;
     }
 
@@ -96,7 +105,11 @@ public class PortfolioDocumentSeedService {
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
+        long startedAt = System.nanoTime();
+        logger.info("Portfolio seed embedding request started.");
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        logger.info("Portfolio seed embedding response received. httpStatus={}, durationMs={}",
+                response.statusCode(), (System.nanoTime() - startedAt) / 1_000_000);
         if (response.statusCode() >= 400) {
             throw new IllegalStateException("OpenAI embeddings request failed: " + response.body());
         }

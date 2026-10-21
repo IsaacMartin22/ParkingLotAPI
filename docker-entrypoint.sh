@@ -24,10 +24,12 @@ stop_all() {
 }
 trap stop_all TERM INT
 
-echo "[entrypoint] Starting MCP server on ${MCP_SERVER_ADDRESS}:${MCP_SERVER_PORT}"
+SECONDS=0
+echo "[entrypoint] timestamp=$(date -u +%FT%TZ) elapsedSeconds=${SECONDS} Starting MCP server on ${MCP_SERVER_ADDRESS}:${MCP_SERVER_PORT}"
 # shellcheck disable=SC2086 # intentional word splitting of JVM options
 java ${MCP_JAVA_OPTS:--XX:MaxRAMPercentage=15 -XX:+UseSerialGC} -jar /app/mcp-server.jar &
 mcp_pid=$!
+echo "[entrypoint] service=mcp pid=${mcp_pid}"
 
 mcp_ready=false
 for _ in $(seq 1 "${MCP_STARTUP_TIMEOUT_SECONDS:-120}"); do
@@ -48,9 +50,10 @@ if [ "${mcp_ready}" != "true" ]; then
   exit 1
 fi
 
-echo "[entrypoint] MCP server is ready; starting API service"
+echo "[entrypoint] timestamp=$(date -u +%FT%TZ) elapsedSeconds=${SECONDS} MCP port is accepting TCP; launching API JVM with New Relic"
 "${API_CMD[@]}" &
 api_pid=$!
+echo "[entrypoint] service=api pid=${api_pid} elapsedSeconds=${SECONDS}"
 
 wait -n "${mcp_pid}" "${api_pid}"
 status=$?

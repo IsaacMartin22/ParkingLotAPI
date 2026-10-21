@@ -2,6 +2,8 @@ package apiservice.config;
 
 import apiservice.model.PortfolioDocument;
 import apiservice.service.PortfolioDocumentSeedService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +18,7 @@ import java.util.Map;
 @Configuration
 public class PortfolioDataSeeder {
 
+    private static final Logger logger = LoggerFactory.getLogger(PortfolioDataSeeder.class);
     private final PortfolioDocumentSeedService portfolioDocumentSeedService;
 
     @Value("${app.chat.seed-data:false}")
@@ -28,11 +31,16 @@ public class PortfolioDataSeeder {
     @Bean
     ApplicationRunner seedPortfolioData() {
         return args -> {
-            if (!seedData) {
+            if (true) {
+                logger.info("Startup portfolio seed skipped. enabled=false");
                 return;
             }
 
+            long startedAt = System.nanoTime();
+            logger.info("Startup portfolio seed started.");
             portfolioDocumentSeedService.seedMissingDocuments(buildSeedDocuments());
+            logger.info("Startup portfolio seed completed. durationMs={}",
+                    (System.nanoTime() - startedAt) / 1_000_000);
         };
     }
 
