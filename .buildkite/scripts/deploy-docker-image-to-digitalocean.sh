@@ -58,7 +58,21 @@ if [[ ! "${api_domain}" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-z
 fi
 
 echo "--- :whale: Pulling API image ${image} on the Droplet"
-docker pull "${image}"
+for attempt in 1 2 3; do
+  echo "Pull attempt ${attempt}/3 (60-second timeout)"
+  if timeout --signal=TERM --kill-after=5s 60s docker pull "${image}"; then
+    break
+  else
+    status=$?
+    echo "Pull attempt ${attempt}/3 failed (exit ${status})." >&2
+    if [ "${attempt}" -eq 3 ]; then
+      echo "API image pull failed after 3 attempts; existing containers are unchanged." >&2
+      exit "${status}"
+    fi
+    echo "Retrying image pull in 5 seconds..." >&2
+    sleep 5
+  fi
+done
 if ! docker network inspect "${network_name}" >/dev/null 2>&1; then
   docker network create "${network_name}"
 fi
