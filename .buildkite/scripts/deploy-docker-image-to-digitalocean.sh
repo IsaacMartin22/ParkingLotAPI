@@ -62,8 +62,8 @@ docker image prune -a -f --filter "until=168h"
 
 echo "--- :whale: Pulling API image ${image} on the Droplet"
 for attempt in 1 2 3; do
-  echo "Pull attempt ${attempt}/3 (60-second timeout)"
-  if timeout --signal=TERM --kill-after=5s 60s docker pull "${image}"; then
+  echo "Pull attempt ${attempt}/3 (90-second timeout)"
+  if timeout --signal=TERM --kill-after=5s 90s docker pull "${image}"; then
     break
   else
     status=$?
