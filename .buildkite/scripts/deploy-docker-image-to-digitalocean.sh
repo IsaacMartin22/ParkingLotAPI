@@ -1,8 +1,19 @@
 #!/bin/sh
 # Deploys the API behind Caddy with automatic HTTPS on a DigitalOcean Droplet.
 # The Droplet must have Docker installed and a runtime .env file at DO_DEPLOY_PATH/.env.
+#
+# Usage: deploy-docker-image-to-digitalocean.sh <stop|pull|start>
+#   stop  - stops legacy containers holding ports 80/443 and removes the existing API container
+#   pull  - prunes old images and pulls the latest API image
+#   start - starts the API container and Caddy proxy, waiting for readiness
 
 set -eu
+
+PHASE="${1:?Usage: $0 <stop|pull|start>}"
+case "${PHASE}" in
+  stop|pull|start) ;;
+  *) echo "Unknown phase: ${PHASE}" >&2; exit 2 ;;
+esac
 
 : "${DO_DROPLET_HOST:?DO_DROPLET_HOST is required}"
 : "${DO_SSH_PRIVATE_KEY:?DO_SSH_PRIVATE_KEY is required}"
@@ -28,17 +39,10 @@ shell_quote() {
   printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
 }
 
-echo "--- :droplet: Deploying ${DOCKER_IMAGE_TAG} to ${SSH_TARGET}"
-REMOTE_COMMAND="bash -s -- $(shell_quote "${DO_DEPLOY_PATH}") $(shell_quote "${DO_CONTAINER_NAME}") $(shell_quote "${DO_API_DOMAIN}") $(shell_quote "${DOCKER_IMAGE_TAG}")"
-ssh \
-  -i "${SSH_KEY_PATH}" \
-  -o IdentitiesOnly=yes \
-  -o BatchMode=yes \
-  -o ServerAliveInterval=15 \
-  -o ServerAliveCountMax=3 \
-  -o StrictHostKeyChecking=yes \
-  -o "UserKnownHostsFile=${KNOWN_HOSTS_PATH}" \
-  "${SSH_TARGET}" "${REMOTE_COMMAND}" <<'REMOTE'
+REMOTE_SCRIPT="$(mktemp)"
+trap 'rm -f "${REMOTE_SCRIPT}"' EXIT
+
+cat > "${REMOTE_SCRIPT}" <<'REMOTE'
 set -eu
 deploy_path=$1
 container_name=$2
@@ -47,6 +51,72 @@ image=$4
 network_name="${container_name}-network"
 proxy_name="${container_name}-caddy"
 
+image_repository() {
+  local reference="${1%%@*}"
+  if [[ "${reference##*/}" == *:* ]]; then
+    reference="${reference%:*}"
+  fi
+  printf '%s\n' "${reference}"
+}
+REMOTE
+
+case "${PHASE}" in
+stop)
+  cat >> "${REMOTE_SCRIPT}" <<'REMOTE'
+echo "--- :stop_sign: Checking containers publishing ports 80 and 443"
+port_owners=$(docker ps --filter publish=80 --filter publish=443 --quiet)
+legacy_containers=()
+for id in ${port_owners}; do
+  name=$(docker inspect --format '{{.Name}}' "${id}")
+  if [ "${name}" = "/${container_name}" ] || [ "${name}" = "/${proxy_name}" ]; then
+    continue
+  fi
+  owner_image=$(docker inspect --format '{{.Config.Image}}' "${id}")
+  owner_repository=$(image_repository "${owner_image}")
+  if [[ "${owner_repository}" != "$(image_repository "${image}")" &&
+        ( "${name}" != "/parkinglot-api" || "${owner_repository}" != "parkinglot-api" ) ]]; then
+    echo "Port 80 or 443 is occupied by unrelated container ${name#/} (${owner_image}); refusing to stop it." >&2
+    exit 1
+  fi
+  legacy_containers+=("${id}")
+done
+
+for id in ${legacy_containers[@]+"${legacy_containers[@]}"}; do
+  echo "Stopping previous API container ${id} to free HTTPS proxy ports"
+  docker stop "${id}"
+done
+
+if docker container inspect "${container_name}" >/dev/null 2>&1; then
+  echo "Removing existing API container ${container_name}"
+  docker rm -f "${container_name}"
+fi
+REMOTE
+  ;;
+pull)
+  cat >> "${REMOTE_SCRIPT}" <<'REMOTE'
+echo "--- :whale: Removing unused Docker images older than 7 days on the Droplet"
+docker image prune -a -f --filter "until=168h"
+
+echo "--- :whale: Pulling API image ${image} on the Droplet"
+for attempt in 1 2; do
+  echo "Pull attempt ${attempt}/2 (300-second timeout)"
+  if timeout --signal=TERM --kill-after=5s 300s docker pull "${image}"; then
+    break
+  else
+    status=$?
+    echo "Pull attempt ${attempt}/2 failed (exit ${status})." >&2
+    if [ "${attempt}" -eq 2 ]; then
+      echo "API image pull failed after 2 attempts." >&2
+      exit "${status}"
+    fi
+    echo "Retrying image pull in 5 seconds..." >&2
+    sleep 5
+  fi
+done
+REMOTE
+  ;;
+start)
+  cat >> "${REMOTE_SCRIPT}" <<'REMOTE'
 if [ ! -f "${deploy_path}/.env" ]; then
   echo "Missing runtime environment file: ${deploy_path}/.env" >&2
   exit 1
@@ -57,25 +127,6 @@ if [[ ! "${api_domain}" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-z
   exit 1
 fi
 
-echo "--- :whale: Removing unused Docker images older than 7 days on the Droplet"
-docker image prune -a -f --filter "until=168h"
-
-echo "--- :whale: Pulling API image ${image} on the Droplet"
-for attempt in 1 2; do
-  echo "Pull attempt ${attempt}/2 (240-second timeout)"
-  if timeout --signal=TERM --kill-after=5s 240s docker pull "${image}"; then
-    break
-  else
-    status=$?
-    echo "Pull attempt ${attempt}/2 failed (exit ${status})." >&2
-    if [ "${attempt}" -eq 2 ]; then
-      echo "API image pull failed after 2 attempts; existing containers are unchanged." >&2
-      exit "${status}"
-    fi
-    echo "Retrying image pull in 5 seconds..." >&2
-    sleep 5
-  fi
-done
 if ! docker network inspect "${network_name}" >/dev/null 2>&1; then
   docker network create "${network_name}"
 fi
@@ -95,37 +146,6 @@ CADDY
     --mount "type=bind,source=${deploy_path}/Caddyfile,target=/etc/caddy/Caddyfile,readonly" \
     caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 fi
-
-image_repository() {
-  local reference="${1%%@*}"
-  if [[ "${reference##*/}" == *:* ]]; then
-    reference="${reference%:*}"
-  fi
-  printf '%s\n' "${reference}"
-}
-
-echo "--- :stop_sign: Checking containers publishing ports 80 and 443"
-port_owners=$(docker ps --filter publish=80 --filter publish=443 --quiet)
-legacy_containers=()
-for id in ${port_owners}; do
-  name=$(docker inspect --format '{{.Name}}' "${id}")
-  if [ "${name}" = "/${container_name}" ] || [ "${name}" = "/${proxy_name}" ]; then
-    continue
-  fi
-  owner_image=$(docker inspect --format '{{.Config.Image}}' "${id}")
-  owner_repository=$(image_repository "${owner_image}")
-  if [[ "${owner_repository}" != "$(image_repository "${image}")" &&
-        ( "${name}" != "/parkinglot-api" || "${owner_repository}" != "parkinglot-api" ) ]]; then
-    echo "Port 80 or 443 is occupied by unrelated container ${name#/} (${owner_image}); refusing to stop it." >&2
-    exit 1
-  fi
-  legacy_containers+=("${id}")
-done
-
-for id in "${legacy_containers[@]}"; do
-  echo "Stopping previous API container ${id} to free HTTPS proxy ports"
-  docker stop "${id}"
-done
 
 if docker container inspect "${container_name}" >/dev/null 2>&1; then
   docker rm -f "${container_name}"
@@ -209,5 +229,19 @@ else
     caddy:2-alpine
 fi
 REMOTE
+  ;;
+esac
 
-echo "+++ :white_check_mark: DigitalOcean deployment completed"
+echo "--- :droplet: Running '${PHASE}' phase for ${DOCKER_IMAGE_TAG} on ${SSH_TARGET}"
+REMOTE_COMMAND="bash -s -- $(shell_quote "${DO_DEPLOY_PATH}") $(shell_quote "${DO_CONTAINER_NAME}") $(shell_quote "${DO_API_DOMAIN}") $(shell_quote "${DOCKER_IMAGE_TAG}")"
+ssh \
+  -i "${SSH_KEY_PATH}" \
+  -o IdentitiesOnly=yes \
+  -o BatchMode=yes \
+  -o ServerAliveInterval=15 \
+  -o ServerAliveCountMax=3 \
+  -o StrictHostKeyChecking=yes \
+  -o "UserKnownHostsFile=${KNOWN_HOSTS_PATH}" \
+  "${SSH_TARGET}" "${REMOTE_COMMAND}" < "${REMOTE_SCRIPT}"
+
+echo "+++ :white_check_mark: DigitalOcean '${PHASE}' phase completed"

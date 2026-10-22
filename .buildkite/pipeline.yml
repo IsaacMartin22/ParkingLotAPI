@@ -99,9 +99,9 @@ steps:
   #     - "chmod +x .buildkite/scripts/deploy-docker-image-to-ec2.sh"
   #     - "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app} sh .buildkite/scripts/deploy-docker-image-to-ec2.sh"
 
-  - label: ":droplet: Deploy Docker image to DigitalOcean"
-    key: "deploy-docker-image-to-digitalocean"
-    timeout_in_minutes: 10
+  - label: ":stop_sign: Stop existing container on DigitalOcean"
+    key: "stop-digitalocean-container"
+    timeout_in_minutes: 5
     retry:
       automatic:
         - exit_status: "*"
@@ -110,8 +110,6 @@ steps:
       - "publish-docker-image"
     if: build.branch == "main"
     secrets:
-      - "DOCKERHUB_USERNAME"
-      - "DOCKERHUB_TOKEN"
       - "DO_DROPLET_HOST"
       - "DO_SSH_PRIVATE_KEY"
       - "DO_SSH_KNOWN_HOSTS"
@@ -120,8 +118,6 @@ steps:
           image: "public.ecr.aws/docker/library/docker:27"
           mount-buildkite-agent: true
           environment:
-            - DOCKERHUB_USERNAME
-            - DOCKERHUB_TOKEN
             - DO_DROPLET_HOST
             - DO_SSH_USER
             - DO_SSH_PRIVATE_KEY
@@ -131,8 +127,65 @@ steps:
             - DO_API_DOMAIN
     command:
       - "chmod +x .buildkite/scripts/deploy-docker-image-to-digitalocean.sh"
-      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/deploy-docker-image-to-digitalocean.sh"
-
+      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/deploy-docker-image-to-digitalocean.sh stop"
+  - label: ":whale: Pull latest image to DigitalOcean"
+    key: "pull-digitalocean-image"
+    timeout_in_minutes: 10
+    retry:
+      automatic:
+        - exit_status: "*"
+          limit: 3
+    depends_on:
+      - "stop-digitalocean-container"
+    if: build.branch == "main"
+    secrets:
+      - "DO_DROPLET_HOST"
+      - "DO_SSH_PRIVATE_KEY"
+      - "DO_SSH_KNOWN_HOSTS"
+    plugins:
+      - docker#v5.12.0:
+          image: "public.ecr.aws/docker/library/docker:27"
+          mount-buildkite-agent: true
+          environment:
+            - DO_DROPLET_HOST
+            - DO_SSH_USER
+            - DO_SSH_PRIVATE_KEY
+            - DO_SSH_KNOWN_HOSTS
+            - DO_DEPLOY_PATH
+            - DO_CONTAINER_NAME
+            - DO_API_DOMAIN
+    command:
+      - "chmod +x .buildkite/scripts/deploy-docker-image-to-digitalocean.sh"
+      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/deploy-docker-image-to-digitalocean.sh pull"
+  - label: ":droplet: Deploy Docker image to DigitalOcean"
+    key: "deploy-docker-image-to-digitalocean"
+    timeout_in_minutes: 10
+    retry:
+      automatic:
+        - exit_status: "*"
+          limit: 3
+    depends_on:
+      - "pull-digitalocean-image"
+    if: build.branch == "main"
+    secrets:
+      - "DO_DROPLET_HOST"
+      - "DO_SSH_PRIVATE_KEY"
+      - "DO_SSH_KNOWN_HOSTS"
+    plugins:
+      - docker#v5.12.0:
+          image: "public.ecr.aws/docker/library/docker:27"
+          mount-buildkite-agent: true
+          environment:
+            - DO_DROPLET_HOST
+            - DO_SSH_USER
+            - DO_SSH_PRIVATE_KEY
+            - DO_SSH_KNOWN_HOSTS
+            - DO_DEPLOY_PATH
+            - DO_CONTAINER_NAME
+            - DO_API_DOMAIN
+    command:
+      - "chmod +x .buildkite/scripts/deploy-docker-image-to-digitalocean.sh"
+      - "DOCKER_IMAGE_TAG=isaaccmartin151/parkinglotapi-app sh .buildkite/scripts/deploy-docker-image-to-digitalocean.sh start"
   - label: ":white_check_mark: Verify DigitalOcean health"
     key: "verify-digitalocean-health"
     depends_on: "deploy-docker-image-to-digitalocean"
