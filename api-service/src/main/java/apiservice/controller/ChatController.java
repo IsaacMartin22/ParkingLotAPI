@@ -4,6 +4,7 @@ import apiservice.model.OpenAiChatModel;
 import apiservice.repository.ChatInteractionRepository;
 import apiservice.service.ChatAnswer;
 import apiservice.service.ChatService;
+import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.PageRequest;
@@ -58,6 +59,11 @@ public class ChatController {
         return ResponseEntity.ok(new AvailableModelsResponse(models));
     }
 
+    @GetMapping("/chat/tools")
+    public ResponseEntity<AvailableToolsResponse> getAvailableTools() {
+        return ResponseEntity.ok(new AvailableToolsResponse(chatService.getAvailableTools()));
+    }
+
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> chat(@Valid @RequestBody ChatRequest request) {
         validateChatRequest(request);
@@ -102,5 +108,8 @@ public class ChatController {
     }
 
     public record AvailableModelsResponse(List<String> models) {
+    }
+
+    public record AvailableToolsResponse(List<McpSchema.Tool> tools) {
     }
 }

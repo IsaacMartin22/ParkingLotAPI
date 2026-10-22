@@ -5,8 +5,10 @@ import apiservice.repository.ChatInteractionRepository;
 import apiservice.service.ChatAnswer;
 import apiservice.service.ChatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,8 +18,47 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class ChatControllerTest {
+
+    @Test
+    void availableToolsReturnsNamesDescriptionsAndInputSchemas() throws Exception {
+        ChatService chatService = mock(ChatService.class);
+        ChatInteractionRepository repository = mock(ChatInteractionRepository.class);
+        when(chatService.getAvailableTools()).thenReturn(List.of(new McpSchema.Tool(
+                "search_portfolio_documents",
+                "Search portfolio",
+                """
+                {"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}
+                """
+        )));
+
+        MockMvcBuilders.standaloneSetup(new ChatController(chatService, repository)).build()
+                .perform(get("/api/chat/tools"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tools.length()").value(1))
+                .andExpect(jsonPath("$.tools[0].name").value("search_portfolio_documents"))
+                .andExpect(jsonPath("$.tools[0].description").value("Search portfolio"))
+                .andExpect(jsonPath("$.tools[0].inputSchema.type").value("object"))
+                .andExpect(jsonPath("$.tools[0].inputSchema.properties.query.type").value("string"))
+                .andExpect(jsonPath("$.tools[0].inputSchema.required[0]").value("query"));
+    }
+
+    @Test
+    void availableToolsReturnsEmptyArrayWhenNoToolsAreAdvertised() throws Exception {
+        ChatService chatService = mock(ChatService.class);
+        ChatInteractionRepository repository = mock(ChatInteractionRepository.class);
+        when(chatService.getAvailableTools()).thenReturn(List.of());
+
+        MockMvcBuilders.standaloneSetup(new ChatController(chatService, repository)).build()
+                .perform(get("/api/chat/tools"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tools").isArray())
+                .andExpect(jsonPath("$.tools").isEmpty());
+    }
 
     @Test
     void recentInteractionsIncludePersistedCompletionMetrics() {

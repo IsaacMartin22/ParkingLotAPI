@@ -99,7 +99,7 @@ steps:
   #     - "chmod +x .buildkite/scripts/deploy-docker-image-to-ec2.sh"
   #     - "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-isaaccmartin151/parkinglotapi-app} sh .buildkite/scripts/deploy-docker-image-to-ec2.sh"
 
-  - label: ":stop_sign: Stop existing container on DigitalOcean"
+  - label: ":octagonal_sign: Stop existing container on DigitalOcean"
     key: "stop-digitalocean-container"
     timeout_in_minutes: 5
     retry:

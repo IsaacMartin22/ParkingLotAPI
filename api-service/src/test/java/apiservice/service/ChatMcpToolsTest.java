@@ -54,6 +54,30 @@ class ChatMcpToolsTest {
     private final ChatInteractionRepository chatInteractionRepository = mock(ChatInteractionRepository.class);
 
     @Test
+    void availableToolsReflectCurrentMcpDiscoveryWithoutCallingTools() {
+        ChatServiceImpl service = service();
+        McpSchema.Tool tool = new McpSchema.Tool("tool_one", "Test tool", "{\"type\":\"object\",\"properties\":{}}");
+        when(mcpClient.listTools())
+                .thenReturn(new McpSchema.ListToolsResult(List.of(tool), null))
+                .thenReturn(new McpSchema.ListToolsResult(List.of(), null));
+        ReflectionTestUtils.setField(service, "openAiApiKey", "");
+
+        assertEquals(List.of(tool), service.getAvailableTools());
+        assertEquals(List.of(), service.getAvailableTools());
+        verify(mcpClient, times(0)).callTool(any());
+        verifyNoInteractions(httpClient, chatInteractionRepository);
+    }
+
+    @Test
+    void availableToolsPropagatesDiscoveryFailureInsteadOfReturningEmptyList() {
+        ChatServiceImpl service = service();
+        IllegalStateException failure = new IllegalStateException("MCP unavailable");
+        when(mcpClient.listTools()).thenThrow(failure);
+
+        assertSame(failure, assertThrows(IllegalStateException.class, service::getAvailableTools));
+    }
+
+    @Test
     void answersWithoutRetrievalWhenModelDoesNotSelectSearch() throws Exception {
         ChatServiceImpl service = service();
         advertisePortfolioSearch();

@@ -223,6 +223,32 @@ The API's MCP integration is always on. The API connects to `CHAT_MCP_BASE_URL` 
 at startup and fails startup if the MCP server is unavailable, so when running locally start the MCP server first.
 `ChatServiceImpl` discovers the tools and lets the model select them using `tool_choice=auto`,
 then sends their results back for the final answer, with at most four tool-calling rounds.
+
+Frontends can discover the same tools with `GET /api/chat/tools`, alongside
+`GET /api/chat/models`. The response contains a `tools` array; each tool includes
+its `name`, optional `description`, and JSON Schema `inputSchema`, for example:
+
+```json
+{
+  "tools": [
+    {
+      "name": "search_portfolio_documents",
+      "description": "Search portfolio documents",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "query": { "type": "string" } },
+        "required": ["query"]
+      }
+    }
+  ]
+}
+```
+
+The endpoint queries the connected MCP server on each request and does not invoke
+tools or call OpenAI. No advertised tools produces `{"tools":[]}`; discovery
+failures produce an HTTP error, not an empty list. Discovery indicates which tools
+the chatbot can select, not that every tool's dependencies or credentials are healthy.
+
 Portfolio retrieval is model-selected rather than performed before every answer. The system prompt directs
 the model to search for facts about Isaac, while greetings and analytics questions need not search MongoDB.
 Citation selection still uses the retrieved documents. Question embeddings remain in the API for interaction
