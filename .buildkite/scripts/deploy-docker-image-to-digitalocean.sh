@@ -57,6 +57,9 @@ if [[ ! "${api_domain}" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-z
   exit 1
 fi
 
+echo "--- :whale: Removing unused Docker images older than 7 days on the Droplet"
+docker image prune -a -f --filter "until=168h"
+
 echo "--- :whale: Pulling API image ${image} on the Droplet"
 for attempt in 1 2 3; do
   echo "Pull attempt ${attempt}/3 (60-second timeout)"
