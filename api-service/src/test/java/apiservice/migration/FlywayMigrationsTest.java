@@ -53,6 +53,26 @@ class FlywayMigrationsTest {
     }
 
     @Test
+    void v11ShouldDropParkingTablesInDependencyOrderAndRemoveCapacityFunctions() throws IOException {
+        List<String> statements = Files.readAllLines(
+                        MIGRATIONS_DIR.resolve("V11__drop_parking_lot_entities.sql"))
+                .stream()
+                .map(String::strip)
+                .filter(line -> !line.isEmpty())
+                .toList();
+
+        assertEquals(List.of(
+                "DROP TABLE parking_spaces;",
+                "DROP TABLE sections;",
+                "DROP TABLE floors;",
+                "DROP TABLE parking_lots;",
+                "DROP FUNCTION enforce_space_limit();",
+                "DROP FUNCTION enforce_section_limit();",
+                "DROP FUNCTION enforce_floor_limit();"
+        ), statements);
+    }
+
+    @Test
     void v9ShouldRebuildChatEmbeddingColumnFor3072Dimensions() throws IOException {
         String sql = Files.readString(MIGRATIONS_DIR.resolve("V9__rebuild_chat_embedding_column_for_3072.sql"));
 

@@ -9,8 +9,13 @@ and a shared common module which contains code used in both the api-service and 
 The `mcp-server` module is a separate HTTP service exposing tools to the chatbot.
 
 The common and SDK modules are published to Maven to be added as dependencies in other Java projects. The API service is built as a Docker image and hosted 24/7 because it powers my portfolio site on GitHub Pages. Buildkite publishes the image and automatically deploys it to DigitalOcean on `main` after publication succeeds.
-The hosted URL is currently hardcoded into both the SDK and the frontend query, so if I ever change where it's hosted I will
-need to update those two places.
+The hosted URL is configured in the frontend query, so hosting changes require updating that URL.
+
+The parking application has been retired. Flyway migration V11 permanently drops
+`parking_spaces`, `sections`, `floors`, and `parking_lots`, including their data,
+and removes the capacity-limit functions. Earlier migrations remain unchanged.
+The parking entities, shared DTOs and events, and parking-only SDK client have
+been removed. Analytics, chatbot, and other portfolio features remain available.
 
 The repository's container workflow is centered on the root `Dockerfile`, which bundles the API service and the MCP server into one image. DigitalOcean deployment also runs a separate Caddy container for HTTPS. There is no separate Docker Compose setup to maintain.
 

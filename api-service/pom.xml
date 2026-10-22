@@ -9,7 +9,7 @@
     <packaging>jar</packaging>
 
     <name>API Service</name>
-    <description>Simple API service with ParkingSpace, Section, Floor, and ParkingLot entities</description>
+    <description>Portfolio API service with analytics, chatbot, contact, diagnostics, and integrations</description>
 
     <parent>
         <groupId>io.github.isaacmartin22</groupId>

@@ -61,15 +61,15 @@ echo "--- :whale: Removing unused Docker images older than 7 days on the Droplet
 docker image prune -a -f --filter "until=168h"
 
 echo "--- :whale: Pulling API image ${image} on the Droplet"
-for attempt in 1 2 3; do
-  echo "Pull attempt ${attempt}/3 (90-second timeout)"
-  if timeout --signal=TERM --kill-after=5s 90s docker pull "${image}"; then
+for attempt in 1 2; do
+  echo "Pull attempt ${attempt}/2 (240-second timeout)"
+  if timeout --signal=TERM --kill-after=5s 240s docker pull "${image}"; then
     break
   else
     status=$?
-    echo "Pull attempt ${attempt}/3 failed (exit ${status})." >&2
-    if [ "${attempt}" -eq 3 ]; then
-      echo "API image pull failed after 3 attempts; existing containers are unchanged." >&2
+    echo "Pull attempt ${attempt}/2 failed (exit ${status})." >&2
+    if [ "${attempt}" -eq 2 ]; then
+      echo "API image pull failed after 2 attempts; existing containers are unchanged." >&2
       exit "${status}"
     fi
     echo "Retrying image pull in 5 seconds..." >&2

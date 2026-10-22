@@ -49,8 +49,8 @@ public class TrelloCreateCardTool {
     McpServerFeatures.SyncToolSpecification specification() {
         return new McpServerFeatures.SyncToolSpecification(new McpSchema.Tool(
                 NAME,
-                "Create a new Trello card on the server's configured board. Use only when the user requests "
-                        + "card creation. The card always goes in the open column named Feature Requests. "
+                "Create a new feature request Trello card on the server's configured board. Use only when the user requests "
+                        + "a new feature. The card always goes in the open column named Feature Requests. "
                         + "Supply a card name and an optional description. "
                         + "This writes to Trello; do not retry automatically after an uncertain outcome.",
                 """

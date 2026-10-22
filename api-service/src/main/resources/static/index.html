@@ -121,19 +121,17 @@
       <h1>Parking Lot API Documentation</h1>
       <p class="intro">Base URL: <code>Hosted on AWS ECS</code></p>
       <p class="intro">
-        This service exposes parking lot inventory, floor and section lookup, parking-space mutation,
-        analytics, diagnostics, chat, contact, and integration endpoints.
+        This service exposes analytics, diagnostics, chat, contact, video download, and integration endpoints.
       </p>
       <p class="intro">
         The production deployment is hosted on AWS using ECS behind the public API URL configured for this environment.
       </p>
       <p class="intro">
-        Public writes are limited to parking-space updates, analytics events, contact messages, and chat.
-        Lot, floor, and section creation is handled outside the public API.
+        Public writes include analytics events, contact messages, and chat.
       </p>
       <p class="intro">
-        Capacity limits are enforced in the domain: lots may have up to 6 floors, floors up to 10 sections,
-        and sections up to 10 parking spaces.
+        The parking application has been retired. Parking lot, floor, section, parking-space,
+        and floor SSE endpoints are no longer available.
       </p>
       <div class="legend" aria-label="HTTP method legend">
         <span class="method get">GET</span>
@@ -157,65 +155,6 @@
         Videos are publicly accessible by URL for seven days, then return 404.
         Downloads may take up to five minutes; expired files are deleted hourly.
       </p>
-    </section>
-
-    <section class="section">
-      <h2>Parking Lots</h2>
-      <p class="section-note">Top-level parking lot lookup and nested floor details.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/lots</code></td><td>Get all parking lots.</td></tr>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/lots/{id}</code></td><td>Get a parking lot by ID.</td></tr>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/lots/{lotId}/floors/{floorId}/details</code></td><td>Get floor details for a specific lot and floor.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>Floors</h2>
-      <p class="section-note">Floor-level data within a parking lot.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/floors</code></td><td>Get all floors.</td></tr>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/floors/{id}</code></td><td>Get a floor by ID.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>Sections</h2>
-      <p class="section-note">Sections group parking spaces on a floor.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/sections</code></td><td>Get all sections.</td></tr>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/sections/{id}</code></td><td>Get a section by ID.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>Parking Spaces</h2>
-      <p class="section-note">Parking-space lookup and occupancy updates.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/spaces</code></td><td>Get all parking spaces.</td></tr>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/spaces/{id}</code></td><td>Get a parking space by ID.</td></tr>
-            <tr><td><span class="method put">PUT</span></td><td><code>/api/spaces/{id}</code></td><td>Assign a car to an empty parking space.</td></tr>
-            <tr><td><span class="method delete">DELETE</span></td><td><code>/api/spaces/{id}</code></td><td>Remove a car from an occupied parking space.</td></tr>
-          </tbody>
-        </table>
-      </div>
     </section>
 
     <section class="section">
@@ -248,8 +187,8 @@
     </section>
 
     <section class="section">
-      <h2>Diagnostics, Integrations, and Events</h2>
-      <p class="section-note">Operational visibility, deployment info, and SSE updates.</p>
+      <h2>Diagnostics and Integrations</h2>
+      <p class="section-note">Operational visibility and deployment info.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
@@ -260,7 +199,6 @@
             <tr><td><span class="method get">GET</span></td><td><code>/api/diagnostics/mongodb</code></td><td>MongoDB diagnostics.</td></tr>
             <tr><td><span class="method get">GET</span></td><td><code>/api/integrations/bk</code></td><td>Buildkite build information.</td></tr>
             <tr><td><span class="method get">GET</span></td><td><code>/api/integrations/deploy</code></td><td>Deployment information.</td></tr>
-            <tr><td><span class="method get">GET</span></td><td><code>/api/lots/{lotId}/floors/{floorId}/events</code></td><td>Subscribe to floor SSE updates.</td></tr>
           </tbody>
         </table>
       </div>
@@ -272,24 +210,11 @@
       <div class="samples">
         <article class="sample-card">
           <div class="sample-head">
-            <span class="method put">PUT</span>
-            <p class="sample-endpoint"><code>/api/spaces/{id}</code></p>
-          </div>
-          <pre><code>{
-  "color": "Red",
-  "make": "Toyota",
-  "model": "Corolla",
-  "manufacturingYear": 2022,
-  "licensePlate": "ABC-123"
-}</code></pre>
-        </article>
-        <article class="sample-card">
-          <div class="sample-head">
             <span class="method post">POST</span>
             <p class="sample-endpoint"><code>/api/chat</code></p>
           </div>
           <pre><code>{
-  "question": "How many floors are available?"
+  "question": "What projects have you built?"
 }</code></pre>
         </article>
         <article class="sample-card">
@@ -299,7 +224,7 @@
           </div>
           <pre><code>{
   "subject": "Support request",
-  "message": "I need help with a parking space update."
+  "message": "I would like to discuss a project."
 }</code></pre>
         </article>
       </div>

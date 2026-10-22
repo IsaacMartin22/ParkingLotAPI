@@ -1,13 +1,9 @@
 # Parking Lot API Java SDK
 
-This module provides a lightweight Java client for the Parking Lot API so other Java projects can call endpoints without manually building HTTP requests.
-
-## What is included
-
-- `ParkingLotApiClient` with endpoint methods for spaces, floors, sections, lots, floor details, and diagnostics.
-- Request DTOs for write operations:
-  - `ParkingSpaceUpdateRequest`
-- Response DTOs matching API payloads.
+The parking application has been retired. The parking-only client and its
+exception classes have been removed. This module currently contains no Java
+client implementation. Previously published versions do not gain support for
+the remaining API endpoints.
  
 ## Coordinates
 
@@ -56,39 +52,6 @@ Then add credentials in `~/.m2/settings.xml`:
 </settings>
 ```
 
-## Quick usage
-
-```java
-import com.example.parkinglot.sdk.ParkingLotApiClient;
-
-ParkingLotApiClient client = new ParkingLotApiClient("https://api-service-i1ms.onrender.com");
-
-## API client methods
-
-- Parking spaces
-  - `getParkingSpaces()`
-  - `getParkingSpace(long id)`
-  - `updateParkingSpace(long id, ParkingSpaceUpdateRequest request)`
-  - `removeCar(long id)`
-- Floors
-  - `getFloors()`
-  - `getFloor(long id)`
-- Sections
-  - `getSections()`
-  - `getSection(long id)`
-- Lots
-  - `getParkingLots()`
-  - `getParkingLot(long id)`
-  - `getFloorDetailsForLot(long lotId, long floorId)`
-- Diagnostics
-  - `getAPIDiagnostics()`
-  - `getDatabaseDiagnostics()`
-
-## Error handling
-
-- Non-2xx responses throw `ApiClientHttpException`.
-- Network/serialization issues throw `ApiClientException`.
-
 ## Build
 
 From the `sdk` folder:
@@ -96,4 +59,3 @@ From the `sdk` folder:
 ```powershell
 mvn clean package
 ```
-
