@@ -44,7 +44,7 @@ public class ContactEmailTool {
                         + "or email header lines. Do not retry automatically "
                         + "after an uncertain outcome.",
                 """
-                {aa
+                {
                   "type": "object",
                   "properties": {
                     "subject": {
