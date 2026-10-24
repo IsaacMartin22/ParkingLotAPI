@@ -33,20 +33,19 @@ public class McpServerConfiguration {
     @Bean(destroyMethod = "closeGracefully")
     McpSyncServer mcpServer(
             HttpServletSseServerTransportProvider transport, SiteAnalyticsTool siteAnalyticsTool,
-            PortfolioSearchTool portfolioSearchTool, TrelloCreateCardTool trelloCreateCardTool,
-            ContactEmailTool contactEmailTool
+            PortfolioSearchTool portfolioSearchTool, TrelloCreateCardTool trelloCreateCardTool
     ) {
         return McpServer.sync(transport)
                 .serverInfo("parking-lot-mcp-server", "0.0.2")
-                .tools(tools(siteAnalyticsTool, portfolioSearchTool, trelloCreateCardTool, contactEmailTool))
+                .tools(tools(siteAnalyticsTool, portfolioSearchTool, trelloCreateCardTool))
                 .build();
     }
 
     static List<McpServerFeatures.SyncToolSpecification> tools(
             SiteAnalyticsTool siteAnalyticsTool, PortfolioSearchTool portfolioSearchTool,
-            TrelloCreateCardTool trelloCreateCardTool, ContactEmailTool contactEmailTool
+            TrelloCreateCardTool trelloCreateCardTool
     ) {
         return List.of(siteAnalyticsTool.specification(), portfolioSearchTool.specification(),
-                trelloCreateCardTool.specification(), contactEmailTool.specification());
+                trelloCreateCardTool.specification());
     }
 }
