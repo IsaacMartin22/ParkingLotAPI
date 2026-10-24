@@ -70,6 +70,20 @@ class ContactEmailToolTest {
     }
 
     @Test
+    void reportsContactValidationFailureWithStatusAndDiagnostic() throws Exception {
+        HttpResponse<Void> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(400);
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
+
+        McpSchema.CallToolResult result = tool.call(Map.of("subject", "Hello", "message", "Hello\nIsaac"));
+
+        assertTrue(Boolean.TRUE.equals(result.isError()));
+        assertTrue(text(result).contains("[MCP errorCode=CONTACT_ERROR httpStatus=400 errorId="));
+        assertTrue(text(result).contains("disallows line breaks"));
+        verify(httpClient).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+    }
+
+    @Test
     void doesNotRetryAnUncertainRequest() throws Exception {
         when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
                 .thenThrow(new IOException("connection lost"));

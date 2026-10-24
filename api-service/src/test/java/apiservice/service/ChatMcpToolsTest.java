@@ -236,7 +236,7 @@ class ChatMcpToolsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"DATABASE_ERROR", "CONFIGURATION_ERROR", "TRELLO_ERROR"})
+    @ValueSource(strings = {"DATABASE_ERROR", "CONFIGURATION_ERROR", "TRELLO_ERROR", "CONTACT_ERROR"})
     void logsServerDiagnosticWithoutLoggingErrorPayload(String errorCode) throws Exception {
         ChatServiceImpl service = service();
         advertiseTool();
@@ -301,6 +301,18 @@ class ChatMcpToolsTest {
             logger.detachAppender(appender);
             appender.stop();
         }
+    }
+
+    @Test
+    void preservesContactHttpStatusWithoutLoggingEmailContent() {
+        String diagnostic = "[MCP errorCode=CONTACT_ERROR httpStatus=400"
+                + " errorId=577daf18-8abc-4932-9981-66f9382cd133]";
+        String logged = ReflectionTestUtils.invokeMethod(ChatServiceImpl.class, "toolErrorDiagnostic",
+                new McpSchema.CallToolResult("private-email-content " + diagnostic, true));
+
+        assertThat(logged).startsWith(diagnostic + " hint=")
+                .contains("ContactService disallows line breaks and HTML")
+                .doesNotContain("private-email-content");
     }
 
     @Test

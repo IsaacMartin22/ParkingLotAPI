@@ -43,8 +43,9 @@ public class ChatServiceImpl implements ChatService {
     private static final int MAX_TOOL_ROUNDS = 4;
     private static final String PORTFOLIO_SEARCH_TOOL = "search_portfolio_documents";
     private static final Pattern MCP_ERROR_DIAGNOSTIC = Pattern.compile(
-            "\\[MCP errorCode=(INVALID_ARGUMENTS|DATABASE_ERROR|SERIALIZATION_ERROR|INTERNAL_ERROR|CONFIGURATION_ERROR|TRELLO_ERROR)"
+            "\\[MCP errorCode=(INVALID_ARGUMENTS|DATABASE_ERROR|SERIALIZATION_ERROR|INTERNAL_ERROR|CONFIGURATION_ERROR|TRELLO_ERROR|CONTACT_ERROR)"
                     + "(?: sqlState=([0-9A-Z]{5}|unknown))?"
+                    + "(?: httpStatus=([1-5][0-9]{2}))?"
                     + " errorId=[0-9a-f-]{36}\\]$");
 
     @Value("${app.chat.openai-api-key:}")
@@ -423,6 +424,11 @@ public class ChatServiceImpl implements ChatService {
                     if ("TRELLO_ERROR".equals(matcher.group(1))) {
                         return matcher.group() + " hint=Check MCP server Trello logs using errorId; "
                                 + "check the board before retrying to avoid duplicate cards.";
+                    }
+                    if ("CONTACT_ERROR".equals(matcher.group(1))) {
+                        return matcher.group() + " hint=Check MCP contact logs using errorId and API contact/SMTP logs. "
+                                + "HTTP 400 can indicate rejected content: ContactService disallows line breaks and HTML. "
+                                + "Check CONTACT_API_URL for connectivity errors; confirm delivery before retrying.";
                     }
                     return matcher.group();
                 }

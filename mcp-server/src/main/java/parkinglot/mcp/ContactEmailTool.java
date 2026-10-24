@@ -40,7 +40,8 @@ public class ContactEmailTool {
         return new McpServerFeatures.SyncToolSpecification(new McpSchema.Tool(
                 NAME,
                 "Send an email to Isaac through the configured contact service. Use only when the user explicitly "
-                        + "asks to email Isaac. Supply the email subject and message. Do not retry automatically "
+                        + "asks to email Isaac. Supply a plain-text subject and message without line breaks, HTML, "
+                        + "or email header lines. Do not retry automatically "
                         + "after an uncertain outcome.",
                 """
                 {
@@ -88,8 +89,14 @@ public class ContactEmailTool {
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 logger.warn("Contact service rejected MCP email request. tool={}, errorId={}, httpStatus={}",
                         NAME, errorId, response.statusCode());
-                return error("Contact service rejected the email request (HTTP "
-                        + response.statusCode() + ").", "CONTACT_ERROR", errorId);
+                return new McpSchema.CallToolResult(
+                        "Contact service returned HTTP " + response.statusCode()
+                                + (response.statusCode() == 400
+                                ? ". Supply a subject up to 200 characters and a message up to 4000 characters; "
+                                        + "ContactService disallows line breaks, HTML, and email header patterns."
+                                : ". Email delivery could not be confirmed. Check before retrying.")
+                                + " [MCP errorCode=CONTACT_ERROR httpStatus=" + response.statusCode()
+                                + " errorId=" + errorId + "]", true);
             }
             logger.info("MCP tool call completed. tool={}, errorId={}, durationMs={}",
                     NAME, errorId, (System.nanoTime() - startedAt) / 1_000_000);
