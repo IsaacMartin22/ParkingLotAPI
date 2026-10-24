@@ -59,11 +59,11 @@ class ContactEmailToolTest {
 
     @Test
     void rejectsInvalidArgumentsWithoutSendingRequest() {
-        for (Map<String, Object> arguments : List.of(
+        for (Map<?, ?> arguments : List.of(
                 Map.of(), Map.of("subject", "Hello"), Map.of("subject", " ", "message", "Body"),
                 Map.of("subject", "Hello", "message", "Body", "to", "other@example.com")
         )) {
-            assertTrue(Boolean.TRUE.equals(tool.call(arguments).isError()));
+            assertTrue(Boolean.TRUE.equals(tool.call((Map<String, Object>) arguments).isError()));
         }
         assertTrue(Boolean.TRUE.equals(tool.call(null).isError()));
         verifyNoInteractions(httpClient);
