@@ -29,7 +29,7 @@ public class ContactEmailTool {
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5)).build();
 
-    @Value("${app.contact.api-url:http://localhost:8080/api/contact}")
+    @Value("${app.contact.api-url:https://api.isaaccmart.in/api/contact}")
     private String contactApiUrl;
 
     public ContactEmailTool(ObjectMapper objectMapper) {
