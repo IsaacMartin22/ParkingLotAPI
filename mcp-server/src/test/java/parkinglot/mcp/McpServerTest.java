@@ -78,7 +78,8 @@ class McpServerTest {
         try (McpSyncClient client = client()) {
             assertEquals("parking-lot-mcp-server", client.initialize().serverInfo().name());
             List<McpSchema.Tool> tools = client.listTools().tools();
-            assertEquals(List.of(TrelloCreateCardTool.NAME, SiteAnalyticsTool.NAME, PortfolioSearchTool.NAME),
+            assertEquals(List.of(TrelloCreateCardTool.NAME, SiteAnalyticsTool.NAME, PortfolioSearchTool.NAME,
+                            ContactEmailTool.NAME),
                     tools.stream().map(McpSchema.Tool::name).sorted().toList());
 
             McpSchema.CallToolResult result = client.callTool(new McpSchema.CallToolRequest(PortfolioSearchTool.NAME, Map.of()));
